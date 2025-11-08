@@ -1,0 +1,32 @@
+.footer-container {
+  background: #000;
+}
+
+.hotline {
+  display: flex;
+  gap: 40px;
+  align-items: center;
+  color: white;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contact-item svg {
+  width: 24px;
+  height: 24px;
+  background-color: white;
+  border-radius: 5px;
+  padding: 4px;
+}
+
+.contact-item span {
+  display: flex;
+  align-items: center; 
+  font-size: 16px;
+  color: white;
+  line-height: 1;
+}

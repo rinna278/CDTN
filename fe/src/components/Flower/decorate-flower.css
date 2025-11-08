@@ -1,0 +1,178 @@
+.birthday-flower-container{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.message-1{
+    margin-top: 4vw;
+    font-style: italic;
+}
+/* --- CSS cho ReactPaginate --- */
+.pagination {
+  display: flex;
+  justify-content: center;
+  list-style: none;
+  padding: 0;
+  margin-top: 2rem;
+  cursor: pointer;
+}
+
+.page-item {
+  margin: 0 5px;
+}
+
+.page-link {
+  padding: 8px 15px;
+  border: 1px solid #ddd;
+  color: black; /* Màu chữ phù hợp với shop hoa */
+  border-radius: 5px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.page-item:not(.disabled) .page-link:hover {
+  background-color: #9e3e6e; /* Màu nền khi hover */
+}
+
+.page-item.active .page-link {
+  background-color: #c88ea7; /* Màu nền của trang đang active */
+  color: white;
+  border-color: #c88ea7;
+}
+
+/* Ẩn các nút "Previous" và "Next" nếu chúng bị disable */
+.page-item.disabled .page-link {
+  color: #ccc;
+  pointer-events: none;
+}
+
+/* Css phần arrangement */
+.arrangement{
+  margin-right: 15vh;
+  display: flex;
+  width: 100%;
+  justify-content: flex-end;
+  gap: 10px;
+  /* align-items: center; */
+}
+
+.arrangement button{
+  width: 7vw;
+  height: 5vh;
+  font-size: 20px;
+  background-color: rgb(193, 185, 185);
+  border: none;
+  border-radius: 5px;
+}
+
+.select {
+  width: fit-content;
+  cursor: pointer;
+  position: relative;
+  transition: 300ms;
+  color: white;
+  overflow: hidden;
+  /* height: 5vh; */
+}
+
+.selected {
+  background-color: #2a2f3b;
+  height: 3.5vh;
+  padding: 5px;
+  margin-bottom: 3px;
+  border-radius: 5px;
+  position: relative;
+  z-index: 100000;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.arrow {
+  position: relative;
+  right: 0px;
+  height: 10px;
+  transform: rotate(-90deg);
+  width: 25px;
+  fill: white;
+  z-index: 100000;
+  transition: 300ms;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  border-radius: 5px;
+  padding: 5px;
+  background-color: #2a2f3b;
+  position: relative;
+  top: -100px;
+  opacity: 0;
+  transition: 300ms;
+  z-index: 1;
+}
+
+.select:hover > .options {
+  opacity: 1;
+  top: 0;
+}
+
+.select:hover > .selected .arrow {
+  transform: rotate(0deg);
+}
+
+.option {
+  border-radius: 5px;
+  padding: 5px;
+  transition: 300ms;
+  background-color: #2a2f3b;
+  width: 150px;
+  font-size: 15px;
+}
+.option:hover {
+  background-color: purple;
+}
+
+.options input[type="radio"] {
+  display: none;
+}
+
+.options label {
+  display: inline-block;
+}
+.options label::before {
+  content: attr(data-txt);
+}
+
+.options input[type="radio"]:checked + label {
+  display: none;
+}
+
+.options input[type="radio"]#all:checked + label {
+  display: none;
+}
+
+.select:has(.options input[type="radio"]#all:checked) .selected::before {
+  content: attr(data-default);
+}
+.select:has(.options input[type="radio"]#a-z:checked) .selected::before {
+  content: attr(data-one);
+}
+.select:has(.options input[type="radio"]#z-a:checked) .selected::before {
+  content: attr(data-two);
+}
+.select:has(.options input[type="radio"]#expensive-cheaper:checked) .selected::before {
+  content: attr(data-three);
+}
+.select:has(.options input[type="radio"]#cheaper-expensive:checked) .selected::before {
+  content: attr(data-four);
+}
+
+
+.description-1, .description-2, .description-3, .description-4, .description-5{
+  margin: 0 4vw;
+}
+
+
