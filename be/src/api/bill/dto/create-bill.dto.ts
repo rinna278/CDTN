@@ -1,4 +1,4 @@
-//ĐÃ SỬA
+//CHƯA SỬA
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
@@ -12,10 +12,10 @@ import {
   MaxLength
 } from 'class-validator';
 
-export class CreateUserDto {
-  //Mã tài khoản
+export class CreateBillDto {
+  //Mã hóa đơn
   @ApiProperty({
-    description: 'maTaiKhoan',
+    description: 'maHoaDon',
   })
   @IsNotEmpty()
   @IsString()
@@ -23,24 +23,22 @@ export class CreateUserDto {
   @Transform(({ value }) => value.trim())
   maTaiKhoan: string;
   
-  //Tên đăng nhập
+  //Ngày lập
   @ApiProperty({
-    description: 'name',
+    description: 'date-create',
   })
   @IsNotEmpty()
   @IsString()
   @MaxLength(100)
-  @Transform(({ value }) => value.trim())
-  name: string;
+  datecreate: string;
 
-  //Mật khẩu
+  //Tổng tiền
   @ApiProperty({
-    description: 'matKhau',
+    description: 'tongTien',
   })
   @IsNotEmpty()
-  @IsString()
-  @Transform(({ value }) => value.trim())
-  matKhau: string;
+  @IsInt()
+  tongTien: number;
 
   //Họ tên
   @ApiProperty({

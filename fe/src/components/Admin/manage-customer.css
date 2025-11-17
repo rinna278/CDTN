@@ -1,0 +1,102 @@
+.content-middle-customer{
+    width: 100%;
+}
+.item-customer{
+    display: flex;
+    justify-content: space-between;
+}
+.item-customer .all-customer, .item-customer .new-customer, .item-customer .rate-customer{
+    background-color: #fff;
+    border-radius: 10px;
+    margin: 1.5vh 0;
+    padding: 1rem;
+    width: 15vw;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.item-customer .all-customer h4, .item-customer .new-customer h4, .item-customer .rate-customer h4{
+    color: gray;
+}
+.item-customer .all-customer p{
+    font-size: 25px;
+    color: #EA9D4A;
+    font-weight: 800;
+}
+.item-customer .new-customer p{
+    font-size: 25px;
+    color: #2169FC;
+    font-weight: 800;
+}
+.item-customer .rate-customer p{
+    font-size: 25px;
+    color: #3FAD82;
+    font-weight: 800;
+}
+
+/* CSS table */
+.table-customers{
+    height: 55vh;
+    margin-top: 5vh;
+    background: #fff;
+    border-radius: 10px;
+    padding: 2vw;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden; /* Ẩn phần tràn ra ngoài */
+}
+.customer-data{
+    max-height: 40vh;
+    overflow-y: auto;
+}
+.title_table h5 {
+    color: rgb(143, 140, 140);
+}
+table {
+    width: 100%;
+    border-collapse: collapse; /* Xóa khoảng cách giữa các cell */
+    text-align: left;
+}
+table th {
+    background-color: #f9f9f9;
+    font-weight: bold;
+    color: #1f2937;
+    position: sticky; /* Đảm bảo tiêu đề dính khi cuộn */
+    top: 0; /* Đặt tiêu đề ở trên cùng */
+    z-index: 1; /* Đảm bảo tiêu đề nằm trên các hàng */
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    justify-content: center;
+}
+table td {
+    color: #555;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+}
+table tr:nth-child(even) {
+    background-color: #f7f7f7;
+}
+
+table tr:nth-child(odd) {
+    background-color: #fff;
+}
+.order-number{
+    font-weight: 700;
+    text-align: center;
+}
+
+svg{
+    margin-right: 1vh;
+}
+
+table tr:hover {
+    background-color: #f0f0f0; /* Màu nền khi hover chuột */
+}
+button.edit:hover svg {
+    fill: #0d8d9b; /* Màu xanh dương đậm khi hover */
+}
+
+/* Khi hover vào nút "Delete" - đổi màu icon thành đỏ */
+button.delete:hover svg {
+    fill: #b91c1c; /* Màu đỏ đậm khi hover */
+}
+
+
+

@@ -58,7 +58,7 @@ export class UserService extends BaseService<UserEntity> {
           status: RoleStatus.ACTIVE,
         },
       },
-      relations: ['roles.permissions', 'organizations'],
+      relations: ['roles.permissions'],
     });
     if (!user) {
       throw new NotFoundException(ERROR_USER.USER_NOT_FOUND.MESSAGE);

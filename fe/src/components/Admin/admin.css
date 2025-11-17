@@ -1,0 +1,94 @@
+/* Tổng container */
+.admin-container {
+  display: flex;
+  height: calc(100vh - 16vh);
+  margin-bottom: 8vh;
+}
+
+/* Sidebar */
+.content-left {
+  width: 17vw;
+  background-color: #FFF1F3;
+  height: calc(100vh - 9vh);
+  position: fixed;
+  top: 9vh;
+  left: 0;
+  z-index: 1000;
+  overflow-y: auto;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-left h2 {
+  margin-bottom: 1rem;
+  padding: 0.5vw 1.5vw;
+}
+
+.content-left hr {
+  border: 1px solid #ccc;
+  margin-top: 2vw;
+}
+
+.content-left ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Mỗi item */
+.content-left .item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 1vw 1.5vw;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.25s, color 0.25s;
+  margin: 0 0.5vw 2vw 0.5vw;
+}
+
+/* Hover */
+.content-left .item:hover {
+  background-color: #eaeaea;
+}
+
+/* Khi NavLink bên trong active → tô nền cho toàn item */
+.content-left .item:has(a.active) {
+  background: linear-gradient(to right, #f43f5e, #ec4899);
+  color: white;
+}
+
+/* Đổi màu icon khi active */
+.content-left .item:has(a.active) svg {
+  fill: white;
+}
+
+/* Icon mặc định */
+.content-left .item svg {
+  width: 22px;
+  height: 22px;
+  fill: #333;
+  transition: fill 0.25s;
+}
+
+/* Text link */
+.content-left .item a {
+  text-decoration: none;
+  color: inherit;
+  font-weight: 500;
+}
+
+/* Ẩn pointer trên NavLink (để click toàn vùng li) */
+.content-left .item a {
+  pointer-events: none;
+}
+
+/* Content phải */
+.content-right {
+  margin-left: 20vw;
+  width: 80vw;
+  padding: 2vw;
+  height: 100vh;
+  background-color: #fff;
+}

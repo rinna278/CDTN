@@ -5,6 +5,8 @@ interface UserState {
   email: string;
   password: string;
   loggedIn: boolean;
+  accessToken: string;
+
 }
 
 const initialState: UserState = {
@@ -12,6 +14,7 @@ const initialState: UserState = {
   email: '',
   password: '',
   loggedIn: false,
+  accessToken: ''
 };
 
 const userSlice = createSlice({

@@ -1,0 +1,278 @@
+/* CSS cho content ở trên */
+.content-top-product {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* Thêm khoảng cách dưới để tách khỏi các nội dung bên dưới */
+    margin-bottom: 2rem;
+}
+
+/* Nút thêm sản phẩm */
+.btn-add-product {
+    flex-shrink: 0; /* Ngăn nó co lại */
+}
+
+.box-button {
+    cursor: pointer;
+    border: 0.25rem solid #1f2937; /* Màu đen đậm hơn */
+    background: linear-gradient(to right, #f43f5e, #ec4899);
+    padding-bottom: 0.625rem; /* 10px */
+    transition: 0.1s ease-in-out;
+    user-select: none;
+    display: inline-block; /* Quan trọng: Đảm bảo nó chỉ chiếm đủ không gian */
+}
+
+.button {
+    background-color: #fce7f3; 
+    border: 0.25rem solid #fff; /* 4px */
+    padding: 0.5rem 1rem; /* Tăng padding để nút lớn hơn một chút */
+    display: block; /* Đảm bảo nó lấp đầy box-button */
+}
+
+.button span {
+    font-size: 1rem; /* Kích thước cơ bản */
+    font-weight: 600; /* Làm chữ đậm hơn */
+    letter-spacing: 1px;
+    color: #1f2937; /* Màu chữ */
+    white-space: nowrap; /* Ngăn chữ bị ngắt dòng */
+}
+
+.box-button:active {
+    padding: 0;
+    margin-bottom: 0.625rem; /* 10px */
+    transform: translateY(0.625rem); /* 10px */
+}
+
+.button::after, .button::before{
+    width: 12.5vw;
+}
+
+/* CSS thanh search */
+.group {
+ display: flex;
+ line-height: 28px;
+ align-items: center;
+ position: relative;
+}
+
+.input {
+ width: 100%;
+ height: 40px;
+ line-height: 28px;
+ padding: 0 1rem;
+ padding-left: 2.5rem;
+ border: 2px solid transparent;
+ border-radius: 8px;
+ outline: none;
+ background-color: #f3f3f4;
+ color: #0d0c22;
+ transition: .3s ease;
+}
+
+.input::placeholder {
+ color: #9e9ea7;
+}
+
+.input:focus, input:hover {
+ outline: none;
+ border-color: rgba(234,76,137,0.4);
+ background-color: #fff;
+ box-shadow: 0 0 0 4px rgb(234 76 137 / 10%);
+}
+
+.icon {
+ position: absolute;
+ left: 1rem;
+ fill: #9e9ea7;
+ width: 1rem;
+ height: 1rem;
+}
+
+/* CSS bảng trong content middle */
+.content-middle-product {
+    height: 55vh;
+    margin-top: 5vh;
+    background: #fff;
+    border-radius: 10px;
+    padding: 2vw;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden; /* Ẩn phần tràn ra ngoài */
+}
+
+/* Tiêu đề bảng */
+
+.title_table h5 {
+    color: rgb(143, 140, 140);
+}
+
+/* Cấu trúc bảng */
+
+table {
+    width: 100%;
+    border-collapse: collapse; /* Xóa khoảng cách giữa các cell */
+    text-align: left;
+}
+
+table th {
+    background-color: #f9f9f9;
+    font-weight: bold;
+    color: #1f2937;
+    position: sticky; /* Đảm bảo tiêu đề dính khi cuộn */
+    top: 0; /* Đặt tiêu đề ở trên cùng */
+    z-index: 1; /* Đảm bảo tiêu đề nằm trên các hàng */
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+}
+
+/* Cột dữ liệu */
+table td {
+    color: #555;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+}
+
+/* Dòng chẵn và lẻ có màu nền khác */
+table tr:nth-child(even) {
+    background-color: #f7f7f7;
+}
+
+table tr:nth-child(odd) {
+    background-color: #fff;
+}
+
+table tr:hover {
+    background-color: #f0f0f0; /* Màu nền khi hover chuột */
+}
+
+/* Định dạng cột "Tồn kho" */
+.stock {
+    padding: 0.2rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* Nút "Edit" và "Delete" */
+td:last-child button{
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    margin: 0 0.5rem;
+}
+
+button.edit {
+    color: #007bff;
+}
+
+button.delete {
+    color: #dc3545;
+}
+
+.edit button:hover, .delete button:hover {
+    opacity: 0.7;
+}
+
+/* Nút chỉnh sửa và xóa */
+button .edit {
+    font-size: 1.2rem;
+}
+
+td:last-child{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+button .delete {
+    font-size: 1.2rem;
+}
+button.edit:hover svg {
+    fill: #0d8d9b; /* Màu xanh dương đậm khi hover */
+}
+
+/* Khi hover vào nút "Delete" - đổi màu icon thành đỏ */
+button.delete:hover svg {
+    fill: #b91c1c; /* Màu đỏ đậm khi hover */
+}
+
+
+.table_list td, .table_list th {
+    text-align: center;
+}
+
+/* Giới hạn chiều cao của bảng trong các trường hợp cần cuộn */
+.table_list {
+    max-height: 40vh;
+    overflow-y: auto;
+}
+
+
+/* CSS nội dung cuối */
+.content-bottom-product {
+    height: auto; /* Điều chỉnh chiều cao để nội dung vừa với container */
+    margin: 2vh 0;
+    background: #fff;
+    border-radius: 10px;
+    padding: 2rem; /* Điều chỉnh padding cho không gian thoáng hơn */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+
+/* Cấu trúc của card danh mục sản phẩm */
+.card-category {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem; /* Khoảng cách giữa các mục */
+    justify-content: center;
+}
+
+/* Mỗi card danh mục */
+.item-cart-category {
+    width: 12rem; /* Điều chỉnh chiều rộng của các card */
+    height: auto;
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.item-cart-category h4 {
+    font-size: 1.1rem;
+    color: #1f2937;
+    margin: 0;
+}
+
+.item-cart-category p {
+    color: #555;
+    margin-bottom: 1rem;
+}
+
+.btn_action {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.btn_action button {
+    background-color: #fce7f3; /* Nền của nút */
+    border: 0.25rem solid #f43f5e;
+    color: #1f2937;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Hiệu ứng hover cho các nút "Sửa" và "Xóa" */
+.btn_action button:hover {
+    background-color: #f43f5e;
+    color: #fff;
+}
+
+/* Hiệu ứng hover cho nút "Xóa" */
+.btn_action button.delete:hover {
+    background-color: #dc3545;
+}

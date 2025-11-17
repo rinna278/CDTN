@@ -1,3 +1,5 @@
+//CHƯA sửa 
+
 import {
   Column,
   Entity,
@@ -10,11 +12,15 @@ import { Exclude } from 'class-transformer';
 import { UserStatus, USER_CONST } from './user.constant';
 import { BaseEntity } from '../../share/database/base.entity';
 import { RoleEntity } from '../role/role.entity';
-import { OrganizationEntity } from '../organization/organization.entity';
+
 @Entity({ name: USER_CONST.MODEL_NAME })
 export class UserEntity extends BaseEntity {
   @Column({ length: 255, unique: true })
   name: string;
+
+  @Column({ type: 'simple-json', nullable: true })
+  cart: { productId: number; quantity: number }[];
+
 
   @Column({ length: 255, unique: true })
   email: string;
@@ -42,14 +48,6 @@ export class UserEntity extends BaseEntity {
     inverseJoinColumn: { name: 'role_id' },
   })
   roles: RoleEntity[];
-
-  @ManyToMany(() => OrganizationEntity)
-  @JoinTable({
-    name: 'user_organization', // user_users_organization: user has a lot of organization
-    joinColumn: { name: 'user_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'organization_id' },
-  })
-  organizations: OrganizationEntity[];
 
   @Column({
     name: 'current_hashed_refresh_token',
