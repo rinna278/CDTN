@@ -27,6 +27,7 @@ function App() {
         hideProgressBar={false}
         pauseOnHover
         theme="colored"
+        style={{marginTop: '60px'}}
       />
     </div>
   );

@@ -6,3 +6,7 @@ const postLogin = (userEmail: string, userPassword: string) => {
     password: userPassword,
   });
 };
+
+
+
+export {postLogin}

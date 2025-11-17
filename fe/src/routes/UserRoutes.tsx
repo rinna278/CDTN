@@ -9,7 +9,7 @@ import GraduateFlower from "../components/Flower/graduate-flower";
 import FuneralFlower from "../components/Flower/funeral-flower";
 import Register from "../components/User/register";
 import Login from "../components/User/login";
-
+import Profile from "../components/User/profile";
 interface UserRoutesProps {
   selected: string;
   setSelected: Dispatch<SetStateAction<string>>;
@@ -27,6 +27,7 @@ const UserRoutes = ({ selected, setSelected }: UserRoutesProps) => {
         </Route>
         <Route path="/register" element={<Register selected={selected} setSelected={setSelected} />} />
         <Route path="/login" element={<Login selected={selected} setSelected={setSelected} />} />
+        <Route path="/profile" element={<Profile selected={selected} setSelected={setSelected}/>}/>
     </Routes>
   );
 };
