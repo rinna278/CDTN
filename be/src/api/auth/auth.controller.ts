@@ -22,6 +22,9 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import JwtRefreshGuard from './guards/jwt-refresh.guard';
 import { JwtAuthGuard } from './guards/jwt.guard';
+import { IAdminPayload } from 'src/share/common/app.interface';
+import { SignUpDto } from './dto/signup.dto';
+import { SendOtpDto } from './dto/send-otp.dto';
 
 @ApiTags('Authentication')
 @Controller()
@@ -38,6 +41,30 @@ export class AuthController {
   @Post('login')
   async login(@Body() loginDto: LoginDto): Promise<LoginResponseDto> {
     return this.authService.login(loginDto);
+  }
+
+  @Post('register')
+  signUp(
+    @Body() data: SignUpDto,
+    @GetUser() user: IAdminPayload,
+  ): Promise<unknown> {
+    return this.authService.signUp(data, user);
+  }
+
+  @Post('test')
+  testRoute() {
+    
+  }
+  @HttpCode(HttpStatus.OK)
+  @Post('send-otp')
+  @ApiBody({
+    type: SendOtpDto,
+    description: 'Email to send OTP',
+    required: true,
+  })
+  sendOtp(@Body() data: SendOtpDto) {
+    console.log('🔥 sendOtp method called with data:', data);
+    return this.authService.sendOtp(data);
   }
 
   @UseGuards(JwtRefreshGuard)

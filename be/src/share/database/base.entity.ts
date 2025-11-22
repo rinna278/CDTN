@@ -11,7 +11,7 @@ export class BaseEntity extends TypeOrmBaseEntity {
   @PrimaryGeneratedColumn({
     type: 'bigint',
   })
-  id: string;
+  id: number;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;

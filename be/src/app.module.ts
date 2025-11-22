@@ -5,8 +5,10 @@ import { AuthModule } from './api/auth/auth.module';
 import { LoggerMiddleware } from './share/middlewares/logger.middleware';
 import { PermissionModule } from './api/permission/permission.module';
 import { RoleModule } from './api/role/role.module';
-import { OrganizationModule } from './api/organization/organization.module';
 import { DatabaseModule } from './configs/database/database.module';
+import { EmailModule } from './api/email/email.module';
+import { OtpModule } from './api/otp/otp.module';
+import { RedisModule } from './configs/redis/redis.module';
 
 @Module({
   imports: [
@@ -18,7 +20,9 @@ import { DatabaseModule } from './configs/database/database.module';
     RoleModule,
     UserModule,
     AuthModule,
-    OrganizationModule,
+    EmailModule,
+    OtpModule,
+    RedisModule,
   ],
 })
 export class AppModule {

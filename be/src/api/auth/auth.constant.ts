@@ -31,6 +31,29 @@ export const ERROR_AUTH = {
     CODE: 'us00007',
     MESSAGE: 'Your account has been locked. Please try again after 30 minutes!',
   },
+  OTP_EXPIRED: {
+    CODE: 'us00013',
+    MESSAGE: 'OTP code has expired. Please check it.',
+  },
+  OTP_QUEUE_FAILED: {
+    CODE: 'us00011',
+    MESSAGE: 'Failed to add OTP to the queue. Please try again later.',
+  },
+};
+
+export const ACCEPT_AUTH = {
+  OTP_SENT_SUCCESS: {
+    CODE: 'aa0001',
+    MESSAGE: 'OTP sent successfully to your email',
+  },
+  OTP_VERIFIED: {
+    CODE: 'aa0002',
+    MESSAGE: 'OTP verified successfully',
+  },
+  PASSWORD_CHANGED: {
+    CODE: 'aa0003',
+    MESSAGE: 'Password changed successfully',
+  },
 };
 
 export const WRONG_NUMBER_OF_LOGIN = {

@@ -68,9 +68,8 @@ export class BaseService<T> implements IBaseService<T> {
         };
       }
 
-      const [data, totalItem] = await this.genericRepository.findAndCount(
-        options,
-      );
+      const [data, totalItem] =
+        await this.genericRepository.findAndCount(options);
 
       const totalPage =
         totalItem % pageSize === 0

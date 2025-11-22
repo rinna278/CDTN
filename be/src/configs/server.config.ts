@@ -19,7 +19,7 @@ export default function (app: INestApplication) {
 
   app.enableVersioning({
     type: VersioningType.URI,
-    defaultVersion: ['1'],
+    defaultVersion: '1',
     prefix: 'api/v',
   });
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));

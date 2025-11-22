@@ -9,7 +9,6 @@ import {
 import { RoleStatus, RoleTypes, ROLE_CONST } from './role.constant';
 import { PermissionEntity } from '../permission/permission.entity';
 import { UserEntity } from '../user/user.entity';
-import { OrganizationEntity } from '../organization/organization.entity';
 
 @Entity({ name: ROLE_CONST.MODEL_NAME })
 export class RoleEntity extends BaseEntity {
@@ -38,14 +37,6 @@ export class RoleEntity extends BaseEntity {
     inverseJoinColumn: { name: 'permission_id' },
   })
   permissions: PermissionEntity[];
-
-  @ManyToMany(() => OrganizationEntity)
-  @JoinTable({
-    name: 'organization_role',
-    joinColumn: { name: 'role_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'organization_id' },
-  })
-  organizations: OrganizationEntity[];
 
   @ManyToMany(() => UserEntity)
   users: UserEntity[];

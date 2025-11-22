@@ -42,6 +42,11 @@ export const ROLES_DEFAULT = [
   },
 ];
 
+export enum RoleName {
+  Administrator = 'Administrator',
+  User = 'User',
+}
+
 export const MOCK_DATA = {
   id: '1',
   name: 'BO Admin',

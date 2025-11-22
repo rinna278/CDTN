@@ -7,8 +7,8 @@ import * as bcrypt from 'bcrypt';
 import { JWT_CONFIG, DEFAULT_ADMIN_USER } from '../../configs/constant.config';
 import { IPaginateParams } from '../../share/common/app.interface';
 import { StringUtil } from '../../share/utils/string.util';
-import { In, Like, Repository } from 'typeorm';
-import { RoleStatus, ROLES_DEFAULT, RoleTypes } from '../role/role.constant';
+import { Like, Repository } from 'typeorm';
+import { RoleStatus, RoleTypes, RoleName } from '../role/role.constant';
 import { ERROR_USER } from './user.constant';
 import { UserEntity } from './user.entity';
 import { IChangePassword } from './user.interface';
@@ -37,14 +37,9 @@ export class UserService extends BaseService<UserEntity> {
         JWT_CONFIG.SALT_ROUNDS,
       );
       uModel.name = DEFAULT_ADMIN_USER.name;
-      uModel.roles = await this.roleRepository.find({
-        where: {
-          name: In(
-            ROLES_DEFAULT.filter((r) => r.type === RoleTypes.Admin).map(
-              (r) => r.name,
-            ),
-          ),
-        },
+      uModel.role = await this.roleRepository.findOneBy({
+        type: RoleTypes.Admin,
+        name: RoleName.Administrator,
       });
       await this.userRepository.save(uModel);
     }
@@ -54,11 +49,11 @@ export class UserService extends BaseService<UserEntity> {
     const user = await this.userRepository.findOne({
       where: {
         email,
-        roles: {
+        role: {
           status: RoleStatus.ACTIVE,
         },
       },
-      relations: ['roles.permissions', 'organizations'],
+      relations: ['roles.permissions'],
     });
     if (!user) {
       throw new NotFoundException(ERROR_USER.USER_NOT_FOUND.MESSAGE);
@@ -80,7 +75,7 @@ export class UserService extends BaseService<UserEntity> {
   }
 
   public async changePassword(
-    id: string,
+    id: number,
     paramsChangePassword: IChangePassword,
   ): Promise<boolean> {
     const userFound = await this.userRepository.findOneBy({ id });
@@ -106,7 +101,7 @@ export class UserService extends BaseService<UserEntity> {
     return true;
   }
 
-  async getUserIfRefreshTokenMatches(refreshToken: string, userId: string) {
+  async getUserIfRefreshTokenMatches(refreshToken: string, userId: number) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       select: {
@@ -125,10 +120,16 @@ export class UserService extends BaseService<UserEntity> {
     return null;
   }
 
-  async setCurrentRefreshToken(refreshToken: string, userId: string) {
+  async setCurrentRefreshToken(refreshToken: string, userId: number) {
     const currentHashedRefreshToken = await bcrypt.hash(refreshToken, 10);
     await this.userRepository.update(userId, {
       currentHashedRefreshToken,
+    });
+  }
+
+  async findByEmail(email: string): Promise<UserEntity | null> {
+    return this.userRepository.findOne({
+      where: { email: email.toLowerCase() },
     });
   }
 }

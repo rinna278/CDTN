@@ -8,13 +8,13 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-abcd1234}
       PGDATA: /data/postgres
     volumes:
-       - ./data/postgres:/data/postgres
+      - ./data/postgres:/data/postgres
     ports:
-      - "5432:5432"
+      - '5432:5432'
     networks:
       - common
     restart: unless-stopped
-  
+
   # pgadmin:
   #   container_name: pgadmin_container
   #   image: dpage/pgadmin4
@@ -29,5 +29,11 @@ services:
   #     - common
   #   restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: nestjs_redis
+    ports:
+      - '6379:6379'
+    restart: unless-stopped
 networks:
   common:
