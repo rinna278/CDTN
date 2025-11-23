@@ -1,4 +1,6 @@
 export interface LoginResponseDto {
+  email: string;
+  fullName?: string;
   accessToken: string;
   accessTokenExpire: number | string;
   isFirstTimeLogin?: boolean;

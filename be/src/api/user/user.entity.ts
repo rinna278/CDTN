@@ -3,10 +3,14 @@ import { Exclude } from 'class-transformer';
 import { UserStatus, USER_CONST } from './user.constant';
 import { BaseEntity } from '../../share/database/base.entity';
 import { RoleEntity } from '../role/role.entity';
+
 @Entity({ name: USER_CONST.MODEL_NAME })
 export class UserEntity extends BaseEntity {
   @Column({ length: 255, unique: true })
   name: string;
+
+  @Column({ type: 'simple-json', nullable: true })
+  cart: { productId: number; quantity: number }[];
 
   @Column({ length: 255, unique: true })
   email: string;

@@ -1,0 +1,265 @@
+.content-top-report{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+/* CSS chọn thời gian */
+.button-with-icon {
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  justify-content: center;
+  border: 1px solid #0f988e;
+  font-family: "Istok Web", sans-serif;
+  letter-spacing: 1px;
+  text-align: center;
+  width: 108px;
+  padding: 0;
+  height: 40px;
+  font-size: 14px;
+  text-transform: uppercase;
+  font-weight: normal;
+  border-radius: 3px;
+  outline: none;
+  user-select: none;
+  cursor: pointer;
+  transform: translateY(0px);
+  position: relative;
+  box-shadow:
+    inset 0 30px 30px -15px rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+    inset 0 1px 20px rgba(0, 0, 0, 0),
+    0 3px 0 #0f988e,
+    0 3px 2px rgba(0, 0, 0, 0.2),
+    0 5px 10px rgba(0, 0, 0, 0.1),
+    0 10px 20px rgba(0, 0, 0, 0.1);
+  background: #15ccbe;
+  color: white;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+  transition: 150ms all ease-in-out;
+}
+
+.button-with-icon .icon {
+  width: 24px;
+  height: 24px;
+  transition: all 0.5s ease-in-out;
+}
+
+.button-with-icon:active {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 16px 2px -15px rgba(0, 0, 0, 0),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.15),
+    inset 0 1px 20px rgba(0, 0, 0, 0.1),
+    0 0 0 #0f988e,
+    0 0 0 2px rgba(255, 255, 255, 0.5),
+    0 0 0 rgba(0, 0, 0, 0),
+    0 0 0 rgba(0, 0, 0, 0);
+}
+
+.button-with-icon:hover .text {
+  transform: translateX(80px);
+}
+.button-with-icon:hover .icon {
+  transform: translate(23px);
+}
+
+.text {
+  transition: all 0.5s ease-in-out;
+  padding-left: 5px;
+  margin-left: 20px;
+}
+
+/* CSS card hiển thị */
+.content-middle-report{
+    width: 100%;
+}
+.item-report{
+    display: flex;
+    justify-content: space-between;
+}
+.item-report .venue-month, .item-report .all-order, .item-report .average-order, .item-report .rate-increase{
+    background-color: #fff;
+    border-radius: 10px;
+    margin: 1.5vh 0;
+    padding: 1rem;
+    width: 12vw;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.item-report .venue-month h3, .item-report .all-order h3, .item-report .average-order h3, .item-report .rate-increase h3{
+    color: gray;
+}
+.item-report .venue-month p{
+    font-size: 25px;
+    color: #EA9D4A;
+    font-weight: 800;
+    text-align: center;
+}
+.item-report .all-order p{
+    font-size: 25px;
+    color: #2169FC;
+    font-weight: 800;
+    text-align: center;
+}
+.item-report .average-order p{
+    font-size: 25px;
+    color: #3FAD82;
+    font-weight: 800;
+    text-align: center;
+}
+.item-report .rate-increase p{
+    font-size: 25px;
+    color: #1ab5c6;
+    font-weight: 800;
+    text-align: center;
+}
+.item-report h5{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* CSS time */
+.btn-select-time {
+    position: relative;
+}
+
+/* CSS MODAL MỚI */
+.time-selection-modal {
+    position: absolute;
+    top: 45px; /* Vị trí dưới nút Time */
+    left: 0;
+    width: 120px; /* Chiều rộng của modal */
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column; /* Hiển thị các button theo hàng ngang */
+    padding: 8px;
+    gap: 8px; /* Khoảng cách giữa các nút Tuần/Tháng/Năm */
+}
+
+.modal-tab-btn {
+    flex-grow: 1;
+    padding: 8px 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: #495057;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.modal-tab-btn:hover {
+    background-color: #15ccbe;
+    color: white;
+    border-color: #15ccbe;
+}
+
+
+/* Chart */
+.chart{
+    height: 50vh;
+    margin-top: 5vh;
+    background: #fff;
+    border-radius: 10px;
+    padding: 2vw;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.chart-1 canvas, .chart-2 canvas{
+    padding-top: 2vh;
+    width: 23vw !important;  /* tự co giãn theo container */
+    height: 100% !important;
+}
+
+
+/* CSS nội dung cuối */
+.content-bottom-report{
+    height: 50vh;
+    margin-top: 2vh;
+    background: #fff;
+    border-radius: 10px;
+    padding: 2vw;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+
+.top-selling-products h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.top-selling-products .sub-title {
+  color: #666;
+  font-size: 13px;
+  margin-bottom: 15px;
+}
+
+.product-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff5f8;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+
+.product-item:hover {
+  background: #ffeaf0;
+}
+
+.rank {
+  background-color: #ff6fa5;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 8px;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+}
+
+.details {
+  flex: 1;
+  margin-left: 15px;
+}
+
+.details h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.details p {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.revenue {
+  text-align: right;
+  font-weight: 700;
+  color: #333;
+}
+
+.revenue span {
+  display: block;
+  font-size: 12px;
+  color: #777;
+}

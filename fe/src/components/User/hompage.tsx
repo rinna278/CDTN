@@ -55,7 +55,7 @@ const HomePage = () => {
             />
             ))}
         </div>
-        <h1 className="button">
+        <h1 className="button-ship">
             <span className="button_lg">
                 <span className="button_sl"></span>
                 <span className="button_text">Giao Hàng Nhanh Chóng - Hoa Đẹp Tận Tay - Gọi Ngay AVICI Shop</span>

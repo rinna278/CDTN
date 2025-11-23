@@ -64,6 +64,8 @@ export class AuthService {
     };
 
     return {
+      email: user.email,
+      fullName: user.name,
       accessToken: await this.createAccessToken(payload),
       accessTokenExpire: JWT_CONFIG.JWT_ACCESS_TOKEN_EXPIRATION_TIME,
       refreshToken,
