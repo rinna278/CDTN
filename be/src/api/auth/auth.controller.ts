@@ -51,10 +51,6 @@ export class AuthController {
     return this.authService.signUp(data, user);
   }
 
-  @Post('test')
-  testRoute() {
-    
-  }
   @HttpCode(HttpStatus.OK)
   @Post('send-otp')
   @ApiBody({
