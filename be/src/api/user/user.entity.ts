@@ -6,7 +6,7 @@ import { RoleEntity } from '../role/role.entity';
 
 @Entity({ name: USER_CONST.MODEL_NAME })
 export class UserEntity extends BaseEntity {
-  @Column({ length: 255, unique: true })
+  @Column({ length: 255 })
   name: string;
 
   @Column({ type: 'simple-json', nullable: true })

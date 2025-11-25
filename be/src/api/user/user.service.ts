@@ -53,7 +53,7 @@ export class UserService extends BaseService<UserEntity> {
           status: RoleStatus.ACTIVE,
         },
       },
-      relations: ['roles.permissions'],
+      relations: ['role.permissions'],
     });
     if (!user) {
       throw new NotFoundException(ERROR_USER.USER_NOT_FOUND.MESSAGE);
@@ -71,7 +71,7 @@ export class UserService extends BaseService<UserEntity> {
     if (params.status) {
       conditions.status = Number(params.status);
     }
-    return this.getPagination(conditions, params, ['roles']);
+    return this.getPagination(conditions, params, ['role']);
   }
 
   public async changePassword(
