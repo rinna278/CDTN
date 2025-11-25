@@ -8,5 +8,20 @@ const postLogin = (userEmail: string, userPassword: string) => {
 };
 
 
+const postSendOTP = (userEmail: string) => {
+  return instance.post(`api/v1/send-otp`, {
+    email: userEmail
+  })
+};
 
-export {postLogin}
+const postRegister = (userEmail: string, userPassword: string, userName: string, otp: string) => {
+  return instance.post(`api/v1/register`, {
+    email: userEmail,
+    password: userPassword,
+    name: userName,
+    otp: otp
+  })
+}
+
+
+export {postLogin, postSendOTP, postRegister}

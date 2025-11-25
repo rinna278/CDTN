@@ -1,7 +1,13 @@
 //ĐÃ SỬA
 
-
-import { Column, Entity, ManyToOne, JoinColumn, OneToMany, OneToOne } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+  OneToOne,
+} from 'typeorm';
 import { BaseEntity } from '../../share/database/base.entity';
 import { UserEntity } from '../user/user.entity'; // UserEntity bạn đã cung cấp
 import { CartDetailEntity } from '../cart-detail/cart-detail.entity';

@@ -3,7 +3,7 @@
 import { Column, Entity, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from '../../share/database/base.entity';
 import { CartEntity } from '../cart/cart.entity';
-import { ProductEntity } from '../product/product.entity'; 
+import { ProductEntity } from '../product/product.entity';
 
 // Tên bảng vẫn là chi_tiet_phieu_thu
 @Entity({ name: 'chi_tiet_phieu_thu' })
