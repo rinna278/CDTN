@@ -9,7 +9,7 @@ import {
   IsNumberString,
   IsOptional,
   IsString,
-  MaxLength
+  MaxLength,
 } from 'class-validator';
 
 export class CreateBillDto {
@@ -22,7 +22,7 @@ export class CreateBillDto {
   @MaxLength(10)
   @Transform(({ value }) => value.trim())
   maTaiKhoan: string;
-  
+
   //Ngày lập
   @ApiProperty({
     description: 'date-create',
@@ -48,7 +48,6 @@ export class CreateBillDto {
   @IsString()
   @Transform(({ value }) => value.trim())
   hoTen: string;
-  
 
   //Email
   @ApiProperty({
@@ -117,5 +116,3 @@ export class CreateBillDto {
   @IsInt()
   status: number;
 }
-
-

@@ -80,7 +80,7 @@ export class AuthService {
       where: {
         email,
       },
-      relations: ['roles'],
+      relations: ['role'],
     });
 
     const isRightPassword = bcrypt.compareSync(password, user?.password);
@@ -101,7 +101,7 @@ export class AuthService {
       where: {
         id,
       },
-      relations: ['roles'],
+      relations: ['role'],
     });
     return this.generateTokenResponse(user);
   }

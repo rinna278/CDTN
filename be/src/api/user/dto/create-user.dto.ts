@@ -9,7 +9,7 @@ import {
   IsNumberString,
   IsOptional,
   IsString,
-  MaxLength
+  MaxLength,
 } from 'class-validator';
 
 export class CreateUserDto {
@@ -22,7 +22,7 @@ export class CreateUserDto {
   @MaxLength(10)
   @Transform(({ value }) => value.trim())
   maTaiKhoan: string;
-  
+
   //Tên đăng nhập
   @ApiProperty({
     description: 'name',
@@ -50,7 +50,6 @@ export class CreateUserDto {
   @IsString()
   @Transform(({ value }) => value.trim())
   hoTen: string;
-  
 
   //Email
   @ApiProperty({
@@ -119,5 +118,3 @@ export class CreateUserDto {
   @IsInt()
   status: number;
 }
-
-

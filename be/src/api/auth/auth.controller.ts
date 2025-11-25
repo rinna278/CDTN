@@ -52,9 +52,7 @@ export class AuthController {
   }
 
   @Post('test')
-  testRoute() {
-    
-  }
+  testRoute() {}
   @HttpCode(HttpStatus.OK)
   @Post('send-otp')
   @ApiBody({
