@@ -39,6 +39,14 @@ export const ERROR_AUTH = {
     CODE: 'us00011',
     MESSAGE: 'Failed to add OTP to the queue. Please try again later.',
   },
+  USER_EMAIL_EXISTED: {
+    CODE: 'us00012',
+    MESSAGE: 'This email is already registered',
+  },
+  OTP_INVALID: {
+    CODE: 'us00014',
+    MESSAGE: 'OTP code is invalid. Please check it again.',
+  },
 };
 
 export const ACCEPT_AUTH = {

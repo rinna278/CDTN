@@ -136,7 +136,7 @@ export class AuthService {
 
     const isValid = await this.otpService.verifyOtp(data.email, data.otp);
     if (!isValid) {
-      // throw new BadRequestException(ERROR_AUTH.OTP_INVALID.MESSAGE);
+      throw new BadRequestException(ERROR_AUTH.OTP_INVALID.MESSAGE);
     }
 
     const uModel = new UserEntity();
@@ -162,7 +162,7 @@ export class AuthService {
     // Check if user exists
     const user = await this.userService.findByEmail(email);
     if (user) {
-      // throw new BadRequestException(ERROR_AUTH.USER_EMAIL_EXISTED.MESSAGE);
+      throw new BadRequestException(ERROR_AUTH.USER_EMAIL_EXISTED.MESSAGE);
     }
 
     // Check if there's already an active OTP
