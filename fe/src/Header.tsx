@@ -40,7 +40,7 @@ const Header = ({selected, setSelected}: HeaderProps) => {
         }
     }
     const handleCart = () => {
-
+        navigate('/cart')
     }
 
     return (
