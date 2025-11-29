@@ -2,11 +2,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { EmailSendType } from 'src/share/common/app.interface';
 
 export interface OtpEmailJobData {
   email: string;
   otp: string;
-  type: 'register' | 'forgot-password';
+  type: EmailSendType;
 }
 
 @Injectable()

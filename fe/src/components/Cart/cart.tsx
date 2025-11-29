@@ -224,4 +224,3 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
 };
 
 export default Cart;
->>>>>>> 7abb90c (Update cart)

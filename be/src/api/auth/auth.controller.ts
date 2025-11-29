@@ -25,6 +25,7 @@ import { JwtAuthGuard } from './guards/jwt.guard';
 import { IAdminPayload } from 'src/share/common/app.interface';
 import { SignUpDto } from './dto/signup.dto';
 import { SendOtpDto } from './dto/send-otp.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 
 @ApiTags('Authentication')
 @Controller()
@@ -80,5 +81,32 @@ export class AuthController {
   @Post('logout')
   logOut(@GetUser('sub') userId: string) {
     return this.authService.removeRefreshToken(userId);
+  }
+
+  // @ApiOkResponse(AUTH_SWAGGER_RESPONSE.SEND_OTP_SUCCESS)
+  // @ApiBadRequestResponse(AUTH_SWAGGER_RESPONSE.SEND_OTP_FAIL)
+  @HttpCode(HttpStatus.OK)
+  @Post('send-otp-forgot-password')
+  @ApiBody({
+    type: SendOtpDto,
+    description: 'Email to send OTP',
+    required: true,
+  })
+  sendOtpForgotPassword(@Body() data: SendOtpDto) {
+    return this.authService.sendOtpForChangePassword(data);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('forgot-password')
+  @ApiBody({
+    description: 'Email, OTP and new password to change password',
+    type: ForgotPasswordDto,
+  })
+  // @ApiOkResponse(AUTH_SWAGGER_RESPONSE.FORGOT_PASSWORD_SUCCESS)
+  // @ApiBadRequestResponse(AUTH_SWAGGER_RESPONSE.FORGOT_PASSWORD_FAIL)
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    const result =
+      await this.authService.changePasswordWithOtp(forgotPasswordDto);
+    return result;
   }
 }

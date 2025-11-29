@@ -38,7 +38,7 @@ export class UserEntity extends BaseEntity {
   //   inverseJoinColumn: { name: 'role_id' },
   // })
   // roles: RoleEntity[];
-  @ManyToOne(() => RoleEntity, (role) => role.users)
+  @ManyToOne(() => RoleEntity, (role) => role.user)
   @JoinColumn([{ name: 'role_id', referencedColumnName: 'id' }])
   role: RoleEntity;
 
