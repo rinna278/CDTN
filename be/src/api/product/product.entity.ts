@@ -1,42 +1,43 @@
-//ĐÃ SỬA
+// //ĐÃ SỬA
 
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
-import { BaseEntity } from '../../share/database/base.entity';
-import { CategoryEntity } from '../category/category.entity';
-import { OrderDetailEntity } from '../order-detail/order-detail.entity';
-import { SAN_PHAM_CONST } from './product.constant';
-import { CartDetailEntity } from '../cart-detail/cart-detail.entity';
+// import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
+// import { BaseEntity } from '../../share/database/base.entity';
+// import { DiscountEntity } from '../discount/discount.entity';
+// import { OrderDetailEntity } from '../order-detail/order-detail.entity';
+// import { PRODUCT_CONST } from './product.constant';
+// import { CartDetailEntity } from '../cart-detail/cart-detail.entity';
 
-@Entity({ name: SAN_PHAM_CONST.MODEL_NAME })
-export class ProductEntity extends BaseEntity {
-  @Column({ length: 255 })
-  tenSanPham: string;
+// @Entity({ name: PRODUCT_CONST.MODEL_NAME })
+// export class ProductEntity extends BaseEntity {
+//   @Column({ length: 200 })
+//   name: string;
 
-  @Column({ type: 'text', nullable: true })
-  moTa: string;
+//   @Column({ type: 'text', nullable: true })
+//   description: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  gia: number;
+//   @Column({ type: 'decimal', precision: 10, scale: 2 })
+//   price: number;
 
-  @Column({ type: 'int' })
-  soLuong: number;
+//   @Column({ type: 'int' })
+//   status: number;
 
-  @Column({ length: 255, nullable: true })
-  hinhAnh: string;
+//   @Column({ type: 'int' })
+//   stock: number;
 
-  @ManyToOne(() => CategoryEntity, (danhMuc) => danhMuc.sanPhams)
-  @JoinColumn({ name: 'maDanhMuc' })
-  danhMuc: CategoryEntity;
+//   // @ManyToOne(() => DiscountEntity, (discount) => discount.products)
+//   // @JoinColumn({ name: 'discountID' })
+//   // discount: DiscountEntity;
 
-  @OneToMany(() => OrderDetailEntity, (ctdh) => ctdh.productId) // ✅ Dùng "product"
-  chiTietDonHangs: OrderDetailEntity[];
+//   // @OneToMany(() => OrderDetailEntity, (orderDetail) => orderDetail.product)
+//   // orderDetails: OrderDetailEntity[];
 
-  @OneToMany(() => CartDetailEntity, (cartItem) => cartItem.product)
-  cartItems: CartDetailEntity[];
-  // Methods
-  themSanPham() {}
-  suaSanPham() {}
-  xoaSanPham() {}
-  timKiem() {}
-  locSanPham() {}
-}
+//   @OneToMany(() => CartDetailEntity, (cartDetail) => cartDetail.product)
+//   cartDetails: CartDetailEntity[];
+
+//   // Methods
+//   themSanPham() {}
+//   suaSanPham() {}
+//   xoaSanPham() {}
+//   timKiem() {}
+//   locSanPham() {}
+// }
