@@ -2,37 +2,38 @@
 
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../share/database/base.entity';
-import { CategoryEntity } from '../category/category.entity';
+import { DiscountEntity } from '../discount/discount.entity';
 import { OrderDetailEntity } from '../order-detail/order-detail.entity';
-import { SAN_PHAM_CONST } from './product.constant';
+import { PRODUCT_CONST } from './product.constant';
 import { CartDetailEntity } from '../cart-detail/cart-detail.entity';
 
-@Entity({ name: SAN_PHAM_CONST.MODEL_NAME })
+@Entity({ name: PRODUCT_CONST.MODEL_NAME })
 export class ProductEntity extends BaseEntity {
-  @Column({ length: 255 })
-  tenSanPham: string;
+  @Column({ length: 200 })
+  name: string;
 
   @Column({ type: 'text', nullable: true })
-  moTa: string;
+  description: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  gia: number;
+  price: number;
 
   @Column({ type: 'int' })
-  soLuong: number;
+  status: number;
 
-  @Column({ length: 255, nullable: true })
-  hinhAnh: string;
+  @Column({ type: 'int' })
+  stock: number;
 
-  @ManyToOne(() => CategoryEntity, (danhMuc) => danhMuc.sanPhams)
-  @JoinColumn({ name: 'maDanhMuc' })
-  danhMuc: CategoryEntity;
+  @ManyToOne(() => DiscountEntity, (discount) => discount.products)
+  @JoinColumn({ name: 'discountID' })
+  discount: DiscountEntity;
 
-  @OneToMany(() => OrderDetailEntity, (ctdh) => ctdh.productId) // ✅ Dùng "product"
-  chiTietDonHangs: OrderDetailEntity[];
+  @OneToMany(() => OrderDetailEntity, (orderDetail) => orderDetail.product)
+  orderDetails: OrderDetailEntity[];
 
-  @OneToMany(() => CartDetailEntity, (cartItem) => cartItem.product)
-  cartItems: CartDetailEntity[];
+  @OneToMany(() => CartDetailEntity, (cartDetail) => cartDetail.product)
+  cartDetails: CartDetailEntity[];
+
   // Methods
   themSanPham() {}
   suaSanPham() {}
