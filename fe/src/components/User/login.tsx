@@ -7,7 +7,10 @@ import {
   loginSuccess,
   loginFailure,
 } from "../../redux/reducer+action/userSlice";
-import { postLogin } from "../../services/apiService";
+import {
+  postLogin,
+  postSendOTPChangePassword,
+} from "../../services/apiService";
 import { toast } from "react-toastify";
 
 interface HeaderProps {
@@ -20,12 +23,16 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const isLogined = useSelector((state: RootState) => state.user.loggedIn);
 
-  // Sử dụng useRef thay vì useState
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const forgotEmailRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotEmailError, setForgotEmailError] = useState("");
 
   const handleSignUp = () => {
     setSelected("register");
@@ -44,16 +51,15 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
     setLoading(true);
     setErrorMsg("");
 
-    // Lấy giá trị từ ref
     const email = emailRef.current?.value || "";
     const password = passwordRef.current?.value || "";
 
-    const isValidEmail = validateEmail(email);
-    if (!isValidEmail) {
+    if (!validateEmail(email)) {
       toast.error("Invalid email");
       setLoading(false);
       return;
     }
+
     if (!password) {
       toast.error("Invalid password");
       setLoading(false);
@@ -63,11 +69,9 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
     try {
       const response = await postLogin(email, password);
 
-      // Clear input ngay sau khi login thành công
       if (emailRef.current) emailRef.current.value = "";
       if (passwordRef.current) passwordRef.current.value = "";
 
-      // Gọi Redux action loginSuccess
       dispatch(
         loginSuccess({
           fullName: response.data.fullName,
@@ -84,18 +88,57 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
       setErrorMsg(msg);
       dispatch(loginFailure(msg));
 
-      // Clear password khi login thất bại (bảo mật)
       if (passwordRef.current) passwordRef.current.value = "";
     } finally {
       setLoading(false);
     }
   };
 
-  // Nếu đã login, không render trang login
-  if (isLogined) return null;
+  const handleForgotPasswordClick = () => {
+    setShowForgotModal(true);
+    setForgotEmailError("");
+  };
 
-  //VIẾT HÀM HIỆN MODAL NHẬP EMAIL KHI FORGOT-PASSWORD, HIỆN MODAL CHỈ CÓ 1 INPUT NHẬP EMAIL (VALIDATE BẰNG CÁCH NẾU CÓ SUCCESS BẰNG TRUE THÌ SẼ TBAO SEND OTP THÀNH CÔNG, NẾU SUCCESS = FALSE THÌ HIỆN TBAO EMAIL KO TỒN TẠI HOẶC BỊ LỖI TRONG QUÁ TRÌNH GỬI)
-  //DƯỚI THÊM 1 NÚT SENDOTP, NẾU THÀNH CÔNG THÌ HIỆN THÔNG BÁO VÀ REDIRECT SANG FORGOT-PASSWORD, KO THÌ BÁO LỖI 
+  const handleCloseModal = () => {
+    setShowForgotModal(false);
+    setForgotEmailError("");
+    if (forgotEmailRef.current) forgotEmailRef.current.value = "";
+  };
+
+  const handleSendOTPForgotPassword = async () => {
+    const email = forgotEmailRef.current?.value || "";
+
+    if (!validateEmail(email)) {
+      setForgotEmailError("Please enter a valid email address");
+      return;
+    }
+
+    setForgotLoading(true);
+    setForgotEmailError("");
+
+    try {
+      const response = await postSendOTPChangePassword(email);
+
+      if (response.data.success) {
+        toast.success("OTP sent successfully to your email");
+        handleCloseModal();
+        navigate("/forgot-password", { state: { email } });
+      } else {
+        setForgotEmailError("Failed to send OTP. Please try again.");
+        toast.error("Failed to send OTP");
+      }
+    } catch (error: any) {
+      const msg =
+        error.response?.data?.message ||
+        "Email does not exist or error occurred";
+      setForgotEmailError(msg);
+      toast.error(msg);
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  if (isLogined) return null;
 
   return (
     <div className="login-container">
@@ -104,32 +147,26 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
         <form className="form" onSubmit={handleLogin}>
           <div className="input-group">
             <label htmlFor="email">Email</label>
-            <input
-              type="text"
-              name="email"
-              id="email"
-              placeholder=""
-              ref={emailRef}
-              required
-            />
+            <input type="text" id="email" ref={emailRef} required />
           </div>
+
           <div className="input-group">
             <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              name="password"
-              id="password"
-              placeholder=""
-              ref={passwordRef}
-              required
-            />
+            <input type="password" id="password" ref={passwordRef} required />
+
             <div className="forgot">
-              <a rel="noopener noreferrer" >
+              <button
+                className="forgot-link"
+                type="button"
+                onClick={handleForgotPasswordClick}
+              >
                 Forgot Password ?
-              </a>
+              </button>
             </div>
           </div>
+
           {errorMsg && <p style={{ color: "red" }}>{errorMsg}</p>}
+
           <button className="sign" type="submit" disabled={loading}>
             {loading && !errorMsg ? "Loading..." : "Sign in"}
           </button>
@@ -140,14 +177,72 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
           <p className="message">Login with social accounts</p>
           <div className="line"></div>
         </div>
-        <div className="social-icons">{/* Các button social */}</div>
+
+        <div className="social-icons"></div>
+
         <p className="signup">
           Don't have an account?
-          <Link rel="noopener noreferrer" to="/register" onClick={handleSignUp}>
+          <Link to="/register" onClick={handleSignUp}>
             Sign up
           </Link>
         </p>
       </div>
+
+      {/* Modal Forgot Password */}
+      {showForgotModal && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Forgot Password</h3>
+              <button className="close-btn" onClick={handleCloseModal}>
+                ×
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <p className="modal-description">
+                Enter your email address and we'll send you an OTP to reset your
+                password.
+              </p>
+
+              <div className="input-group">
+                <label>Email Address</label>
+                <input
+                  type="email"
+                  ref={forgotEmailRef}
+                  placeholder="Enter your email"
+                  disabled={forgotLoading}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") handleSendOTPForgotPassword();
+                  }}
+                />
+              </div>
+
+              {forgotEmailError && (
+                <div className="error-message">{forgotEmailError}</div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="cancel-btn"
+                onClick={handleCloseModal}
+                disabled={forgotLoading}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="send-otp-btn"
+                onClick={handleSendOTPForgotPassword}
+                disabled={forgotLoading}
+              >
+                {forgotLoading ? "Sending..." : "Send OTP"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
