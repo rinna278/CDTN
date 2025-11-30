@@ -94,6 +94,9 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
   // Nếu đã login, không render trang login
   if (isLogined) return null;
 
+  //VIẾT HÀM HIỆN MODAL NHẬP EMAIL KHI FORGOT-PASSWORD, HIỆN MODAL CHỈ CÓ 1 INPUT NHẬP EMAIL (VALIDATE BẰNG CÁCH NẾU CÓ SUCCESS BẰNG TRUE THÌ SẼ TBAO SEND OTP THÀNH CÔNG, NẾU SUCCESS = FALSE THÌ HIỆN TBAO EMAIL KO TỒN TẠI HOẶC BỊ LỖI TRONG QUÁ TRÌNH GỬI)
+  //DƯỚI THÊM 1 NÚT SENDOTP, NẾU THÀNH CÔNG THÌ HIỆN THÔNG BÁO VÀ REDIRECT SANG FORGOT-PASSWORD, KO THÌ BÁO LỖI 
+
   return (
     <div className="login-container">
       <div className="form-container">
@@ -121,7 +124,7 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
               required
             />
             <div className="forgot">
-              <a rel="noopener noreferrer" href="/forgot-password">
+              <a rel="noopener noreferrer" >
                 Forgot Password ?
               </a>
             </div>

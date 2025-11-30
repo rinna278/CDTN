@@ -23,14 +23,13 @@ export class CartDetailEntity extends BaseEntity {
   @JoinColumn({ name: 'phieu_thu_id' })
   cart: CartEntity;
 
+  @ManyToOne(() => ProductEntity, (product) => product.cartDetails)
+  @JoinColumn({ name: 'detail_cart' })
+  product: ProductEntity;
+
   @Column({ type: 'bigint', name: 'phieu_thu_id' })
   cartId: number;
   // --------------------------------------------------------
-
-  // QUAN HỆ: Product <-> CartItem (Many CartItem links to One Product)
-  @ManyToOne(() => ProductEntity, (product) => product.cartItems)
-  @JoinColumn({ name: 'san_pham_id' })
-  product: ProductEntity;
 
   @Column({ type: 'bigint', name: 'san_pham_id' })
   productId: number;

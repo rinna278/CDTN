@@ -12,10 +12,9 @@ export class OrderDetailEntity extends BaseEntity {
   @JoinColumn({ name: 'ma_don_hang' })
   order: OrderEntity;
 
-  // ✅ QUAN TRỌNG: Phải có thuộc tính "product" (không phải "productId")
-  @ManyToOne(() => ProductEntity, (product) => product.chiTietDonHangs)
-  @JoinColumn({ name: 'ma_san_pham' })
-  productId: ProductEntity;
+  @ManyToOne(() => ProductEntity, (product) => product.orderDetails)
+  @JoinColumn({ name: 'ma_don_hang' })
+  product: ProductEntity;
 
   @Column({ name: 'so_luong', type: 'int' })
   quantity: number;

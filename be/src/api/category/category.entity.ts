@@ -10,9 +10,6 @@ export class CategoryEntity extends BaseEntity {
   @Column({ length: 255 })
   tenDanhMuc: string;
 
-  @OneToMany(() => ProductEntity, (sanPham) => sanPham.danhMuc)
-  sanPhams: ProductEntity[];
-
   // Methods tương tự như ERD
   themDanhMuc() {}
   suaDanhMuc() {}
