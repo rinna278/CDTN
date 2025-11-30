@@ -20,6 +20,9 @@ export const PERMISSIONS = {
   ROLE_DELETE: 'role:delete',
   // Permission
   PERMISSION_READ: 'permission:read',
+
+  // Admin
+  ADMIN_CREATE: 'admin:create',
 };
 
 export const MOCK_DATA = {

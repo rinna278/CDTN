@@ -15,6 +15,8 @@ import { IChangePassword } from './user.interface';
 import { BaseService } from '../../share/database/base.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RoleEntity } from '../role/role.entity';
+import { CreateUserDto } from './dto/create-user.dto';
+import { ERROR_AUTH } from '../auth/auth.constant';
 
 @Injectable()
 export class UserService extends BaseService<UserEntity> {
@@ -131,5 +133,35 @@ export class UserService extends BaseService<UserEntity> {
     return this.userRepository.findOne({
       where: { email: email.toLowerCase() },
     });
+  }
+
+  async createAdmin(data: CreateUserDto): Promise<UserEntity> {
+    const user = await this.userRepository.findOneBy({
+      email: data?.email?.toLowerCase(),
+    });
+
+    if (user) {
+      throw new NotFoundException(ERROR_AUTH.USER_NAME_EXISTED.MESSAGE);
+    }
+
+    const passwordHash = await bcrypt.hash(
+      data.password,
+      JWT_CONFIG.SALT_ROUNDS,
+    );
+    const role = await this.roleRepository.findOneBy({
+      type: RoleTypes.Admin,
+      status: RoleStatus.ACTIVE,
+      name: RoleName.Administrator,
+    });
+
+    const uModel = new UserEntity();
+    uModel.email = data.email.toLowerCase();
+    uModel.password = passwordHash;
+    uModel.name = data.name;
+    uModel.role = role;
+    if (data.phone) {
+      uModel.phone = data.phone;
+    }
+    return this.userRepository.save(uModel);
   }
 }

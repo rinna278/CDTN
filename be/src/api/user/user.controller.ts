@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Post,
   Query,
   UseGuards,
   UseInterceptors,
@@ -25,6 +26,7 @@ import { ChangeUserPasswordDto, UpdateUserDto } from './dto/update-user.dto';
 import { USER_SWAGGER_RESPONSE } from './user.constant';
 import { UserEntity } from './user.entity';
 import { UserService } from './user.service';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Controller({
   version: [API_CONFIG.VERSION_V1],
@@ -73,5 +75,23 @@ export class UserController {
   @PermissionMetadata(PERMISSIONS.USER_READ)
   public findUser(@Query() query: QueryParamDto): Promise<any> {
     return this.userService.findUser(query);
+  }
+
+  // @ApiOkResponse(USER_SWAGGER_RESPONSE.CREATE_SUCCESS)
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(PermissionGuard)
+  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  createUser(@Body() body: CreateUserDto) {
+    return this.userService.createAdmin(body);
+  }
+
+  @ApiOkResponse(USER_SWAGGER_RESPONSE.GET_SUCCESS)
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(PermissionGuard)
+  @PermissionMetadata(PERMISSIONS.USER_READ)
+  public get(@Param() param: ParamIdBaseDto): Promise<UserEntity> {
+    return this.userService.get(param.id);
   }
 }
