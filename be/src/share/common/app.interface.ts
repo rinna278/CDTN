@@ -30,3 +30,8 @@ export interface IPaginateParams {
   companyId?: string;
   roleIds?: string;
 }
+
+export enum EmailSendType {
+  REGISTER = 'register',
+  FORGOT_PASSWORD = 'forgot-password',
+}

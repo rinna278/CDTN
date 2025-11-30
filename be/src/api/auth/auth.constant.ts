@@ -9,11 +9,6 @@ export const ERROR_AUTH = {
     CODE: 'us00002',
     MESSAGE: 'Username or password is invalid!',
   },
-  USER_DEACTIVE: {
-    CODE: 'us00003',
-    MESSAGE:
-      'This account has been deactivated. Please contact the organization admin to reactivate your account.',
-  },
   USER_LOCKED: {
     CODE: 'us00004',
     MESSAGE:
@@ -31,21 +26,29 @@ export const ERROR_AUTH = {
     CODE: 'us00007',
     MESSAGE: 'Your account has been locked. Please try again after 30 minutes!',
   },
-  OTP_EXPIRED: {
-    CODE: 'us00013',
-    MESSAGE: 'OTP code has expired. Please check it.',
+  OTP_INVALID: {
+    CODE: 'us00008',
+    MESSAGE: 'Invalid OTP code. Please try again.',
+  },
+  USER_ID_INVALID: {
+    CODE: 'us00009',
+    MESSAGE: 'User ID is invalid or does not exist.',
+  },
+  USER_EMAIL_EXISTED: {
+    CODE: 'us00010',
+    MESSAGE: 'This email already exists. Please input a new email',
   },
   OTP_QUEUE_FAILED: {
     CODE: 'us00011',
     MESSAGE: 'Failed to add OTP to the queue. Please try again later.',
   },
-  USER_EMAIL_EXISTED: {
+  USER_EMAIL_NOT_EXIST: {
     CODE: 'us00012',
-    MESSAGE: 'This email is already registered',
+    MESSAGE: 'This email does not exist. Please input a valid email',
   },
-  OTP_INVALID: {
-    CODE: 'us00014',
-    MESSAGE: 'OTP code is invalid. Please check it again.',
+  OTP_EXPIRED: {
+    CODE: 'us00013',
+    MESSAGE: 'OTP code has expired. Please check it.',
   },
 };
 

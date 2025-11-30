@@ -16,12 +16,13 @@ import { UserEntity } from '../user/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SignUpDto } from './dto/signup.dto';
-import { IAdminPayload } from 'src/share/common/app.interface';
+import { EmailSendType, IAdminPayload } from 'src/share/common/app.interface';
 import { RoleStatus, RoleTypes } from '../role/role.constant';
 import { RoleEntity } from '../role/role.entity';
 import { OtpService } from '../otp/otp.service';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { EmailQueueService } from '../queue/email-queue.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -184,7 +185,7 @@ export class AuthService {
       await this.emailQueueService.addOtpEmailJob({
         email,
         otp,
-        type: 'register',
+        type: EmailSendType.REGISTER,
       });
 
       return {
@@ -198,5 +199,70 @@ export class AuthService {
         ERROR_AUTH.OTP_QUEUE_FAILED.MESSAGE,
       );
     }
+  }
+
+  async sendOtpForChangePassword(
+    data: SendOtpDto,
+  ): Promise<{ success: boolean; message: string }> {
+    const { email } = data;
+
+    // Check if user exists
+    const user = await this.userService.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException(ERROR_AUTH.USER_EMAIL_NOT_EXIST.MESSAGE);
+    }
+
+    // Check if there's already an active OTP
+    const hasActiveOtp = await this.otpService.hasActiveOtp(email);
+    if (hasActiveOtp) {
+      return {
+        success: false,
+        message: ERROR_AUTH.OTP_EXPIRED.MESSAGE,
+      };
+    }
+
+    // Generate OTP
+    const otp = this.otpService.generateOtp();
+
+    // Store OTP in Redis
+    await this.otpService.storeOtp(email, otp);
+
+    try {
+      await this.emailQueueService.addOtpEmailJob({
+        email,
+        otp,
+        type: EmailSendType.FORGOT_PASSWORD,
+      });
+
+      return {
+        success: true,
+        message: ACCEPT_AUTH.OTP_SENT_SUCCESS.MESSAGE,
+      };
+    } catch (e) {
+      // If queue fails, clean up the stored OTP
+      await this.otpService.invalidateOtp(email);
+      throw new InternalServerErrorException(
+        ERROR_AUTH.OTP_QUEUE_FAILED.MESSAGE,
+      );
+    }
+  }
+
+  async changePasswordWithOtp(dto: ForgotPasswordDto) {
+    const isValid = await this.otpService.verifyOtp(dto.email, dto.otp);
+
+    if (!isValid) {
+      throw new BadRequestException(ERROR_AUTH.OTP_INVALID.MESSAGE);
+    }
+
+    const user = await this.userService.findByEmail(dto.email);
+    if (!user) {
+      throw new BadRequestException(ERROR_AUTH.USER_EMAIL_NOT_EXIST.MESSAGE);
+    }
+
+    user.password = bcrypt.hashSync(dto.newPassword, JWT_CONFIG.SALT_ROUNDS);
+    console.log(user.password);
+    await user.save();
+
+    return { message: ACCEPT_AUTH.PASSWORD_CHANGED.MESSAGE };
   }
 }

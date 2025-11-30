@@ -28,7 +28,7 @@ export class EmailQueueProcessor extends WorkerHost {
     this.logger.log(`Processing OTP email job for ${email}, type: ${type}`);
 
     try {
-      const success = await this.emailService.sendOtpEmail(email, otp);
+      const success = await this.emailService.sendOtpEmail(email, otp, type);
 
       if (!success) {
         throw new Error('Failed to send OTP email');

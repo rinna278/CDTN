@@ -7,12 +7,6 @@ export const PERMISSION_CONST = {
 
 export const PERMISSIONS = {
   ALL: 'all',
-  // organization
-  ORGANIZATION_SEARCH: 'organization:search',
-  ORGANIZATION_CREATE: 'organization:create',
-  ORGANIZATION_READ: 'organization:read',
-  ORGANIZATION_EDIT: 'organization:update',
-  ORGANIZATION_DELETE: 'organization:delete',
   // User
   USER_CREATE: 'user:create',
   USER_READ: 'user:read',
