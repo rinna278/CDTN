@@ -1,43 +1,49 @@
-// //ĐÃ SỬA
+// product.entity.ts
+import { Column, Entity } from 'typeorm';
+import { Exclude } from 'class-transformer';
+import { ProductStatus, PRODUCT_CONST } from './product.constant';
+import { BaseEntity } from '../../share/database/base.entity';
 
-// import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
-// import { BaseEntity } from '../../share/database/base.entity';
-// import { DiscountEntity } from '../discount/discount.entity';
-// import { OrderDetailEntity } from '../order-detail/order-detail.entity';
-// import { PRODUCT_CONST } from './product.constant';
-// import { CartDetailEntity } from '../cart-detail/cart-detail.entity';
+@Entity({ name: PRODUCT_CONST.MODEL_NAME })
+export class ProductEntity extends BaseEntity {
+  @Column({ length: 255 })
+  name: string;
 
-// @Entity({ name: PRODUCT_CONST.MODEL_NAME })
-// export class ProductEntity extends BaseEntity {
-//   @Column({ length: 200 })
-//   name: string;
+  @Column({ type: 'text', nullable: true })
+  description: string;
 
-//   @Column({ type: 'text', nullable: true })
-//   description: string;
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  price: number;
 
-//   @Column({ type: 'decimal', precision: 10, scale: 2 })
-//   price: number;
+  @Column({ type: 'int', default: 0 })
+  discount: number;
 
-//   @Column({ type: 'int' })
-//   status: number;
+  @Column({ type: 'int', default: 0 })
+  stock: number;
 
-//   @Column({ type: 'int' })
-//   stock: number;
+  @Column({ length: 100, nullable: true })
+  category: string;
 
-//   // @ManyToOne(() => DiscountEntity, (discount) => discount.products)
-//   // @JoinColumn({ name: 'discountID' })
-//   // discount: DiscountEntity;
+  @Column({ type: 'simple-json', nullable: true })
+  images: string[];
 
-//   // @OneToMany(() => OrderDetailEntity, (orderDetail) => orderDetail.product)
-//   // orderDetails: OrderDetailEntity[];
+  @Column({ length: 50, nullable: true })
+  color: string;
 
-//   @OneToMany(() => CartDetailEntity, (cartDetail) => cartDetail.product)
-//   cartDetails: CartDetailEntity[];
+  @Column({ type: 'simple-json', nullable: true })
+  occasions: string[];
 
-//   // Methods
-//   themSanPham() {}
-//   suaSanPham() {}
-//   xoaSanPham() {}
-//   timKiem() {}
-//   locSanPham() {}
-// }
+  @Column({ type: 'enum', enum: ProductStatus, default: ProductStatus.ACTIVE })
+  status: number;
+
+  @Column({ type: 'int', default: 0, name: 'sold_count' })
+  soldCount: number;
+
+  @Column({ type: 'bigint', name: 'created_by', nullable: true })
+  @Exclude()
+  createdBy: number;
+
+  @Column({ type: 'bigint', name: 'updated_by', nullable: true })
+  @Exclude()
+  updatedBy: number;
+}

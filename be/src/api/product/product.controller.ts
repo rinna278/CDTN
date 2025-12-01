@@ -1,151 +1,173 @@
-// // src/modules/product/product.controller.ts
+// product.controller.ts
+import {
+  Body,
+  ClassSerializerInterceptor,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiTags,
+  ApiOperation,
+} from '@nestjs/swagger';
+import { API_CONFIG } from '../../configs/constant.config';
+import { ParamIdBaseDto } from '../../share/common/dto/query-param.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt.guard';
+import { PermissionMetadata } from '../permission/permission.decorator';
+import { PERMISSIONS } from '../permission/permission.constant';
+import { PermissionGuard } from '../permission/permission.guard';
+import { GetUser } from '../../share/decorator/get-user.decorator';
+import { IAdminPayload } from '../../share/common/app.interface';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+import { QueryProductDto } from './dto/query-product.dto';
+import { UpdateStockDto } from './dto/update-stock.dto';
+import { ProductEntity } from './product.entity';
+import { ProductService } from './product.service';
+import { PRODUCT_SWAGGER_RESPONSE } from './product.constant';
 
-// import {
-//   Controller,
-//   Get,
-//   Post,
-//   Put,
-//   Delete,
-//   Body,
-//   Param,
-//   Query,
-//   HttpCode,
-//   HttpStatus,
-//   ParseIntPipe,
-// } from '@nestjs/common';
-// import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-// import { ProductService } from './product.service';
-// import { CreateProductDto } from './dto/create-product.dto';
-// import { UpdateProductDto } from './dto/update-product.dto';
+@Controller({
+  version: [API_CONFIG.VERSION_V1],
+  path: 'products',
+})
+@UseInterceptors(ClassSerializerInterceptor)
+@ApiTags('Product')
+export class ProductController {
+  constructor(private readonly productService: ProductService) {}
 
-// @ApiTags('Products')
-// @Controller('products')
-// export class ProductController {
-//   constructor(private readonly productService: ProductService) {}
+  // ========== PUBLIC ENDPOINTS ==========
 
-//   // Thêm sản phẩm
-//   @Post()
-//   @HttpCode(HttpStatus.CREATED)
-//   @ApiOperation({ summary: 'Tạo sản phẩm mới' })
-//   @ApiResponse({
-//     status: HttpStatus.CREATED,
-//     description: 'Sản phẩm đã được tạo thành công',
-//   })
-//   @ApiResponse({
-//     status: HttpStatus.BAD_REQUEST,
-//     description: 'Dữ liệu không hợp lệ',
-//   })
-//   async themSanPham(@Body() createProductDto: CreateProductDto) {
-//     return await this.productService.create(createProductDto);
-//   }
+  @ApiOperation({
+    summary: 'Lấy danh sách sản phẩm (có filter, search, phân trang)',
+  })
+  @ApiOkResponse(PRODUCT_SWAGGER_RESPONSE.GET_LIST_SUCCESS)
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  findAll(@Query() query: QueryProductDto) {
+    return this.productService.findAll(query);
+  }
 
-//   // Lấy tất cả sản phẩm
-//   @Get()
-//   @HttpCode(HttpStatus.OK)
-//   @ApiOperation({ summary: 'Lấy danh sách tất cả sản phẩm' })
-//   @ApiResponse({
-//     status: HttpStatus.OK,
-//     description: 'Danh sách sản phẩm',
-//   })
-//   async layTatCaSanPham() {
-//     return await this.productService.findAll();
-//   }
+  @ApiOperation({ summary: 'Lấy chi tiết sản phẩm theo ID' })
+  @ApiOkResponse(PRODUCT_SWAGGER_RESPONSE.GET_SUCCESS)
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  get(@Param() param: ParamIdBaseDto): Promise<ProductEntity> {
+    return this.productService.get(param.id);
+  }
 
-//   // Tìm kiếm sản phẩm theo tên
-//   @Get('search')
-//   @HttpCode(HttpStatus.OK)
-//   @ApiOperation({ summary: 'Tìm kiếm sản phẩm theo tên' })
-//   @ApiQuery({
-//     name: 'keyword',
-//     required: true,
-//     description: 'Từ khóa tìm kiếm',
-//   })
-//   @ApiResponse({
-//     status: HttpStatus.OK,
-//     description: 'Kết quả tìm kiếm',
-//   })
-//   async timKiem(@Query('keyword') keyword: string) {
-//     return await this.productService.search(keyword);
-//   }
+  @ApiOperation({ summary: 'Lấy danh sách sản phẩm bán chạy' })
+  @ApiOkResponse(PRODUCT_SWAGGER_RESPONSE.GET_LIST_SUCCESS)
+  @Get('featured/best-sellers')
+  @HttpCode(HttpStatus.OK)
+  getBestSellers(@Query('limit') limit?: number): Promise<ProductEntity[]> {
+    return this.productService.getBestSellers(limit);
+  }
 
-//   // Lọc sản phẩm
-//   @Get('filter')
-//   @HttpCode(HttpStatus.OK)
-//   @ApiOperation({ summary: 'Lọc sản phẩm theo điều kiện' })
-//   @ApiQuery({ name: 'minPrice', required: false, description: 'Giá tối thiểu' })
-//   @ApiQuery({ name: 'maxPrice', required: false, description: 'Giá tối đa' })
-//   @ApiQuery({ name: 'status', required: false, description: 'Trạng thái' })
-//   @ApiQuery({
-//     name: 'inStock',
-//     required: false,
-//     description: 'Còn hàng (true/false)',
-//   })
-//   @ApiResponse({
-//     status: HttpStatus.OK,
-//     description: 'Kết quả lọc sản phẩm',
-//   })
-//   async locSanPham(
-//     @Query('minPrice') minPrice?: number,
-//     @Query('maxPrice') maxPrice?: number,
-//     @Query('status') status?: number,
-//     @Query('inStock') inStock?: boolean,
-//   ) {
-//     return await this.productService.filter({
-//       minPrice,
-//       maxPrice,
-//       status,
-//       inStock,
-//     });
-//   }
+  @ApiOperation({ summary: 'Lấy danh sách sản phẩm mới nhất' })
+  @ApiOkResponse(PRODUCT_SWAGGER_RESPONSE.GET_LIST_SUCCESS)
+  @Get('featured/latest')
+  @HttpCode(HttpStatus.OK)
+  getLatestProducts(@Query('limit') limit?: number): Promise<ProductEntity[]> {
+    return this.productService.getLatestProducts(limit);
+  }
 
-//   // Lấy chi tiết sản phẩm theo ID
-//   @Get(':id')
-//   @HttpCode(HttpStatus.OK)
-//   @ApiOperation({ summary: 'Lấy chi tiết sản phẩm theo ID' })
-//   @ApiResponse({
-//     status: HttpStatus.OK,
-//     description: 'Chi tiết sản phẩm',
-//   })
-//   @ApiResponse({
-//     status: HttpStatus.NOT_FOUND,
-//     description: 'Không tìm thấy sản phẩm',
-//   })
-//   async layChiTietSanPham(@Param('id', ParseIntPipe) id: number) {
-//     return await this.productService.findOne(id);
-//   }
+  @ApiOperation({ summary: 'Lấy danh sách sản phẩm đang giảm giá' })
+  @ApiOkResponse(PRODUCT_SWAGGER_RESPONSE.GET_LIST_SUCCESS)
+  @Get('featured/discount')
+  @HttpCode(HttpStatus.OK)
+  getDiscountProducts(
+    @Query('limit') limit?: number,
+  ): Promise<ProductEntity[]> {
+    return this.productService.getDiscountProducts(limit);
+  }
 
-//   // Sửa sản phẩm
-//   @Put(':id')
-//   @HttpCode(HttpStatus.OK)
-//   @ApiOperation({ summary: 'Cập nhật thông tin sản phẩm' })
-//   @ApiResponse({
-//     status: HttpStatus.OK,
-//     description: 'Sản phẩm đã được cập nhật',
-//   })
-//   @ApiResponse({
-//     status: HttpStatus.NOT_FOUND,
-//     description: 'Không tìm thấy sản phẩm',
-//   })
-//   async suaSanPham(
-//     @Param('id', ParseIntPipe) id: number,
-//     @Body() updateProductDto: UpdateProductDto,
-//   ) {
-//     return await this.productService.update(id, updateProductDto);
-//   }
+  @ApiOperation({ summary: 'Lấy danh sách categories' })
+  @Get('meta/categories')
+  @HttpCode(HttpStatus.OK)
+  getCategories(): Promise<string[]> {
+    return this.productService.getCategories();
+  }
 
-//   // Xóa sản phẩm
-//   @Delete(':id')
-//   @HttpCode(HttpStatus.OK)
-//   @ApiOperation({ summary: 'Xóa sản phẩm' })
-//   @ApiResponse({
-//     status: HttpStatus.OK,
-//     description: 'Sản phẩm đã được xóa',
-//   })
-//   @ApiResponse({
-//     status: HttpStatus.NOT_FOUND,
-//     description: 'Không tìm thấy sản phẩm',
-//   })
-//   async xoaSanPham(@Param('id', ParseIntPipe) id: number) {
-//     return await this.productService.delete(id);
-//   }
-// }
+  @ApiOperation({ summary: 'Lấy danh sách màu sắc' })
+  @Get('meta/colors')
+  @HttpCode(HttpStatus.OK)
+  getColors(): Promise<string[]> {
+    return this.productService.getColors();
+  }
+
+  @ApiOperation({ summary: 'Lấy sản phẩm liên quan' })
+  @Get(':id/related')
+  @HttpCode(HttpStatus.OK)
+  getRelatedProducts(
+    @Param() param: ParamIdBaseDto,
+    @Query('limit') limit?: number,
+  ): Promise<ProductEntity[]> {
+    return this.productService.getRelatedProducts(param.id, limit);
+  }
+
+  // ========== ADMIN ENDPOINTS (Require Authentication & Permission) ==========
+
+  @ApiOperation({ summary: '[ADMIN] Tạo sản phẩm mới' })
+  @ApiOkResponse(PRODUCT_SWAGGER_RESPONSE.CREATE_SUCCESS)
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  create(
+    @Body() createDto: CreateProductDto,
+    @GetUser() user: IAdminPayload,
+  ): Promise<ProductEntity> {
+    return this.productService.create(createDto, user.sub);
+  }
+
+  @ApiOperation({ summary: '[ADMIN] Cập nhật sản phẩm' })
+  @ApiOkResponse(PRODUCT_SWAGGER_RESPONSE.UPDATE_SUCCESS)
+  @Patch(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  async update(
+    @Param() param: ParamIdBaseDto,
+    @Body() updateDto: UpdateProductDto,
+    @GetUser() user: IAdminPayload,
+  ): Promise<boolean> {
+    return this.productService.update(param.id, updateDto, user.sub);
+  }
+
+  @ApiOperation({ summary: '[ADMIN] Xóa sản phẩm (soft delete)' })
+  @ApiOkResponse(PRODUCT_SWAGGER_RESPONSE.DELETE_SUCCESS)
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  remove(@Param() param: ParamIdBaseDto): Promise<boolean> {
+    return this.productService.remove(param.id);
+  }
+
+  @ApiOperation({ summary: '[ADMIN] Cập nhật tồn kho' })
+  @ApiOkResponse({ description: 'Update stock successfully' })
+  @Patch(':id/stock')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  updateStock(
+    @Param() param: ParamIdBaseDto,
+    @Body() updateStockDto: UpdateStockDto,
+  ): Promise<ProductEntity> {
+    return this.productService.updateStock(param.id, updateStockDto);
+  }
+}

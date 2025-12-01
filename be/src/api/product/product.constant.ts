@@ -7,3 +7,9 @@ export const PRODUCT_CONST = {
   // DEFAULT_PRICE: 0,
   // DEFAULT_STATUS: 'active',
 };
+
+export enum ProductStatus {
+  ACTIVE = 1,
+  INACTIVE = 0,
+  OUT_OF_STOCK = 2,
+}

@@ -9,6 +9,7 @@ import { DatabaseModule } from './configs/database/database.module';
 import { EmailModule } from './api/email/email.module';
 import { OtpModule } from './api/otp/otp.module';
 import { RedisModule } from './configs/redis/redis.module';
+import { ProductModule } from './api/product/product.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { RedisModule } from './configs/redis/redis.module';
     EmailModule,
     OtpModule,
     RedisModule,
+    ProductModule,
   ],
 })
 export class AppModule {

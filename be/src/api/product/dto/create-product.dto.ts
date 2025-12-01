@@ -1,57 +1,102 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
 import {
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
   IsString,
-  MaxLength,
+  IsNumber,
+  IsOptional,
+  IsArray,
   Min,
+  Max,
+  MaxLength,
+  IsEnum,
 } from 'class-validator';
+import { ProductStatus } from '../product.constant';
+import { Type } from 'class-transformer';
 
 export class CreateProductDto {
-  //Tên sản phẩm
-  @ApiProperty({
-    description: 'name',
-  })
-  @IsNotEmpty()
+  @ApiProperty({ example: 'Ecuador roses', description: 'Name of product' })
   @IsString()
-  @MaxLength(200)
-  @Transform(({ value }) => value.trim())
+  @MaxLength(255)
   name: string;
 
-  //Mô tả
   @ApiPropertyOptional({
-    description: 'description',
+    example: 'Fresh roses imported from Ecuador',
   })
-  @IsOptional()
   @IsString()
-  @Transform(({ value }) => value.trim())
-  description: string;
+  @IsOptional()
+  description?: string;
 
-  //Giá
-  @ApiProperty({
-    description: 'price',
-  })
-  @IsNotEmpty()
-  @IsInt()
+  @ApiProperty({ example: 500000, description: 'Price' })
+  @IsNumber()
   @Min(0)
+  @Type(() => Number)
   price: number;
 
-  //Trạng thái
-  @ApiProperty({
-    description: 'status',
+  @ApiPropertyOptional({
+    example: 10,
+    description: 'Discount (%), 0-100',
+    minimum: 0,
+    maximum: 100,
   })
-  @IsNotEmpty()
-  @IsInt()
-  status: number;
-
-  //Số lượng tồn kho
-  @ApiProperty({
-    description: 'stock',
-  })
-  @IsNotEmpty()
-  @IsInt()
+  @IsNumber()
   @Min(0)
+  @Max(100)
+  @IsOptional()
+  @Type(() => Number)
+  discount?: number;
+
+  @ApiProperty({ example: 100 })
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
   stock: number;
+
+  @ApiPropertyOptional({
+    example: 'Roses',
+    description: 'Type or category of the product',
+  })
+  @IsString()
+  @MaxLength(100)
+  @IsOptional()
+  category?: string;
+
+  @ApiPropertyOptional({
+    example: [
+      'https://example.com/image1.jpg',
+      'https://example.com/image2.jpg',
+    ],
+    description: 'List of image URLs',
+    type: [String],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  images?: string[];
+
+  @ApiPropertyOptional({
+    example: 'Red',
+    description: 'Color of the product',
+  })
+  @IsString()
+  @MaxLength(50)
+  @IsOptional()
+  color?: string;
+
+  @ApiPropertyOptional({
+    example: ['Birthday', 'Graduation'],
+    type: [String],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  occasions?: string[];
+
+  @ApiPropertyOptional({
+    example: ProductStatus.ACTIVE,
+    enum: ProductStatus,
+    description: '1-Active, 0-Inactive, 2-Out of stock',
+  })
+  @IsEnum(ProductStatus)
+  @IsOptional()
+  @Type(() => Number)
+  status?: number;
 }
