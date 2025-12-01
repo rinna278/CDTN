@@ -23,5 +23,24 @@ const postRegister = (userEmail: string, userPassword: string, userName: string,
   })
 }
 
+const postSendOTPChangePassword = (userEmail: string) => {
+  return instance.post(`api/v1/send-otp-forgot-password`, {
+    email: userEmail
+  })
+}
 
-export {postLogin, postSendOTP, postRegister}
+const postSubmitChangePassword = (userEmail: string, otp: string, newPassword: string) => {
+  return instance.post(`api/v1/forgot-password`, {
+    email: userEmail,
+    otp: otp,
+    newPassword: newPassword
+  })
+}
+
+
+const getInfo = () => {
+  return instance.get(`api/v1/users/info`);
+};
+
+
+export {postLogin, postSendOTP, postRegister, postSendOTPChangePassword, postSubmitChangePassword, getInfo}

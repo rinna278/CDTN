@@ -10,6 +10,7 @@
 //   @Column({ length: 255 })
 //   tenDanhMuc: string;
 
+
 //   @OneToMany(() => ProductEntity, (sanPham) => sanPham.danhMuc)
 //   sanPhams: ProductEntity[];
 

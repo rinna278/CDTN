@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import "./register.css";
-import { Dispatch, SetStateAction, useState, useRef } from "react";
+import { Dispatch, SetStateAction, useState, useRef, useEffect } from "react";
 import { postSendOTP, postRegister } from "../../services/apiService";
 import { toast } from "react-toastify";
 
@@ -12,13 +12,37 @@ interface HeaderProps {
 const Register = ({ selected, setSelected }: HeaderProps) => {
   const navigate = useNavigate();
   const [showOtpModal, setShowOtpModal] = useState(false);
-  const [isOtpSent, setIsOtpSent] = useState(false); // Track xem đã gửi OTP chưa
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isOtpValid, setIsOtpValid] = useState(false); // Trạng thái OTP còn hạn
+  const [otpExpireTime, setOtpExpireTime] = useState<number | null>(null); // Thời gian hết hạn
+  const [remainingTime, setRemainingTime] = useState<number>(0); // Thời gian còn lại (giây)
 
-  // Sử dụng useRef thay vì useState
+  const OTP_EXPIRE_DURATION = 5 * 60 * 1000; // 5 phút (ms)
+
   const userNameRef = useRef<HTMLInputElement>(null);
   const userEmailRef = useRef<HTMLInputElement>(null);
   const userPasswordRef = useRef<HTMLInputElement>(null);
   const otpRef = useRef<HTMLInputElement>(null);
+
+  // Countdown timer cho OTP
+  useEffect(() => {
+    if (!otpExpireTime) return;
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const timeLeft = Math.max(0, Math.floor((otpExpireTime - now) / 1000));
+
+      setRemainingTime(timeLeft);
+
+      if (timeLeft === 0) {
+        setIsOtpValid(false);
+        toast.warning("OTP đã hết hạn! Vui lòng gửi lại.");
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [otpExpireTime]);
 
   const handleLogin = () => {
     setSelected("login");
@@ -27,7 +51,6 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
   const handleSignUpClick = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Lấy giá trị từ ref
     const userName = userNameRef.current?.value || "";
     const userEmail = userEmailRef.current?.value || "";
     const userPassword = userPasswordRef.current?.value || "";
@@ -37,22 +60,41 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(userEmail)) {
       toast.error("Email không hợp lệ!");
       return;
     }
 
-    // Validate password length
     if (userPassword.length < 6) {
       toast.error("Mật khẩu phải có ít nhất 6 ký tự!");
       return;
     }
 
-    // Hiện modal OTP
     setShowOtpModal(true);
-    setIsOtpSent(false); // Reset trạng thái OTP
+    setIsOtpSent(false);
+    setIsOtpValid(false);
+    setOtpExpireTime(null);
+    setRemainingTime(0);
+  };
+
+  // Fake API kiểm tra OTP còn hạn hay không
+  const checkOtpValidity = async (): Promise<boolean> => {
+    // Trong thực tế, đây sẽ là API call:
+    // const response = await apiCheckOtpValidity(userEmail);
+    // return response.data.isValid;
+
+    // FAKE: Kiểm tra dựa trên thời gian local
+    if (!otpExpireTime) return false;
+
+    const now = Date.now();
+    const isValid = now < otpExpireTime;
+
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(isValid);
+      }, 500); // Giả lập network delay
+    });
   };
 
   const handleSendOtp = async () => {
@@ -67,17 +109,21 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
       console.log("Sending OTP...");
       const response = await postSendOTP(userEmail);
 
-      // Hiển thị message từ backend
       if (response.data.success) {
         toast.success(
           response.data.message || "OTP đã được gửi đến email của bạn!"
         );
+
+        // Lưu thời gian hết hạn
+        const expireTime = Date.now() + OTP_EXPIRE_DURATION;
+        setOtpExpireTime(expireTime);
         setIsOtpSent(true);
+        setIsOtpValid(true);
+        setRemainingTime(OTP_EXPIRE_DURATION / 1000);
       }
     } catch (err: any) {
       console.error(err);
 
-      // Xử lý lỗi từ backend
       if (err.response?.data) {
         const errorMessage =
           err.response.data.message || err.response.data.errors;
@@ -106,6 +152,16 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
       return;
     }
 
+    // Kiểm tra OTP còn hạn hay không
+    const isValid = await checkOtpValidity();
+
+    if (!isValid) {
+      toast.error("OTP đã hết hạn! Vui lòng gửi lại OTP.");
+      setIsOtpValid(false);
+      if (otpRef.current) otpRef.current.value = "";
+      return;
+    }
+
     try {
       const userName = userNameRef.current?.value || "";
       const userEmail = userEmailRef.current?.value || "";
@@ -118,14 +174,13 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
         otp
       );
 
-      // Hiển thị message thành công từ backend
       if (response.data.success || response.data.message) {
         toast.success(response.data.message || "Đăng ký thành công!");
       } else {
         toast.success("Đăng ký thành công!");
       }
 
-      // Clear tất cả input sau khi đăng ký thành công
+      // Clear tất cả input
       if (userNameRef.current) userNameRef.current.value = "";
       if (userEmailRef.current) userEmailRef.current.value = "";
       if (userPasswordRef.current) userPasswordRef.current.value = "";
@@ -133,12 +188,13 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
 
       setShowOtpModal(false);
       setIsOtpSent(false);
-      setSelected("login"); // chuyển sang login
-      navigate('/login');
+      setIsOtpValid(false);
+      setOtpExpireTime(null);
+      setSelected("login");
+      navigate("/login");
     } catch (err: any) {
       console.error(err);
 
-      // Xử lý lỗi từ backend
       if (err.response?.data) {
         const errorMessage =
           err.response.data.message || err.response.data.errors;
@@ -156,9 +212,15 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
         toast.error("Xác thực OTP thất bại!");
       }
 
-      // Clear OTP khi thất bại
       if (otpRef.current) otpRef.current.value = "";
     }
+  };
+
+  // Format thời gian còn lại (MM:SS)
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   return (
@@ -219,23 +281,51 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
             <button
               className="otp-btn"
               onClick={handleSendOtp}
-              disabled={isOtpSent}
+              disabled={isOtpSent && isOtpValid}
             >
-              {isOtpSent ? "OTP đã gửi ✓" : "Send OTP"}
+              {isOtpSent && isOtpValid ? "OTP đã gửi ✓" : "Send OTP"}
             </button>
+
+            {/* Hiển thị thời gian còn lại */}
+            {isOtpValid && remainingTime > 0 && (
+              <p
+                style={{
+                  color: remainingTime < 60 ? "#ff4444" : "#4CAF50",
+                  fontSize: "14px",
+                  margin: "8px 0",
+                  fontWeight: "bold",
+                }}
+              >
+                OTP còn hạn: {formatTime(remainingTime)}
+              </p>
+            )}
+
+            {/* Thông báo hết hạn */}
+            {isOtpSent && !isOtpValid && (
+              <p
+                style={{
+                  color: "#ff4444",
+                  fontSize: "14px",
+                  margin: "8px 0",
+                  fontWeight: "bold",
+                }}
+              >
+                OTP đã hết hạn! Vui lòng gửi lại.
+              </p>
+            )}
 
             <input
               type="text"
               className="otp-input"
               placeholder="Enter OTP"
               ref={otpRef}
-              disabled={!isOtpSent}
+              disabled={!isOtpSent || !isOtpValid}
             />
 
             <button
               className="otp-submit-btn"
               onClick={handleSubmitOtp}
-              disabled={!isOtpSent}
+              disabled={!isOtpSent || !isOtpValid}
             >
               OK
             </button>
@@ -245,6 +335,9 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
               onClick={() => {
                 setShowOtpModal(false);
                 setIsOtpSent(false);
+                setIsOtpValid(false);
+                setOtpExpireTime(null);
+                setRemainingTime(0);
               }}
             >
               Close

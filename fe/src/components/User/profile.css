@@ -1,0 +1,56 @@
+.profile-container{
+    width: 50vw;
+    height: 55vh;
+    margin: 5vh auto;
+    background: #fff;
+    border-radius: 10px;
+    padding: 1vw;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-information {
+    padding: 0 10vh;
+}
+
+.profile-information p{
+    color: white;
+    background-color: #3b82f6;
+    border-radius: 10px;
+    font-style: italic;
+    line-height: 1.6;
+    width: 10vh;
+    text-align: center;
+    padding: 0 2vh;
+}
+
+
+.profile-email input, .profile-username input, .profile-password input{
+    width: 25vw;
+    height: 4vh;
+    border-radius: 10px;
+    padding: 0 2vh;
+}
+
+.profile-email, .profile-username, .profile-password{
+    display: flex;
+    align-items: center;
+    gap: 10vh;
+}
+
+
+.profile-action{
+    padding: 5vh 0;
+    display: flex;
+    gap: 2vh;
+    justify-content: space-evenly;
+}
+
+.profile-action button {
+    display: inline-block;
+    padding: 1.5vh 3vh;
+    background-color: rgb(135, 10, 10);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
