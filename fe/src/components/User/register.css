@@ -139,59 +139,135 @@
 
 /* OTP */
 
+/* OTP Modal mới đẹp hơn */
 .otp-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0,0,0,0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background-color: rgba(0,0,0,0.5);
+display: flex;
+justify-content: center;
+align-items: center;
+z-index: 999;
+animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+from { opacity: 0; }
+to { opacity: 1; }
 }
 
 .otp-modal {
-  background: white;
-  padding: 20px 25px;
-  border-radius: 10px;
-  width: 300px;
-  text-align: center;
-  animation: popup 0.2s ease;
+background: linear-gradient(135deg, #6b5b95, #120c18);
+padding: 2rem 2.5rem;
+border-radius: 1rem;
+width: 320px;
+max-width: 90%;
+text-align: center;
+color: #fff;
+box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+transform: scale(0.9);
+animation: popup 0.25s ease forwards;
 }
 
 @keyframes popup {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+from { transform: scale(0.8); opacity: 0; }
+to { transform: scale(1); opacity: 1; }
 }
 
-.otp-btn,
-.otp-submit-btn,
-.otp-close {
-  width: 100%;
-  margin-top: 10px;
-  padding: 8px;
-  border: none;
-  background: #4c6ef5;
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
+.otp-modal h3 {
+margin-bottom: 1rem;
+font-size: 1.5rem;
+font-weight: 700;
+color: #fff;
+text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
-.otp-btn:hover,
+.send-otp {
+display: flex;
+gap: 0.5rem;
+margin-bottom: 1rem;
+}
+
+.send-otp input {
+flex: 2;
+padding: 0.75rem;
+border-radius: 0.5rem;
+border: none;
+outline: none;
+font-size: 1rem;
+background-color: #fff;
+color: #333;
+transition: 0.2s;
+}
+
+.send-otp input:focus {
+box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
+}
+
+.send-otp button {
+flex: 1;
+border: none;
+border-radius: 0.5rem;
+background: #ff7f50;
+color: #fff;
+font-weight: 600;
+cursor: pointer;
+transition: 0.2s;
+}
+
+.send-otp button:hover {
+background: #ff5722;
+}
+
+.action-modal-btn {
+display: flex;
+justify-content: space-between;
+margin-top: 1.5rem;
+gap: 1rem;
+}
+
+.action-modal-btn button {
+flex: 1;
+padding: 0.75rem 0;
+border-radius: 0.5rem;
+font-weight: 600;
+cursor: pointer;
+transition: 0.2s;
+}
+
+.otp-submit-btn {
+background: #4caf50;
+color: #fff;
+}
+
 .otp-submit-btn:hover {
-  background: #364fc7;
+background: #43a047;
 }
 
 .otp-close {
-  background: #999;
+background: #f44336;
+color: #fff;
 }
 
-.otp-input {
-  width: 95%;
-  padding: 8px;
-  margin-top: 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+.otp-close:hover {
+background: #e53935;
+}
+
+.otp-time {
+font-weight: 600;
+margin-bottom: 1rem;
+}
+
+@media (max-width: 400px) {
+.otp-modal {
+width: 90%;
+padding: 1.5rem 1.5rem;
+}
+.send-otp input, .send-otp button {
+font-size: 0.9rem;
+padding: 0.6rem;
+}
 }
