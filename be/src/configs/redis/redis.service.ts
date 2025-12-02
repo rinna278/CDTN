@@ -44,4 +44,13 @@ export class RedisService {
   async flushAll(): Promise<void> {
     await this.redisClient.flushall();
   }
+
+  /**
+   * Get remaining time-to-live (TTL) for a key in seconds
+   * @param key - Redis key
+   * @returns TTL in seconds (-1 if no expiry, -2 if key doesn't exist, or seconds remaining)
+   */
+  async getTtl(key: string): Promise<number> {
+    return await this.redisClient.ttl(key);
+  }
 }

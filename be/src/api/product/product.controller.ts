@@ -30,11 +30,11 @@ import { GetUser } from '../../share/decorator/get-user.decorator';
 import { IAdminPayload } from '../../share/common/app.interface';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { QueryProductDto } from './dto/query-product.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
 import { ProductEntity } from './product.entity';
 import { ProductService } from './product.service';
 import { PRODUCT_SWAGGER_RESPONSE } from './product.constant';
+import { QueryProductDto } from './dto/query-product.dto';
 
 @Controller({
   version: [API_CONFIG.VERSION_V1],
@@ -123,7 +123,7 @@ export class ProductController {
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  @PermissionMetadata(PERMISSIONS.PRODUCT_CREATE)
   create(
     @Body() createDto: CreateProductDto,
     @GetUser() user: IAdminPayload,
@@ -137,7 +137,7 @@ export class ProductController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  @PermissionMetadata(PERMISSIONS.PRODUCT_UPDATE)
   async update(
     @Param() param: ParamIdBaseDto,
     @Body() updateDto: UpdateProductDto,
@@ -152,7 +152,7 @@ export class ProductController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  @PermissionMetadata(PERMISSIONS.PRODUCT_DELETE)
   remove(@Param() param: ParamIdBaseDto): Promise<boolean> {
     return this.productService.remove(param.id);
   }

@@ -9,9 +9,9 @@ import { Repository } from 'typeorm';
 import { ProductEntity } from './product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { QueryProductDto } from './dto/query-product.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
 import { ProductStatus } from './product.constant';
+import { QueryProductDto } from './dto/query-product.dto';
 
 @Injectable()
 export class ProductService {
@@ -22,7 +22,7 @@ export class ProductService {
 
   async create(
     createDto: CreateProductDto,
-    userId: number,
+    userId: string,
   ): Promise<ProductEntity> {
     // Kiểm tra discount hợp lệ
     if (
@@ -103,7 +103,10 @@ export class ProductService {
     const sortColumn = allowedSortFields.includes(sortBy)
       ? sortBy
       : 'createdAt';
-    queryBuilder.orderBy(`product.${sortColumn}`, sortOrder);
+    queryBuilder.orderBy(
+      `product.${sortColumn}`,
+      (sortOrder as 'ASC' | 'DESC') || 'DESC',
+    );
 
     // Pagination
     queryBuilder.skip((page - 1) * limit).take(limit);
@@ -119,7 +122,7 @@ export class ProductService {
     };
   }
 
-  async findOne(id: number): Promise<ProductEntity> {
+  async findOne(id: string): Promise<ProductEntity> {
     const product = await this.productRepository.findOne({
       where: { id },
     });
@@ -131,14 +134,14 @@ export class ProductService {
     return product;
   }
 
-  async get(id: number): Promise<ProductEntity> {
+  async get(id: string): Promise<ProductEntity> {
     return this.findOne(id);
   }
 
   async update(
-    id: number,
+    id: string,
     updateDto: UpdateProductDto,
-    userId: number,
+    userId: string,
   ): Promise<boolean> {
     const product = await this.findOne(id);
 
@@ -172,14 +175,14 @@ export class ProductService {
     return true;
   }
 
-  async remove(id: number): Promise<boolean> {
-    const product = await this.findOne(id);
+  async remove(id: string): Promise<boolean> {
+    await this.findOne(id); // Verify product exists
     await this.productRepository.softDelete(id);
     return true;
   }
 
   async updateStock(
-    id: number,
+    id: string,
     updateStockDto: UpdateStockDto,
   ): Promise<ProductEntity> {
     const product = await this.findOne(id);
@@ -208,11 +211,11 @@ export class ProductService {
     return await this.productRepository.save(product);
   }
 
-  async incrementSoldCount(id: number, quantity: number): Promise<void> {
+  async incrementSoldCount(id: string, quantity: number): Promise<void> {
     await this.productRepository.increment({ id }, 'soldCount', quantity);
 
-    // Sau khi bán hàng, giảm stock
-    const product = await this.findOne(id);
+    // Verify product exists and update stock
+    await this.findOne(id);
     await this.updateStock(id, { quantity: -quantity });
   }
 
@@ -272,7 +275,7 @@ export class ProductService {
 
   // Lấy sản phẩm liên quan (cùng category hoặc occasion)
   async getRelatedProducts(
-    id: number,
+    id: string,
     limit: number = 6,
   ): Promise<ProductEntity[]> {
     const product = await this.findOne(id);

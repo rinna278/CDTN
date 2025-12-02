@@ -21,12 +21,10 @@ export interface IBaseService<T> {
     params: IPaginateParams,
     relations?: string[],
   ): Promise<IPagination<T>>;
-  get(
-    id: string | number | string[] | number[] | FindOptionsWhere<T>,
-  ): Promise<T>;
-  update(id: string | number, dto: T): Promise<UpdateResult>;
-  delete(id: string | number): Promise<boolean>;
-  softDelete(id: string | number): Promise<boolean>;
+  get(id: string | FindOptionsWhere<T>): Promise<T>;
+  update(id: string, dto: T): Promise<UpdateResult>;
+  delete(id: string): Promise<boolean>;
+  softDelete(id: string): Promise<boolean>;
 }
 
 export class BaseService<T> implements IBaseService<T> {
@@ -87,9 +85,7 @@ export class BaseService<T> implements IBaseService<T> {
     }
   }
 
-  get(
-    id: string | number | string[] | number[] | FindOptionsWhere<T>,
-  ): Promise<T> {
+  get(id: string | FindOptionsWhere<T>): Promise<T> {
     try {
       const where = { id } as FindOptionsWhere<any>;
       return <Promise<T>>this.genericRepository.findOneBy(where);
@@ -98,9 +94,7 @@ export class BaseService<T> implements IBaseService<T> {
     }
   }
 
-  async delete(
-    id: string | number | string[] | number[] | FindOptionsWhere<T>,
-  ): Promise<boolean> {
+  async delete(id: string | FindOptionsWhere<T>): Promise<boolean> {
     try {
       await this.genericRepository.delete(id);
       return true;
@@ -109,9 +103,7 @@ export class BaseService<T> implements IBaseService<T> {
     }
   }
 
-  async softDelete(
-    id: string | number | string[] | number[] | FindOptionsWhere<T>,
-  ): Promise<boolean> {
+  async softDelete(id: string | FindOptionsWhere<T>): Promise<boolean> {
     try {
       await this.genericRepository.softDelete(id);
       return true;
@@ -121,7 +113,7 @@ export class BaseService<T> implements IBaseService<T> {
   }
 
   async update(
-    id: string | number,
+    id: string,
     entity: any,
     uniqueParams?: any,
   ): Promise<UpdateResult> {

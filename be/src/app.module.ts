@@ -10,6 +10,7 @@ import { EmailModule } from './api/email/email.module';
 import { OtpModule } from './api/otp/otp.module';
 import { RedisModule } from './configs/redis/redis.module';
 import { ProductModule } from './api/product/product.module';
+import { SeederModule } from './api/seed/seeder.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ProductModule } from './api/product/product.module';
     OtpModule,
     RedisModule,
     ProductModule,
+    SeederModule,
   ],
 })
 export class AppModule {

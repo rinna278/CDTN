@@ -21,7 +21,7 @@ export enum RoleStatus {
 export const ROLES_DEFAULT = [
   {
     name: 'Administrator',
-    permissions: [PERMISSIONS.ALL, PERMISSIONS.ADMIN_CREATE],
+    permissions: [PERMISSIONS.ALL],
     isSuperAdmin: true,
     type: RoleTypes.Admin,
   },

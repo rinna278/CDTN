@@ -5,6 +5,8 @@ import {
   HttpStatus,
   Post,
   UseGuards,
+  Get,
+  Query,
 } from '@nestjs/common';
 import {
   ApiOkResponse,
@@ -13,6 +15,7 @@ import {
   ApiNotFoundResponse,
   ApiInternalServerErrorResponse,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { GetUser } from '../../share/decorator/get-user.decorator';
 import { AUTH_SWAGGER_RESPONSE } from './auth.constant';
@@ -26,11 +29,16 @@ import { IAdminPayload } from 'src/share/common/app.interface';
 import { SignUpDto } from './dto/signup.dto';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { OtpService } from '../otp/otp.service';
+import { GetOtpTtlResponseDto } from './dto/get-otp-ttl-response.dto';
 
 @ApiTags('Authentication')
 @Controller()
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly otpService: OtpService,
+  ) {}
 
   @ApiOkResponse(AUTH_SWAGGER_RESPONSE.LOGIN_SUCCESS)
   @ApiBadRequestResponse(AUTH_SWAGGER_RESPONSE.BAD_REQUEST_EXCEPTION)
@@ -108,5 +116,28 @@ export class AuthController {
     const result =
       await this.authService.changePasswordWithOtp(forgotPasswordDto);
     return result;
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Get('otp-ttl')
+  @ApiQuery({
+    name: 'email',
+    description: 'Email address to check OTP TTL',
+    required: true,
+    type: String,
+  })
+  @ApiOkResponse({
+    description: 'OTP time-to-live retrieved successfully',
+    type: GetOtpTtlResponseDto,
+  })
+  async getOtpTtl(
+    @Query('email') email: string,
+  ): Promise<GetOtpTtlResponseDto> {
+    const ttl = await this.otpService.getOtpTtl(email);
+    return {
+      email,
+      ttl,
+      isActive: ttl > 0,
+    };
   }
 }

@@ -22,8 +22,8 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
   status: number;
 
-  @Column({ type: 'bigint', name: 'created_by', nullable: true })
-  createdBy: number;
+  @Column({ type: 'varchar', name: 'created_by', nullable: true })
+  createdBy: string;
 
   @Column({ length: 14, nullable: true })
   phone: string;

@@ -1,13 +1,13 @@
 import { IRole } from 'src/api/role/role.interface';
 
 export interface IAdminPayload {
-  sub: number;
+  sub: string;
   email: string;
   fullName?: string;
 }
 
 export interface IUserPayload {
-  id?: number | string;
+  id?: string;
   sub?: number | string;
   name: string;
   email: string;

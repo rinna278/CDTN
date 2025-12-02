@@ -39,11 +39,11 @@ export class ProductEntity extends BaseEntity {
   @Column({ type: 'int', default: 0, name: 'sold_count' })
   soldCount: number;
 
-  @Column({ type: 'bigint', name: 'created_by', nullable: true })
+  @Column({ type: 'varchar', name: 'created_by', nullable: true })
   @Exclude()
-  createdBy: number;
+  createdBy: string;
 
-  @Column({ type: 'bigint', name: 'updated_by', nullable: true })
+  @Column({ type: 'varchar', name: 'updated_by', nullable: true })
   @Exclude()
-  updatedBy: number;
+  updatedBy: string;
 }

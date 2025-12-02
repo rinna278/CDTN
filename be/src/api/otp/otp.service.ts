@@ -81,4 +81,20 @@ export class OtpService {
     const key = `otp:${email}`;
     await this.redisService.del(key);
   }
+
+  /**
+   * Get the remaining time-to-live (TTL) of an OTP in seconds
+   * @param email - User email
+   * @returns TTL in seconds (0 if expired/not found, or positive seconds remaining)
+   */
+  async getOtpTtl(email: string): Promise<number> {
+    const key = `otp:${email}`;
+    const ttl = await this.redisService.getTtl(key);
+
+    // Redis returns:
+    // -2 if key doesn't exist
+    // -1 if key exists but has no expiry
+    // positive number for seconds remaining
+    return ttl > 0 ? ttl : 0;
+  }
 }

@@ -1,12 +1,12 @@
 export interface IRole {
-  id: number;
+  id: string;
   name: string;
   type: number;
   isSuperAdmin?: boolean;
   createdBy?: string;
   status?: number;
   permissions?: {
-    id: number;
+    id: string;
     name: string;
   }[];
 }

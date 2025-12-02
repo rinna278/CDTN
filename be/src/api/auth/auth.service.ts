@@ -94,7 +94,7 @@ export class AuthService {
     return this.generateTokenResponse(user);
   }
 
-  async refreshToken(id: number): Promise<LoginResponseDto> {
+  async refreshToken(id: string): Promise<LoginResponseDto> {
     if (!id) {
       throw new InternalServerErrorException(' Invalid user id');
     }

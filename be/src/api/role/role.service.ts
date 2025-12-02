@@ -1,7 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { In, Repository } from 'typeorm';
 import { RoleEntity } from './role.entity';
-import { ROLES_DEFAULT } from './role.constant';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PermissionEntity } from '../permission/permission.entity';
 
@@ -15,27 +14,26 @@ export class RoleService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    const count = await this.rolesRepository.countBy({});
-    if (count > 0) return;
-
-    for (const role of ROLES_DEFAULT) {
-      const roleExisted = await this.rolesRepository.findOneBy({
-        name: role.name,
-      });
-      if (!roleExisted) {
-        const permissions = await this.permissionRepository.find({
-          where: {
-            name: In(role.permissions),
-          },
-        });
-        const rModel = new RoleEntity();
-        rModel.name = role.name;
-        rModel.type = role.type;
-        rModel.isSuperAdmin = role.isSuperAdmin || false;
-        rModel.permissions = permissions;
-        await this.rolesRepository.save(rModel);
-      }
-    }
+    // const count = await this.rolesRepository.countBy({});
+    // if (count > 0) return;
+    // for (const role of ROLES_DEFAULT) {
+    //   const roleExisted = await this.rolesRepository.findOneBy({
+    //     name: role.name,
+    //   });
+    //   if (!roleExisted) {
+    //     const permissions = await this.permissionRepository.find({
+    //       where: {
+    //         name: In(role.permissions),
+    //       },
+    //     });
+    //     const rModel = new RoleEntity();
+    //     rModel.name = role.name;
+    //     rModel.type = role.type;
+    //     rModel.isSuperAdmin = role.isSuperAdmin || false;
+    //     rModel.permissions = permissions;
+    //     await this.rolesRepository.save(rModel);
+    //   }
+    // }
   }
 
   public async findRole({ search, type }) {

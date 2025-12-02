@@ -41,6 +41,6 @@ export class QueryParamBaseDto {
 export class ParamIdBaseDto {
   @ApiProperty()
   @IsNotEmpty()
-  @IsNumberString()
+  @IsString()
   id: string;
 }

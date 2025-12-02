@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { JWT_CONFIG, DEFAULT_ADMIN_USER } from '../../configs/constant.config';
+import { JWT_CONFIG } from '../../configs/constant.config';
 import { IPaginateParams } from '../../share/common/app.interface';
 import { StringUtil } from '../../share/utils/string.util';
 import { Like, Repository } from 'typeorm';
@@ -29,23 +29,24 @@ export class UserService extends BaseService<UserEntity> {
     super(userRepository);
   }
 
-  async onModuleInit() {
-    const userCount = await this.userRepository.count({});
-    if (userCount === 0) {
-      const uModel = new UserEntity();
-      uModel.email = DEFAULT_ADMIN_USER.email;
-      uModel.password = await bcrypt.hash(
-        DEFAULT_ADMIN_USER.password,
-        JWT_CONFIG.SALT_ROUNDS,
-      );
-      uModel.name = DEFAULT_ADMIN_USER.name;
-      uModel.role = await this.roleRepository.findOneBy({
-        type: RoleTypes.Admin,
-        name: RoleName.Administrator,
-      });
-      await this.userRepository.save(uModel);
-    }
-  }
+  // async onModuleInit() {
+  //   console.log('UserService init');
+  //   const userCount = await this.userRepository.count({});
+  //   if (userCount === 0) {
+  //     const uModel = new UserEntity();
+  //     uModel.email = DEFAULT_ADMIN_USER.email;
+  //     uModel.password = await bcrypt.hash(
+  //       DEFAULT_ADMIN_USER.password,
+  //       JWT_CONFIG.SALT_ROUNDS,
+  //     );
+  //     uModel.name = DEFAULT_ADMIN_USER.name;
+  //     uModel.role = await this.roleRepository.findOneBy({
+  //       type: RoleTypes.Admin,
+  //       name: RoleName.Administrator,
+  //     });
+  //     await this.userRepository.save(uModel);
+  //   }
+  // }
 
   async getByEmail(email: string): Promise<UserEntity> {
     const user = await this.userRepository.findOne({
@@ -77,7 +78,7 @@ export class UserService extends BaseService<UserEntity> {
   }
 
   public async changePassword(
-    id: number,
+    id: string,
     paramsChangePassword: IChangePassword,
   ): Promise<boolean> {
     const userFound = await this.userRepository.findOneBy({ id });
@@ -103,7 +104,7 @@ export class UserService extends BaseService<UserEntity> {
     return true;
   }
 
-  async getUserIfRefreshTokenMatches(refreshToken: string, userId: number) {
+  async getUserIfRefreshTokenMatches(refreshToken: string, userId: string) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       select: {
@@ -122,7 +123,7 @@ export class UserService extends BaseService<UserEntity> {
     return null;
   }
 
-  async setCurrentRefreshToken(refreshToken: string, userId: number) {
+  async setCurrentRefreshToken(refreshToken: string, userId: string) {
     const currentHashedRefreshToken = await bcrypt.hash(refreshToken, 10);
     await this.userRepository.update(userId, {
       currentHashedRefreshToken,
