@@ -59,6 +59,7 @@ export class UserController {
   @ApiOkResponse(USER_SWAGGER_RESPONSE.UPDATE_SUCCESS)
   @Patch(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @PermissionMetadata(PERMISSIONS.USER_EDIT)
   @UseGuards(PermissionGuard)
   public async update(
     @Param() param: ParamIdBaseDto,

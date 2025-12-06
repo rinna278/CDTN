@@ -149,12 +149,26 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
         <div className="profile-password">
           <p>Password</p>
           {isEditing ? (
-            <input
-              type="password"
-              placeholder="Nhập mật khẩu mới (để trống nếu không đổi)"
-              onChange={handlePasswordChange}
-              className="profile-input"
-            />
+            <div>
+              <input
+                type="old-password"
+                placeholder="Nhập mật khẩu cũ"
+                onChange={handlePasswordChange}
+                className="profile-input"
+              />
+              <input
+                type="new-password"
+                placeholder="Nhập mật khẩu mới "
+                onChange={handlePasswordChange}
+                className="profile-input"
+              />
+              <input
+                type="confirm-password"
+                placeholder="Xác nhận mật khẩu mới"
+                onChange={handlePasswordChange}
+                className="profile-input"
+              />
+            </div>
           ) : (
             <h3>••••••••</h3>
           )}

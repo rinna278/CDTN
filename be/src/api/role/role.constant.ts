@@ -37,7 +37,7 @@ export const ROLES_DEFAULT = [
   },
   {
     name: 'User',
-    permissions: [PERMISSIONS.USER_READ],
+    permissions: [PERMISSIONS.USER_READ, PERMISSIONS.USER_EDIT],
     type: RoleTypes.User,
   },
 ];
