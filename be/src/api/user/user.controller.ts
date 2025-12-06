@@ -59,6 +59,7 @@ export class UserController {
   @ApiOkResponse(USER_SWAGGER_RESPONSE.UPDATE_SUCCESS)
   @Patch(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @PermissionMetadata(PERMISSIONS.USER_UPDATE)
   @UseGuards(PermissionGuard)
   public async update(
     @Param() param: ParamIdBaseDto,
@@ -71,8 +72,8 @@ export class UserController {
   @ApiOkResponse(USER_SWAGGER_RESPONSE.GET_LIST_SUCCESS)
   @Get()
   @HttpCode(HttpStatus.OK)
+  @PermissionMetadata(PERMISSIONS.USER_GET_ALL)
   @UseGuards(PermissionGuard)
-  @PermissionMetadata(PERMISSIONS.USER_READ)
   public findUser(@Query() query: QueryParamDto): Promise<any> {
     return this.userService.findUser(query);
   }

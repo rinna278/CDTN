@@ -26,18 +26,8 @@ export const ROLES_DEFAULT = [
     type: RoleTypes.Admin,
   },
   {
-    name: 'User Manager',
-    permissions: Object.values([
-      PERMISSIONS.USER_READ,
-      PERMISSIONS.USER_CREATE,
-      PERMISSIONS.USER_EDIT,
-      PERMISSIONS.USER_DELETE,
-    ]),
-    type: RoleTypes.Admin,
-  },
-  {
     name: 'User',
-    permissions: [PERMISSIONS.USER_READ],
+    permissions: [PERMISSIONS.USER_READ, PERMISSIONS.USER_UPDATE],
     type: RoleTypes.User,
   },
 ];

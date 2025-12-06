@@ -10,8 +10,11 @@ export const PERMISSIONS = {
   // User
   USER_CREATE: 'user:create',
   USER_READ: 'user:read',
-  USER_EDIT: 'user:update',
+  USER_UPDATE: 'user:update',
   USER_DELETE: 'user:delete',
+  USER_GET_ALL: 'user:getall',
+
+  // Product
   PRODUCT_CREATE: 'product:create',
   PRODUCT_READ: 'product:read',
   PRODUCT_UPDATE: 'product:update',
@@ -24,6 +27,8 @@ export const PERMISSIONS = {
   ROLE_DELETE: 'role:delete',
   // Permission
   PERMISSION_READ: 'permission:read',
+
+  // 
 
   // Admin
   ADMIN_CREATE: 'admin:create',

@@ -64,6 +64,13 @@ export class UserService extends BaseService<UserEntity> {
     return user;
   }
 
+  async getByIdWithRoles(id: string): Promise<UserEntity | null> {
+    return this.userRepository.findOne({
+      where: { id },
+      relations: ['role', 'role.permissions'],
+    });
+  }
+
   findUser(params: IPaginateParams) {
     const conditions: any = {};
     if (params.search) {
