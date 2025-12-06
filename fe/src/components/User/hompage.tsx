@@ -35,7 +35,9 @@ const HomePage = () => {
     if (isLogined) {
         navigate('/cart');
     }
-    navigate('/login');
+    else{
+        navigate('/login');
+    }
   }
 
   useEffect(() => {

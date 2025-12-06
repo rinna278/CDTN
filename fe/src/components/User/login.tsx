@@ -77,6 +77,7 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
           fullName: response.data.fullName,
           email: response.data.email,
           accessToken: response.data.accessToken,
+          refreshToken: response.data.refreshToken,
           isFirstTimeLogin: response.data.isFirstTimeLogin,
         })
       );

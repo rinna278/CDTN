@@ -28,8 +28,6 @@ export const PERMISSIONS = {
   // Permission
   PERMISSION_READ: 'permission:read',
 
-  // 
-
   // Admin
   ADMIN_CREATE: 'admin:create',
 };

@@ -1,5 +1,7 @@
 import instance from '../utils/axiosCustomize'
 
+
+//Người dùng
 const postLogin = (userEmail: string, userPassword: string) => {
   return instance.post(`api/v1/login`, {
     email: userEmail,
@@ -41,6 +43,26 @@ const postSubmitChangePassword = (userEmail: string, otp: string, newPassword: s
 const getInfo = () => {
   return instance.get(`api/v1/users/info`);
 };
+
+
+// Product
+// const getProducts = (param?: {
+//   page?: number;
+//   limit?: number;
+//   search?: string;
+//   category?: string;
+//   color?: string;
+//   occasion?: string;
+//   status?: number;
+//   sortBy?: string;
+//   sortOrder?: 'ASC' | 'DESC';
+//   minPrice?: number;
+//   maxPrice?: number;
+// }) => {
+//   return instance.get(`api/v1/products`)
+// }
+
+
 
 
 export {postLogin, postSendOTP, postRegister, postSendOTPChangePassword, postSubmitChangePassword, getInfo}
