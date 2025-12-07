@@ -53,6 +53,7 @@ export class UserController {
     @GetUser() user: IAdminPayload,
     @Body() body: ChangeUserPasswordDto,
   ) {
+    console.log('user.sub', user.sub);
     return this.userService.changePassword(user.sub, body);
   }
 
