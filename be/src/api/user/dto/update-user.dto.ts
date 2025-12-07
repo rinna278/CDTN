@@ -20,6 +20,15 @@ export class UpdateUserDto {
   name: string;
 
   @ApiPropertyOptional({
+    description: 'phone',
+  })
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => value.trim())
+  @MaxLength(12)
+  phone: string;
+
+  @ApiPropertyOptional({
     description: 'status',
   })
   @IsOptional()
@@ -36,12 +45,12 @@ export class ChangeUserPasswordDto {
   @ApiProperty()
   @IsNotEmpty()
   @IsString()
-  @MinLength(8)
+  @MinLength(6)
   newPassword: string;
 
   @ApiProperty()
   @IsNotEmpty()
   @IsString()
-  @MinLength(8)
+  @MinLength(6)
   confirmPassword: string;
 }

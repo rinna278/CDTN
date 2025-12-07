@@ -16,8 +16,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: JwtPayload): Promise<UserEntity | null> {
-    const user = await this.userService.getByIdWithRoles(payload.sub as string);
-    return user || null;
+  // async validate(payload: JwtPayload): Promise<UserEntity | null> {
+  //   // const user = await this.userService.getByIdWithRoles(payload.sub as string);
+  //   return ...payload;
+  // }
+
+  async validate(payload: JwtPayload): Promise<JwtPayload> {
+    return { ...payload };
   }
 }
