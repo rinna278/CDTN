@@ -45,6 +45,20 @@ const getInfo = () => {
 };
 
 
+const PatchUpdateUser = (id: string, name: string) => {
+  return instance.patch(`api/v1/users/${id}`, {
+    name : name
+  })
+}
+
+const PatchUpdatePassword = async (oldPassword: string, newPassword: string, confirmPassword: string) => {
+  return instance.patch(`api/v1/users/change-password`, {
+    oldPassword : oldPassword,
+    newPassword : newPassword,
+    confirmPassword : confirmPassword
+  });
+}
+
 // Product
 // const getProducts = (param?: {
 //   page?: number;
@@ -65,4 +79,4 @@ const getInfo = () => {
 
 
 
-export {postLogin, postSendOTP, postRegister, postSendOTPChangePassword, postSubmitChangePassword, getInfo}
+export {postLogin, postSendOTP, postRegister, postSendOTPChangePassword, postSubmitChangePassword, getInfo, PatchUpdatePassword, PatchUpdateUser }

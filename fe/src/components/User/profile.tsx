@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
-import { getInfo } from "../../services/apiService";
-import './profile.css'
+import { getInfo, PatchUpdatePassword, PatchUpdateUser } from "../../services/apiService";
+import "./profile.css";
 
 interface HeaderProps {
   selected: string;
@@ -9,9 +9,14 @@ interface HeaderProps {
 
 const Profile = ({ selected, setSelected }: HeaderProps) => {
   // Dùng useRef để lưu thông tin (không hiển thị trong DevTools)
-  const emailRef = useRef("");
+  const idRef = useRef("");
+  const phoneRef = useRef("");
   const fullNameRef = useRef("");
-  const passwordRef = useRef("");
+  const addressRef = useRef("");
+  const oldpasswordRef = useRef("");
+  const newpasswordRef = useRef("");
+  const confirmpasswordRef = useRef("");
+  
 
   // State chỉ dùng để trigger re-render
   const [loading, setLoading] = useState(true);
@@ -25,11 +30,16 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
       try {
         setLoading(true);
         const response = await getInfo();
-        const { email, name } = response.data;
+        const { id, /*phone,*/ name /*,address*/ } = response.data;
+        console.log("User info:", response.data);
+
 
         // Lưu vào ref thay vì state
-        emailRef.current = email;
+        // phoneRef.current = phone;
+        // addressRef.current = address;
+        idRef.current = id;
         fullNameRef.current = name;
+
 
         setForceUpdate((prev) => prev + 1); // Trigger re-render
       } catch (err: any) {
@@ -50,51 +60,52 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   // Xử lý khi nhấn Cancel
   const handleCancel = () => {
     setIsEditing(false);
-    // Reset password về rỗng
-    passwordRef.current = "";
-    // Reset lại giá trị input về giá trị ban đầu
     setForceUpdate((prev) => prev + 1);
   };
 
-  // Xử lý khi nhấn Save
   const handleSave = async () => {
     try {
-      // TODO: Gọi API để update backend
-      // Nếu có thay đổi password thì gửi kèm
-      // await instance.put('api/v1/user/update', {
-      //   email: emailRef.current,
-      //   fullName: fullNameRef.current,
-      //   ...(passwordRef.current && { newPassword: passwordRef.current })
-      // });
-
       setIsEditing(false);
 
-      // Reset password sau khi save
-      passwordRef.current = "";
+      const name = fullNameRef.current;
+      const id = idRef.current;
+      const oldPassword = oldpasswordRef.current;
+      const newPassword = newpasswordRef.current;
+      const confirmPassword = confirmpasswordRef.current;
 
-      // Optional: Gọi lại getInfo() để đảm bảo data đồng bộ với backend
-      // const response = await getInfo();
-      // emailRef.current = response.data.email;
-      // fullNameRef.current = response.data.fullName;
-      // setForceUpdate(prev => prev + 1);
+      const response =  await Promise.all([
+         PatchUpdateUser(id, name),
+         PatchUpdatePassword(oldPassword, newPassword, confirmPassword),
+       ]);
+      console.log("Thành công update: ", response);
     } catch (error) {
       console.error("Update failed:", error);
       setError("Failed to update profile");
     }
   };
 
-  // Xử lý thay đổi input
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    emailRef.current = e.target.value;
-  };
+  // const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   phoneRef.current = e.target.value;
+  // };
 
   const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     fullNameRef.current = e.target.value;
   };
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    passwordRef.current = e.target.value;
+  // const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   addressRef.current = e.target.value;
+  // }
+
+  const handleOldPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    oldpasswordRef.current = e.target.value;
   };
+  const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    newpasswordRef.current = e.target.value;
+  };
+  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    confirmpasswordRef.current = e.target.value;
+  };
+  
 
   if (loading) {
     return (
@@ -118,20 +129,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
       <p>Quản lý thông tin đăng nhập của bạn</p>
 
       <div className="profile-information">
-        <div className="profile-email">
-          <p>Email</p>
-          {isEditing ? (
-            <input
-              type="email"
-              defaultValue={emailRef.current}
-              onChange={handleEmailChange}
-              className="profile-input"
-            />
-          ) : (
-            <h3>{emailRef.current}</h3>
-          )}
-        </div>
-
         <div className="profile-username">
           <p>Name</p>
           {isEditing ? (
@@ -145,27 +142,52 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
             <h3>{fullNameRef.current}</h3>
           )}
         </div>
-
+        <div className="profile-phone">
+          <p>Phone</p>
+          {isEditing ? (
+            <input
+              type="phone"
+              defaultValue={phoneRef.current}
+              // onChange={handlePhoneChange}
+              className="profile-input"
+            />
+          ) : (
+            <h3>{phoneRef.current}</h3>
+          )}
+        </div>
+        <div className="profile-address">
+          <p>Address</p>
+          {isEditing ? (
+            <input
+              type="address"
+              defaultValue={addressRef.current}
+              // onChange={handleAddressChange}
+              className="profile-input"
+            />
+          ) : (
+            <h3>{addressRef.current}</h3>
+          )}
+        </div>
         <div className="profile-password">
           <p>Password</p>
           {isEditing ? (
-            <div>
+            <div className="editPassword">
               <input
-                type="old-password"
+                type="text"
                 placeholder="Nhập mật khẩu cũ"
-                onChange={handlePasswordChange}
+                onChange={handleOldPasswordChange}
                 className="profile-input"
               />
               <input
-                type="new-password"
+                type="text"
                 placeholder="Nhập mật khẩu mới "
-                onChange={handlePasswordChange}
+                onChange={handleNewPasswordChange}
                 className="profile-input"
               />
               <input
-                type="confirm-password"
+                type="text"
                 placeholder="Xác nhận mật khẩu mới"
-                onChange={handlePasswordChange}
+                onChange={handleConfirmPasswordChange}
                 className="profile-input"
               />
             </div>
@@ -173,23 +195,23 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
             <h3>••••••••</h3>
           )}
         </div>
-      </div>
 
-      <div className="profile-action">
-        {isEditing ? (
-          <>
-            <button onClick={handleSave} className="btn-save">
-              Save
+        <div className="profile-action">
+          {isEditing ? (
+            <>
+              <button onClick={handleSave} className="btn-save">
+                Save
+              </button>
+              <button onClick={handleCancel} className="btn-cancel">
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button onClick={handleEdit} className="btn-edit">
+              Edit
             </button>
-            <button onClick={handleCancel} className="btn-cancel">
-              Cancel
-            </button>
-          </>
-        ) : (
-          <button onClick={handleEdit} className="btn-edit">
-            Edit
-          </button>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
