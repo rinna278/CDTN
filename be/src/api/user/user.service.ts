@@ -89,6 +89,7 @@ export class UserService extends BaseService<UserEntity> {
     paramsChangePassword: IChangePassword,
   ): Promise<boolean> {
     const userFound = await this.userRepository.findOneBy({ id });
+    console.log("User found: ", userFound);
     console.log('🔐 Debug Info:');
     console.log('User ID:', id);
     console.log('Password from DB:', userFound.password);

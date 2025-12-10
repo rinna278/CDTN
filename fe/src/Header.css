@@ -361,7 +361,7 @@
 .search-and-cart button:hover{
   background-color: rgb(171, 10, 171);
 }
-.search-and-cart svg{
+.search-and-cart button svg{
   color: white;
   fill: white;
 }
