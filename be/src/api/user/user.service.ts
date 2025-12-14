@@ -89,12 +89,13 @@ export class UserService extends BaseService<UserEntity> {
     paramsChangePassword: IChangePassword,
   ): Promise<boolean> {
     const userFound = await this.userRepository.findOneBy({ id });
-    console.log('🔐 Debug Info:');
-    console.log('User ID:', id);
-    console.log('Password from DB:', userFound.password);
-    console.log('Password length:', userFound.password.length);
-    console.log('Starts with $2b$:', userFound.password.startsWith('$2b$'));
-    console.log('Old password input:', paramsChangePassword.oldPassword);
+    // console.log('🔐 Debug Info:');
+    // console.log('User ID:', id);
+    // console.log('user found:', userFound);
+    // console.log('Password from DB:', userFound.password);
+    // console.log('Password length:', userFound.password.length);
+    // console.log('Starts with $2b$:', userFound.password.startsWith('$2b$'));
+    // console.log('Old password input:', paramsChangePassword.oldPassword);
     const { oldPassword, newPassword } = paramsChangePassword;
     const isRightPassword = bcrypt.compareSync(oldPassword, userFound.password);
     console.log('Compare result:', isRightPassword);

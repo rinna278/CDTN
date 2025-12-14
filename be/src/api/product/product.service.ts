@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProductEntity } from './product.entity';
+import { BaseService } from '../../share/database/base.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
@@ -14,13 +15,15 @@ import { ProductStatus } from './product.constant';
 import { QueryProductDto } from './dto/query-product.dto';
 
 @Injectable()
-export class ProductService {
+export class ProductService extends BaseService<ProductEntity> {
   constructor(
     @InjectRepository(ProductEntity)
     private readonly productRepository: Repository<ProductEntity>,
-  ) {}
+  ) {
+    super(productRepository);
+  }
 
-  async create(
+  async createProduct(
     createDto: CreateProductDto,
     userId: string,
   ): Promise<ProductEntity> {
@@ -138,7 +141,7 @@ export class ProductService {
     return this.findOne(id);
   }
 
-  async update(
+  async updateProduct(
     id: string,
     updateDto: UpdateProductDto,
     userId: string,
@@ -167,12 +170,13 @@ export class ProductService {
       updateDto.status = ProductStatus.ACTIVE;
     }
 
-    await this.productRepository.update(id, {
+    const result = await this.productRepository.update(id, {
       ...updateDto,
       updatedBy: userId,
     });
 
-    return true;
+    // Return true if rows were affected
+    return (result?.affected ?? 0) > 0;
   }
 
   async remove(id: string): Promise<boolean> {

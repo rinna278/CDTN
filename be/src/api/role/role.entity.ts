@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToMany, JoinTable } from 'typeorm';
+import { Column, Entity, ManyToMany, JoinTable, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../share/database/base.entity';
 import { RoleStatus, RoleTypes, ROLE_CONST } from './role.constant';
 import { PermissionEntity } from '../permission/permission.entity';
@@ -32,6 +32,6 @@ export class RoleEntity extends BaseEntity {
   })
   permissions: PermissionEntity[];
 
-  @ManyToMany(() => UserEntity)
+  @OneToMany(() => UserEntity, (user) => user.role)
   user: UserEntity[];
 }

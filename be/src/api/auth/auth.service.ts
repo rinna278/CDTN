@@ -23,6 +23,7 @@ import { OtpService } from '../otp/otp.service';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { EmailQueueService } from '../queue/email-queue.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { RedisService } from '../../configs/redis/redis.service';
 
 @Injectable()
 export class AuthService {
@@ -35,6 +36,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly otpService: OtpService,
     private readonly emailQueueService: EmailQueueService,
+    private readonly redisService: RedisService,
   ) {}
   createAccessToken(payload: JwtPayload): Promise<string> {
     return this.jwtService.signAsync(payload, {
@@ -57,11 +59,33 @@ export class AuthService {
     const refreshToken = await this.createRefreshToken({ userId: user.id });
     await this.userService.setCurrentRefreshToken(refreshToken, user.id);
 
+    const permissions = user.role?.permissions?.map((p) => p.name) ?? [];
+
+    // Cache role permissions in Redis (per-role, not per-user) for optimal cache reuse
+    try {
+      const roleId = user.role?.id;
+      if (roleId) {
+        const cacheKey = `role:permissions:${roleId}`;
+        const cacheValue = {
+          isSuperAdmin: user.role?.isSuperAdmin ?? false,
+          permissions,
+        };
+        // TTL = 24h for role cache (longer than token expiration)
+        const ttl = 24 * 3600;
+        await this.redisService.set(cacheKey, JSON.stringify(cacheValue), ttl);
+      }
+    } catch (err) {
+      // don't block login if cache fails
+      console.warn('Failed to cache role permissions', user.role?.id, err);
+    }
+
+    // Embed roleId & isSuperAdmin in JWT to avoid DB query on every request
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       fullName: user.name,
-      role: user?.role,
+      roleId: user.role?.id,
+      isSuperAdmin: user.role?.isSuperAdmin ?? false,
     };
 
     return {
@@ -81,7 +105,11 @@ export class AuthService {
       where: {
         email,
       },
-      relations: ['role'],
+      relations: {
+        role: {
+          permissions: true,
+        },
+      },
     });
 
     const isRightPassword = bcrypt.compareSync(password, user?.password);
@@ -102,7 +130,7 @@ export class AuthService {
       where: {
         id,
       },
-      relations: ['role'],
+      relations: ['role', 'role.permissions'],
     });
     return this.generateTokenResponse(user);
   }

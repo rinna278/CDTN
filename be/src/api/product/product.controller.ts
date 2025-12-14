@@ -128,7 +128,7 @@ export class ProductController {
     @Body() createDto: CreateProductDto,
     @GetUser() user: IAdminPayload,
   ): Promise<ProductEntity> {
-    return this.productService.create(createDto, user.sub);
+    return this.productService.createProduct(createDto, user.sub);
   }
 
   @ApiOperation({ summary: '[ADMIN] Cập nhật sản phẩm' })
@@ -143,7 +143,7 @@ export class ProductController {
     @Body() updateDto: UpdateProductDto,
     @GetUser() user: IAdminPayload,
   ): Promise<boolean> {
-    return this.productService.update(param.id, updateDto, user.sub);
+    return this.productService.updateProduct(param.id, updateDto, user.sub);
   }
 
   @ApiOperation({ summary: '[ADMIN] Xóa sản phẩm (soft delete)' })

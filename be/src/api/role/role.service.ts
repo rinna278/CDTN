@@ -3,6 +3,7 @@ import { In, Repository } from 'typeorm';
 import { RoleEntity } from './role.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PermissionEntity } from '../permission/permission.entity';
+import { RedisService } from '../../configs/redis/redis.service';
 
 @Injectable()
 export class RoleService implements OnModuleInit {
@@ -11,6 +12,7 @@ export class RoleService implements OnModuleInit {
     private readonly rolesRepository: Repository<RoleEntity>,
     @InjectRepository(PermissionEntity)
     private readonly permissionRepository: Repository<PermissionEntity>,
+    private readonly redisService: RedisService,
   ) {}
 
   async onModuleInit() {
@@ -56,5 +58,22 @@ export class RoleService implements OnModuleInit {
     return {
       data,
     };
+  }
+
+  /**
+   * Invalidate cached permissions for a role
+   * Call this after updating role or its permissions
+   */
+  async invalidateRolePermissionCache(roleId: string): Promise<void> {
+    try {
+      const cacheKey = `role:permissions:${roleId}`;
+      await this.redisService.del(cacheKey);
+      console.log(`Invalidated permission cache for role ${roleId}`);
+    } catch (err) {
+      console.warn(
+        `Failed to invalidate role permission cache for ${roleId}`,
+        err,
+      );
+    }
   }
 }

@@ -1,11 +1,10 @@
-import { RoleEntity } from 'src/api/role/role.entity';
-
 export interface JwtPayload {
   sub: string;
   email: string;
   fullName: string;
+  roleId?: string;
+  isSuperAdmin?: boolean;
   iat?: string;
-  role?: RoleEntity;
 }
 
 export interface JwtRefreshTokenPayload {
