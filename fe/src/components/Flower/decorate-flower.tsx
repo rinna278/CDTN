@@ -108,7 +108,7 @@ const DecorateFlower = () => {
     };
 
     return (
-        <div className='birthday-flower-container'>
+        <div className='decorate-flower-container'>
             <h1 className='message-1'>Hoa Trang Trí</h1>
             <div className='arrangement'>
                 <button disabled>Sắp xếp</button>

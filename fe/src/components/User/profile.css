@@ -1,56 +1,210 @@
-.profile-container{
-    width: 50vw;
-    height: 55vh;
-    margin: 5vh auto;
-    background: #fff;
-    border-radius: 10px;
-    padding: 1vw;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.profile-container {
+  display: flex;
+  margin: 5vh;
+  background: #fff;
+  border-radius: 10px;
+  padding: 3vw;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-menu-section {
+  flex: 2;
+}
+.profile-menu-navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 5vh;
+  padding: 5vh 4vh 0 0;
+  /* background-color: black; */
+}
+.profile-menu-navigation .navigation-profile {
+  display: flex;
+  align-items: center;
+  gap: 2vh;
+  width: 30vw;
+  border-left: 4px solid transparent; /* mặc định không màu */
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.profile-menu-navigation .navigation-profile:hover {
+  background-color: #e0e7ff;
+}
+
+.navigation-profile.active {
+  border-left: 4px solid #2563eb; /* xanh dương (blue) */
+  background-color: #eff6ff; /* nền xanh nhạt cho đẹp */
 }
 
 .profile-information {
-    padding: 0 10vh;
+  margin: 5vh 0 0 5vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1vh;
+  flex: 2;
 }
 
-.profile-information p{
-    color: white;
-    background-color: #3b82f6;
-    border-radius: 10px;
-    font-style: italic;
-    line-height: 1.6;
-    width: 10vh;
-    text-align: center;
-    padding: 0 2vh;
+.profile-information p {
+  color: black;
+  border-radius: 10px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.6;
+  width: 17vh;
+  text-align: left;
+  padding: 0 2vh;
 }
 
-
-.profile-email input, .profile-username input, .profile-password input{
-    width: 25vw;
-    height: 4vh;
-    border-radius: 10px;
-    padding: 0 2vh;
+.profile-email input,
+.profile-username input,
+.profile-password input,
+.profile-address input,
+.profile-phone input {
+  width: 20vw;
+  height: 5vh;
+  border-radius: 10px;
+  padding: 0 2vh;
 }
 
-.profile-email, .profile-username, .profile-password{
-    display: flex;
-    align-items: center;
-    gap: 10vh;
+.profile-email,
+.profile-username,
+.profile-password,
+.profile-phone,
+.profile-address {
+  display: flex;
+  align-items: center;
+  gap: 2vh;
+  justify-content: space-between;
 }
 
-
-.profile-action{
-    padding: 5vh 0;
-    display: flex;
-    gap: 2vh;
-    justify-content: space-evenly;
+.profile-action {
+  padding: 5vh 0;
+  display: flex;
+  gap: 2vh;
+  justify-content: flex-end;
 }
 
 .profile-action button {
-    display: inline-block;
-    padding: 1.5vh 3vh;
-    background-color: rgb(135, 10, 10);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+  display: inline-block;
+  padding: 1.5vh 3vh;
+  background-color: rgb(135, 10, 10);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }
+
+.save-close {
+  justify-content: flex-end;
+  display: flex;
+  gap: 7vh;
+}
+
+.editPassword {
+  margin-top: 2vh;
+  display: flex;
+  gap: 15px;
+  flex-direction: column;
+}
+
+.profile-password button {
+  background-color: rgb(135, 10, 10);
+  border-radius: 5px;
+  cursor: pointer;
+  color: white;
+  padding: 1.5vh 3vh;
+  border: none;
+}
+
+.my-orders {
+  flex: 2;
+  padding: 0 7vh;
+  height: 55vh;
+  overflow-y: auto;
+}
+
+/* Modal */
+/* --- CSS CHO MODAL ĐỔI MẬT KHẨU --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Nền tối mờ */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  width: 400px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.modal-content h3 {
+  margin: 0;
+  text-align: center;
+  color: #333;
+}
+
+.modal-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal-input-group label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #555;
+}
+
+.modal-input-group input {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.btn-modal-save {
+  background-color: #2563eb; /* Màu xanh */
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-modal-cancel {
+  background-color: #9ca3af; /* Màu xám */
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.btn-modal-save:hover {
+  background-color: #1d4ed8;
+}
+
+.btn-modal-cancel:hover {
+  background-color: #6b7280;
+}
+
