@@ -1,5 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsNumber, IsEnum } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsArray,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryProductDto {
@@ -30,10 +36,15 @@ export class QueryProductDto {
   @IsString()
   color?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by occasion' })
+  @ApiPropertyOptional({
+    description: 'Filter by occasions (multiple)',
+    example: ['birthday', 'anniversary'],
+    isArray: true,
+  })
   @IsOptional()
-  @IsString()
-  occasion?: string;
+  @IsArray()
+  @IsString({ each: true })
+  occasions?: string[];
 
   @ApiPropertyOptional({
     description: 'Filter by status',
