@@ -109,7 +109,13 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
         setRemainingTime(OTP_EXPIRE_DURATION / 1000);
       }
     } catch (err: any) {
-      toast.error("Gửi OTP thất bại!");
+      const status = err.response?.status;
+      if (status === 400){
+        toast.error('Email đã tồn tại, thử email khác');
+      }
+      else{
+        toast.error("Gửi OTP thất bại!");
+      }
     }
   };
 

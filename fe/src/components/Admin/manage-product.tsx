@@ -1,7 +1,10 @@
 import "./manage-product.css";
-import { getAllProduct } from "../../services/apiService";
+import { getAllProduct, deleteProduct } from "../../services/apiService";
 import { useEffect, useState } from "react";
 import ModalCreateProduct from "./modal-create-product";
+import ModalEditProduct from "./modal-edit-product";
+import ModalConfirmDelete from "./modal-confirm-delete"; // Import modal mới
+import { toast } from "react-toastify";
 
 interface IProduct {
   id: string;
@@ -25,10 +28,20 @@ const ManageProduct = () => {
   const [totalProducts, setTotalProducts] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
+
+  // State cho delete modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<IProduct | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchProducts = async () => {
     try {
-      let res = await getAllProduct();
+      let res = await getAllProduct({
+        page: 1,
+        limit: 1000
+      });
       console.log("Raw API Response:", res);
       console.log("First product:", res?.data?.[0]);
 
@@ -44,6 +57,7 @@ const ManageProduct = () => {
   };
 
   console.log("Danh sách sản phẩm: ", products);
+
   const formatCurrency = (amount: number) => {
     return Number(amount).toLocaleString("vi-VN", {
       style: "currency",
@@ -59,9 +73,68 @@ const ManageProduct = () => {
     setIsModalOpen(false);
   };
 
+  const handleOpenEditModal = (product: IProduct) => {
+    setSelectedProduct(product);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedProduct(null);
+  };
+
   const handleSuccess = () => {
-    // Reload lại danh sách sản phẩm sau khi thêm thành công
+    // Reload lại danh sách sản phẩm sau khi thêm/sửa thành công
     fetchProducts();
+  };
+
+  // Mở modal delete
+  const handleOpenDeleteModal = (product: IProduct) => {
+    setProductToDelete(product);
+    setIsDeleteModalOpen(true);
+  };
+
+  // Đóng modal delete
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setProductToDelete(null);
+  };
+
+  // Xác nhận xóa sản phẩm
+  const handleConfirmDelete = async () => {
+    if (!productToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteProduct(productToDelete.id);
+
+      toast.success("Xóa sản phẩm thành công!", {
+        position: "top-right",
+        autoClose: 2000,
+      });
+
+      // Đóng modal và reload danh sách
+      setIsDeleteModalOpen(false);
+      setProductToDelete(null);
+      fetchProducts();
+    } catch (error: any) {
+      console.error("Lỗi khi xóa sản phẩm:", error);
+
+      const statusCode = error.response?.status;
+      const message = error.response?.data?.message;
+
+      if (statusCode === 401) {
+        toast.error("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại");
+      } else if (statusCode === 403) {
+        toast.error("Bạn không có quyền xóa sản phẩm");
+      } else if (statusCode === 404) {
+        toast.error("Không tìm thấy sản phẩm");
+      } else {
+        toast.error(message || "Có lỗi xảy ra khi xóa sản phẩm");
+      }
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   useEffect(() => {
@@ -96,7 +169,7 @@ const ManageProduct = () => {
       <div className="content-middle-product">
         <div className="title_table">
           <h2>Danh Sách Sản Phẩm</h2>
-          <h5>Tổng cộng có ${products.length} loại</h5>
+          <h5>Tổng cộng có {products.length} loại</h5>
         </div>
         <div className="table_list">
           <table>
@@ -129,7 +202,10 @@ const ManageProduct = () => {
                       <td>{formatCurrency(Number(product.price))}</td>
                       <td>{product.stock}</td>
                       <td>
-                        <button className="edit">
+                        <button
+                          className="edit"
+                          onClick={() => handleOpenEditModal(product)}
+                        >
                           Edit
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -144,7 +220,10 @@ const ManageProduct = () => {
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                           </svg>
                         </button>
-                        <button className="delete">
+                        <button
+                          className="delete"
+                          onClick={() => handleOpenDeleteModal(product)}
+                        >
                           Delete
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -214,11 +293,29 @@ const ManageProduct = () => {
           </div>
         </div>
       </div>
+
       {/* Modal Create Product */}
       <ModalCreateProduct
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSuccess={handleSuccess}
+      />
+
+      {/* Modal Edit Product */}
+      <ModalEditProduct
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        onSuccess={handleSuccess}
+        product={selectedProduct}
+      />
+
+      {/* Modal Delete Product */}
+      <ModalConfirmDelete
+        isOpen={isDeleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+        productName={productToDelete?.name}
+        isDeleting={isDeleting}
       />
     </>
   );

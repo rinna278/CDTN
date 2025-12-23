@@ -15,6 +15,7 @@ import codauThuImage from '../../assets/co-dau-thu.png';
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from "../../redux/store";
+import { getAllProduct } from '../../services/apiService';
 
 // Danh sách các ảnh bạn muốn hiển thị
 const sliderImages = [
