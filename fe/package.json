@@ -12,6 +12,7 @@
     "@types/node": "^16.18.126",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.1",
+    "antd": "^6.1.1",
     "aos": "^2.3.4",
     "axios": "^1.12.2",
     "chart.js": "^4.5.1",
@@ -29,7 +30,7 @@
     "react-scripts": "5.0.1",
     "react-toastify": "^11.0.5",
     "redux-persist": "^6.0.0",
-    "typescript": "^5.0.3",
+    "typescript": "5.0.3",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

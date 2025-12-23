@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Upload, Trash2, CheckCircle, AlertCircle } from "lucide-react";
 import "./modal-create-product.css";
 import { postCreateProduct } from "../../services/apiService";
+import { toast } from "react-toastify";
 
 interface ModalCreateProductProps {
   isOpen: boolean;
@@ -23,7 +24,7 @@ const ModalCreateProduct = ({
     discount: "",
     color: "",
     occasions: "",
-    status: "1",
+    status: "",
   });
 
   const [images, setImages] = useState<File[]>([]);
@@ -109,7 +110,15 @@ const ModalCreateProduct = ({
     if (!formData.stock || Number(formData.stock) < 0)
       newErrors.stock = "Số lượng không hợp lệ";
     if (!formData.category) newErrors.category = "Vui lòng chọn danh mục";
-
+    if (!formData.discount || Number(formData.discount) <0 || Number(formData.discount) > 100)
+        newErrors.discount = 'Tỉ lệ khuyến mãi không hợp lệ';
+    if (Number(formData.stock) > 0){
+      formData.status = '1';
+    }
+    if (Number(formData.stock) === 0){
+      formData.status = '0';
+    }
+ 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -124,7 +133,7 @@ const ModalCreateProduct = ({
       discount: "",
       color: "",
       occasions: "",
-      status: "1",
+      status: "",
     });
     setImages([]);
     setImagePreview([]);
@@ -139,7 +148,6 @@ const ModalCreateProduct = ({
     setErrors({});
 
     try {
-      // 1. Xử lý logic Occasions (String -> Array)
       const occasionsArray = formData.occasions
         ? formData.occasions
             .split(",")
@@ -147,7 +155,6 @@ const ModalCreateProduct = ({
             .filter(Boolean)
         : [];
 
-      // 2. Xử lý ảnh sang Base64
       const imageUrls: string[] = [];
       for (const file of images) {
         const base64 = await new Promise<string>((resolve) => {
@@ -163,23 +170,22 @@ const ModalCreateProduct = ({
         name: formData.name,
         price: Number(formData.price),
         stock: Number(formData.stock),
-        category: formData.category,
         description: formData.description,
         discount: formData.discount ? Number(formData.discount) : 0,
+        category: formData.category,
+        images: imageUrls,
         color: formData.color,
         occasions: occasionsArray,
         status: Number(formData.status),
-        image: imageUrls,
       };
 
-      // 4. Gọi API
       const response = await postCreateProduct(payload);
 
-      // Giả sử service trả về data hoặc throw error
-      if (response && response.error) {
+
+      if (response && response.status === 400) {
         throw new Error(response.error);
       }
-
+      toast.success("Thêm sản phẩm thành công");
       setSuccessMessage("Thêm sản phẩm thành công!");
 
       setTimeout(() => {
@@ -191,6 +197,7 @@ const ModalCreateProduct = ({
       setErrors({
         submit: error.message || "Có lỗi xảy ra, vui lòng thử lại.",
       });
+      toast.error('Thêm sản phẩm thất bại, vui lòng kiểm tra thông tin');
     } finally {
       setIsSubmitting(false);
     }
@@ -238,13 +245,13 @@ const ModalCreateProduct = ({
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="Ví dụ: Bó hoa hồng đỏ lãng mạn"
+                placeholder="Tên sản phẩm"
                 className={errors.name ? "input-error" : ""}
               />
               {errors.name && <span className="err-text">{errors.name}</span>}
             </div>
 
-            <div className="form-group">
+            <div className="form-group width-input-small-1">
               <label>
                 Giá (VNĐ) <span className="req">*</span>
               </label>
@@ -253,13 +260,13 @@ const ModalCreateProduct = ({
                 name="price"
                 value={formData.price}
                 onChange={handleChange}
-                placeholder="0"
+                placeholder="Giá sản phẩm"
                 className={errors.price ? "input-error" : ""}
               />
               {errors.price && <span className="err-text">{errors.price}</span>}
             </div>
 
-            <div className="form-group">
+            <div className="form-group width-input-small-1">
               <label>
                 Tồn kho <span className="req">*</span>
               </label>
@@ -268,13 +275,13 @@ const ModalCreateProduct = ({
                 name="stock"
                 value={formData.stock}
                 onChange={handleChange}
-                placeholder="0"
+                placeholder="Số lượng tồn kho"
                 className={errors.stock ? "input-error" : ""}
               />
               {errors.stock && <span className="err-text">{errors.stock}</span>}
             </div>
 
-            <div className="form-group">
+            <div className="form-group width-input-small-2">
               <label>
                 Danh mục <span className="req">*</span>
               </label>
@@ -285,7 +292,7 @@ const ModalCreateProduct = ({
                   onChange={handleChange}
                   className={errors.category ? "input-error" : ""}
                 >
-                  <option value="">-- Chọn danh mục --</option>
+                  <option value="" disabled selected>-- Chọn danh mục --</option>
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
@@ -298,7 +305,7 @@ const ModalCreateProduct = ({
               )}
             </div>
 
-            <div className="form-group">
+            <div className="form-group width-input-small-2">
               <label>Trạng thái</label>
               <div className="select-wrapper">
                 <select
@@ -306,8 +313,10 @@ const ModalCreateProduct = ({
                   value={formData.status}
                   onChange={handleChange}
                 >
+                  <option value="" selected disabled>-- Chọn trạng thái mặt hàng --</option>
                   <option value="1">Đang bán</option>
                   <option value="0">Ngừng bán</option>
+                  <option value="2">Chưa biết</option>
                 </select>
               </div>
             </div>
@@ -323,27 +332,27 @@ const ModalCreateProduct = ({
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group width-input-small-1">
               <label>Giảm giá (%)</label>
               <input
                 type="number"
                 name="discount"
                 value={formData.discount}
                 onChange={handleChange}
-                placeholder="0"
+                placeholder="Nhập % giảm giá"
                 min="0"
                 max="100"
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group width-input-small-1">
               <label>Màu sắc</label>
               <input
                 type="text"
                 name="color"
                 value={formData.color}
                 onChange={handleChange}
-                placeholder="Đỏ, Vàng..."
+                placeholder="Màu sản phẩm"
               />
             </div>
 
@@ -362,7 +371,7 @@ const ModalCreateProduct = ({
 
             <div className="form-group full-width">
               <label>Hình ảnh ({imagePreview.length}/5)</label>
-              <div className="upload-area">
+              <div className="upload-area full-width-2">
                 <input
                   type="file"
                   id="img-upload"
