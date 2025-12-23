@@ -40,18 +40,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       }>(cacheKey);
 
       if (cached) {
-        // Cache hit: construct user with cached role/permissions
-        // No DB query needed - roleId from token, permissions from cache
-        const role = {
-          id: roleId,
-          isSuperAdmin: cached.isSuperAdmin ?? isSuperAdmin,
-          permissions: (cached.permissions || []).map((n) => ({ name: n })),
-        } as any;
-
-        return {
-          id: userId,
-          role,
-        } as any;
+        // Cache hit: load full user from DB and merge with cached role
+        // DB lookup is fast (primary key), we get full user object
+        const user = await this.userService.get(userId);
+        if (user) {
+          // Merge cached role into user object
+          (user as any).role = {
+            id: roleId,
+            isSuperAdmin: cached.isSuperAdmin ?? isSuperAdmin,
+            permissions: (cached.permissions || []).map((n) => ({ name: n })),
+          };
+          return user;
+        }
       }
     } catch (err) {
       // ignore redis errors and fallback to DB

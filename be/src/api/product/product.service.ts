@@ -51,7 +51,7 @@ export class ProductService extends BaseService<ProductEntity> {
       search,
       category,
       color,
-      occasion,
+      occasions,
       status,
       sortBy = 'createdAt',
       sortOrder = 'DESC',
@@ -84,12 +84,19 @@ export class ProductService extends BaseService<ProductEntity> {
       queryBuilder.andWhere('product.color = :color', { color });
     }
 
-    // Filter by occasion - tìm trong JSON array
-    if (occasion) {
-      queryBuilder.andWhere(
-        "JSON_SEARCH(product.occasions, 'one', :occasion) IS NOT NULL",
-        { occasion },
+    // Filter by occasions - check if any occasion matches (OR logic)
+    if (occasions && occasions.length > 0) {
+      const occasionConditions = occasions
+        .map((_, index) => `product.occasions::jsonb ? :occasion${index}`)
+        .join(' OR ');
+      const params = occasions.reduce(
+        (acc, occasion, index) => {
+          acc[`occasion${index}`] = occasion;
+          return acc;
+        },
+        {} as Record<string, string>,
       );
+      queryBuilder.andWhere(`(${occasionConditions})`, params);
     }
 
     // Filter by price range
