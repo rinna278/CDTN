@@ -1,7 +1,11 @@
 // product.entity.ts
 import { Column, Entity } from 'typeorm';
 import { Exclude } from 'class-transformer';
-import { ProductStatus, PRODUCT_CONST } from './product.constant';
+import {
+  ProductStatus,
+  PRODUCT_CONST,
+  IProductImage,
+} from './product.constant';
 import { BaseEntity } from '../../share/database/base.entity';
 
 @Entity({ name: PRODUCT_CONST.MODEL_NAME })
@@ -25,7 +29,7 @@ export class ProductEntity extends BaseEntity {
   category: string;
 
   @Column({ type: 'simple-json', nullable: true })
-  images: string[];
+  images: IProductImage[];
 
   @Column({ length: 50, nullable: true })
   color: string;

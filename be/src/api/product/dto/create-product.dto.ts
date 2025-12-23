@@ -8,8 +8,9 @@ import {
   Max,
   MaxLength,
   IsEnum,
+  ValidateNested,
 } from 'class-validator';
-import { ProductStatus } from '../product.constant';
+import { ProductStatus, IProductImage } from '../product.constant';
 import { Type } from 'class-transformer';
 
 export class CreateProductDto {
@@ -61,16 +62,17 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     example: [
-      'https://example.com/image1.jpg',
-      'https://example.com/image2.jpg',
+      { url: 'https://example.com/image1.jpg', publicId: 'folder/id1' },
+      { url: 'https://example.com/image2.jpg', publicId: 'folder/id2' },
     ],
-    description: 'List of image URLs',
-    type: [String],
+    description: 'List of image objects with url and publicId',
+    type: [Object],
   })
   @IsArray()
-  @IsString({ each: true })
+  @ValidateNested({ each: true })
+  @Type(() => ProductImageDto)
   @IsOptional()
-  images?: string[];
+  images?: IProductImage[];
 
   @ApiPropertyOptional({
     example: 'Red',
@@ -99,4 +101,14 @@ export class CreateProductDto {
   @IsOptional()
   @Type(() => Number)
   status?: number;
+}
+
+export class ProductImageDto implements IProductImage {
+  @ApiProperty({ example: 'https://example.com/image.jpg' })
+  @IsString()
+  url: string;
+
+  @ApiProperty({ example: 'folder/image-id' })
+  @IsString()
+  publicId: string;
 }

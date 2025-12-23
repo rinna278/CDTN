@@ -8,6 +8,11 @@ export const PRODUCT_CONST = {
   // DEFAULT_STATUS: 'active',
 };
 
+export interface IProductImage {
+  url: string;
+  publicId: string;
+}
+
 export enum ProductStatus {
   ACTIVE = 1,
   INACTIVE = 0,
