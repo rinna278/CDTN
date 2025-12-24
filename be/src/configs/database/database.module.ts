@@ -5,6 +5,7 @@ import { RoleEntity } from '../../api/role/role.entity';
 import { UserEntity } from '../../api/user/user.entity';
 import { DATABASE_CONFIG } from '../constant.config';
 import { databaseProviders } from './database.providers';
+import { AddressEntity } from 'src/api/user/address.entity';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { databaseProviders } from './database.providers';
         username: DATABASE_CONFIG.username,
         password: DATABASE_CONFIG.password,
         database: DATABASE_CONFIG.database,
-        entities: [PermissionEntity, RoleEntity, UserEntity],
+        entities: [PermissionEntity, RoleEntity, UserEntity, AddressEntity],
         migrations: [__dirname + '/../../migrations/*.ts'],
         autoLoadEntities: true,
         synchronize: true,
