@@ -1,8 +1,9 @@
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { UserStatus, USER_CONST } from './user.constant';
 import { BaseEntity } from '../../share/database/base.entity';
 import { RoleEntity } from '../role/role.entity';
+import { AddressEntity } from './address.entity';
 
 @Entity({ name: USER_CONST.MODEL_NAME })
 export class UserEntity extends BaseEntity {
@@ -41,6 +42,13 @@ export class UserEntity extends BaseEntity {
   @ManyToOne(() => RoleEntity, (role) => role.user)
   @JoinColumn([{ name: 'role_id', referencedColumnName: 'id' }])
   role: RoleEntity;
+
+  // Addresses relationship
+  @OneToMany(() => AddressEntity, (address) => address.user, {
+    cascade: ['insert', 'update', 'remove'],
+    eager: false,
+  })
+  addresses: AddressEntity[];
 
   @Column({
     name: 'current_hashed_refresh_token',
