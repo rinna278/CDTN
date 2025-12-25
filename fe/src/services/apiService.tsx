@@ -1,19 +1,27 @@
 import instance from "../utils/axiosCustomize";
 
-// ✅ Thêm status vào interface
 interface GetProductsParams {
   page?: number;
   limit?: number;
-  occasion?: string;
+  occasions?: string[];
   sortBy?: string;
   sortOrder?: "ASC" | "DESC";
-  status?: number; // ✅ Thêm dòng này
+  status?: number; 
   search?: string;
   category?: string;
   color?: string;
   minPrice?: number;
   maxPrice?: number;
 }
+
+export interface ProductResponse {
+  data: any[]; 
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 //Người dùng
 const postLogin = (userEmail: string, userPassword: string) => {
   return instance.post(`api/v1/login`, {
@@ -64,9 +72,10 @@ const getInfo = () => {
   return instance.get(`api/v1/users/info`);
 };
 
-const PatchUpdateUser = (id: string, name: string) => {
+const PatchUpdateUser = (id: string, name: string, phone: string) => {
   return instance.patch(`api/v1/users/${id}`, {
     name: name,
+    phone: phone
   });
 };
 
@@ -88,7 +97,7 @@ const getAllProduct = async (params: GetProductsParams) => {
   const response = await instance.get("api/v1/products", {
     params,
   });
-  return response.data;
+  return response.data as ProductResponse;
 };
 
 const postCreateProduct = async (payload: any) => {

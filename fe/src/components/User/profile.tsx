@@ -35,12 +35,13 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
       try {
         setLoading(true);
         const response = await getInfo();
-        const { id, name } = response.data;
+        const { id, name, phone } = response.data;
         console.log("User info:", response.data);
         console.log("User ID: ", response.data.id);
 
         idRef.current = id;
         fullNameRef.current = name;
+        phoneRef.current = phone;
 
         setForceUpdate((prev) => prev + 1);
       } catch (err: any) {
@@ -67,8 +68,9 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
       setIsEditing(false);
       const name = fullNameRef.current;
       const id = idRef.current;
+      const phone = phoneRef.current;
 
-      const userResponse = await PatchUpdateUser(id, name);
+      const userResponse = await PatchUpdateUser(id, name, phone);
 
       if (userResponse.status === 200 || userResponse.status === 204) {
         toast.success("Cập nhật thông tin thành công");
@@ -122,6 +124,9 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     fullNameRef.current = e.target.value;
   };
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    phoneRef.current = e.target.value;
+  }
 
   // Các hàm change input cho password
   const handleOldPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,6 +211,7 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
               <input
                 type="phone"
                 defaultValue={phoneRef.current}
+                onChange={handlePhoneChange}
                 className="profile-input"
               />
             ) : (

@@ -25,6 +25,9 @@ const Header = ({ selected, setSelected }: HeaderProps) => {
   const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
+  const roleName = useSelector((state: RootState) => state.user.role);
+  const isAdmin = roleName === "Administrator";
+
   useEffect(() => {
     const routeId =
       location.pathname === "/" ? "home" : location.pathname.slice(1);
@@ -81,7 +84,7 @@ const Header = ({ selected, setSelected }: HeaderProps) => {
   return (
     <div className="header-container">
       <div className="section-1">
-        {isLogined ? (
+        {isLogined && isAdmin ? (
           <>
             {/* Nút chuyển admin user */}
             <div className="tooltip-wrapper">

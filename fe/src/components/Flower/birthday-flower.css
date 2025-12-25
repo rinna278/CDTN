@@ -176,3 +176,107 @@
 .description-1, .description-2, .description-3, .description-4, .description-5{
   margin: 0 4vw;
 }
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    padding: 20px 0;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.page-item .page-link {
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #333;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.page-item.active .page-link {
+    background-color: #c88ea7; /* Màu tím hồng đặc trưng của bạn */
+    color: white;
+    border-color: #c88ea7;
+}
+
+.page-item:hover:not(.active) .page-link {
+    background-color: #f0f0f0;
+}
+
+/* thêm  */
+/* --- PHÂN TRANG (PAGINATION) --- */
+.pagination {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    margin: 40px 0;
+    gap: 8px;
+}
+
+.page-item {
+    cursor: pointer;
+}
+
+.page-link {
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #333;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.page-link:hover {
+    background-color: #f8f8f8;
+}
+
+.active .page-link {
+    background-color: #c88ea7; /* Màu hồng chủ đạo */
+    color: white;
+    border-color: #c88ea7;
+}
+
+/* --- HIỆU ỨNG LOADING MƯỢT MÀ --- */
+.product-list-wrapper {
+    position: relative;
+    min-height: 500px; /* Tránh giật trang khi load dữ liệu */
+}
+
+.content-loading {
+    opacity: 0.4;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+}
+
+.spinner {
+    width: 45px;
+    height: 45px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #c88ea7;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error-box {
+    text-align: center;
+    color: red;
+    padding: 50px;
+}
+
