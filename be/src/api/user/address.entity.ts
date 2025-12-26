@@ -4,12 +4,6 @@ import { UserEntity } from './user.entity';
 
 @Entity({ name: 'addresses' })
 export class AddressEntity extends BaseEntity {
-  @Column({ length: 100 })
-  fullName: string;
-
-  @Column({ length: 20, nullable: true })
-  phone: string;
-
   @Column({ type: 'varchar', length: 500 })
   street: string; // địa chỉ chi tiết (số nhà, tên đường, etc)
 

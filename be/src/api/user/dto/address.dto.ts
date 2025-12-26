@@ -8,18 +8,6 @@ import {
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 
 export class CreateAddressDto {
-  @ApiProperty({ example: 'Nguyễn Văn A' })
-  @IsNotEmpty()
-  @IsString()
-  @Length(1, 100)
-  fullName: string;
-
-  @ApiProperty({ example: '0901234567', required: false })
-  @IsOptional()
-  @IsString()
-  @Length(7, 20)
-  phone: string;
-
   @ApiProperty({ example: '123 Nguyễn Huệ' })
   @IsNotEmpty()
   @IsString()
@@ -66,12 +54,6 @@ export class UpdateAddressDto extends PartialType(CreateAddressDto) {}
 export class AddressResponseDto {
   @ApiProperty()
   id: string;
-
-  @ApiProperty()
-  fullName: string;
-
-  @ApiProperty()
-  phone: string;
 
   @ApiProperty()
   street: string;

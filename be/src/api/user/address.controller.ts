@@ -20,10 +20,14 @@ import {
 } from './dto/address.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { GetUser } from 'src/share/decorator/get-user.decorator';
+import { API_CONFIG } from 'src/configs/constant.config';
 
 @ApiTags('Addresses')
 @ApiBearerAuth('access-token')
-@Controller('api/v1/addresses')
+@Controller({
+  version: [API_CONFIG.VERSION_V1],
+  path: 'addresses',
+})
 @UseGuards(JwtAuthGuard)
 export class AddressController {
   constructor(private addressService: AddressService) {}

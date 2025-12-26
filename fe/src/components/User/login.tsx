@@ -85,6 +85,10 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
       toast.success("Đăng nhập thành công");
       navigate("/", { replace: true });
     } catch (error: any) {
+      const status = error.response?.status;
+      if (status === 500){
+        toast.error('Tài khoản không tồn tại');
+      }
       const msg = error.response?.data?.message || "Login failed";
       setErrorMsg(msg);
       dispatch(loginFailure(msg));

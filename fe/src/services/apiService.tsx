@@ -1,4 +1,52 @@
+import axios from "axios";
 import instance from "../utils/axiosCustomize";
+
+const PROVINCE_API_BASE = "https://provinces.open-api.vn/api";
+
+
+interface Province {
+  code: number;
+  name: string;
+  name_en: string;
+  full_name: string;
+  full_name_en: string;
+}
+
+interface District {
+  code: number;
+  name: string;
+  name_en: string;
+  full_name: string;
+  full_name_en: string;
+  province_code: number;
+}
+
+interface Ward {
+  code: number;
+  name: string;
+  name_en: string;
+  full_name: string;
+  full_name_en: string;
+  district_code: number;
+}
+
+interface AddressData {
+  street: string;
+  ward: string;
+  district: string;
+  city: string;
+  isDefault?: boolean;
+  postalCode?: string;
+  notes?: string;
+}
+
+interface AddressResponse extends AddressData {
+  id: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 interface GetProductsParams {
   page?: number;
@@ -91,6 +139,71 @@ const PatchUpdatePassword = async (
   });
 };
 
+// Lấy tất cả tỉnh/thành phố
+const getAllProvinces = async () => {
+  const response = await axios.get(`${PROVINCE_API_BASE}/p/`);
+  return response.data as Province[];
+};
+
+// Lấy danh sách quận/huyện theo tỉnh đã chọn
+const getDistrictsByProvinceCode = async (provinceCode: number) => {
+  const response = await axios.get(`${PROVINCE_API_BASE}/p/${provinceCode}`, {
+    params: { depth: 2 },
+  });
+  return response.data.districts as District[];
+};
+
+// Lấy danh sách phường/xã theo quận đã chọn
+const getWardsByDistrictCode = async (districtCode: number) => {
+  const response = await axios.get(`${PROVINCE_API_BASE}/d/${districtCode}`, {
+    params: { depth: 2 },
+  });
+  return response.data.wards as Ward[];
+};
+
+// Lấy tất cả địa chỉ của user hiện tại
+const getAllAddresses = async () => {
+  const response = await instance.get(`api/v1/addresses`);
+  return response.data as AddressResponse[];
+};
+
+// Lấy địa chỉ mặc định
+const getDefaultAddress = async () => {
+  const response = await instance.get(`api/v1/addresses/default`);
+  return response.data as AddressResponse | null;
+};
+
+// Lấy địa chỉ theo ID
+const getAddressById = async (id: string) => {
+  const response = await instance.get(`api/v1/addresses/${id}`);
+  return response.data as AddressResponse;
+};
+
+// Tạo địa chỉ mới
+const createAddress = async (data: AddressData) => {
+  const response = await instance.post(`api/v1/addresses`, data);
+  return response.data as AddressResponse;
+};
+
+// Cập nhật địa chỉ
+const updateAddress = async (id: string, data: Partial<AddressData>) => {
+  const response = await instance.patch(`api/v1/addresses/${id}`, data);
+  return response.data as AddressResponse;
+};
+
+// Xóa địa chỉ
+const deleteAddress = async (id: string) => {
+  const response = await instance.delete(`api/v1/addresses/${id}`);
+  return response.data;
+};
+
+// Đặt địa chỉ làm mặc định
+const setAsDefaultAddress = async (id: string) => {
+  const response = await instance.patch(`api/v1/addresses/${id}/set-default`);
+  return response.data as AddressResponse;
+};
+
+
 //Product
 
 const getAllProduct = async (params: GetProductsParams) => {
@@ -139,6 +252,66 @@ const deleteProduct = async (id: string) => {
   return response.data;
 };
 
+//Upload 1 ảnh
+const uploadImage = async(file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await instance.post(`api/v1/upload/image`, formData, {
+    headers:{
+      'Contend-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+}
+
+//Upload nhiều ảnh
+const uploadImages = async(files: File[]) => {
+  if (files.length > 6){
+    throw new Error('Maximum 5 files allowed per request');
+  }
+  const formData = new FormData();
+  files.forEach((file) => {
+    formData.append('files', file);
+  });
+  const response = await instance.post(`api/v1/upload/images`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+}
+
+//Xóa ảnh theo publicId (một ảnh)
+const deleteImage = async(publicId : string) => {
+  const response = await instance.delete(`api/v1/upload/image/${publicId}`, {
+    data: {
+      publicId: publicId,
+    },
+  });
+  return response.data;
+}
+
+
+//Xóa ảnh theo publicIds (nhiều ảnh)
+const deleteImages = async(publicIds: string[]) => {
+  const response = await instance.delete(`api/v1/upload/images`, {
+    data: {
+      publicIds: publicIds,
+    },
+  });
+  return response.data;
+}
+
+// Lấy signed parameters để upload trực tiếp từ client
+const getSignedUploadParams = async () => {
+  const response = await instance.get('api/v1/upload/sign');
+  return response.data;
+};
+
+
+
+
 export {
   postLogin,
   postSendOTP,
@@ -151,5 +324,20 @@ export {
   getAllProduct,
   postCreateProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  uploadImage,
+  uploadImages,
+  deleteImage,
+  deleteImages,
+  getSignedUploadParams, 
+  getAllProvinces,
+  getDistrictsByProvinceCode,
+  getWardsByDistrictCode,
+  getAddressById, 
+  getAllAddresses,
+  getDefaultAddress,
+  createAddress,
+  updateAddress,
+  deleteAddress,
+  setAsDefaultAddress
 };

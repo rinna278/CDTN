@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { X, Upload, Trash2, AlertCircle } from "lucide-react";
 import "./modal-edit-product.css";
-import { updateProduct } from "../../services/apiService";
+import { updateProduct, uploadImage } from "../../services/apiService";
 import { toast } from "react-toastify";
-import ImageCropModal from "./image-crop-modal"; // 1. Import component Crop
+import ImageCropModal from "./image-crop-modal";
 
 interface IProduct {
   id: string;
@@ -45,13 +45,16 @@ const ModalEditProduct = ({
 
   const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
 
-  const [images, setImages] = useState<File[]>([]);
+  // ✅ Thay đổi: Dùng imageObjects thay vì images (File[])
+  const [imageObjects, setImageObjects] = useState<
+    Array<{ url: string; publicId: string }>
+  >([]);
   const [imagePreview, setImagePreview] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false); // ✅ Thêm state upload
 
-  // 2. States cho crop modal
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const [currentImageForCrop, setCurrentImageForCrop] = useState<string>("");
   const [currentFileName, setCurrentFileName] = useState<string>("");
@@ -73,7 +76,6 @@ const ModalEditProduct = ({
     { value: "funeral", label: "Tang lễ" },
   ];
 
-  // Load dữ liệu sản phẩm khi modal mở
   useEffect(() => {
     if (isOpen && product) {
       setFormData({
@@ -90,7 +92,7 @@ const ModalEditProduct = ({
       setSelectedOccasions(product.occasions || []);
       setExistingImages(product.images || []);
       setImagePreview([]);
-      setImages([]);
+      setImageObjects([]); // ✅ Reset imageObjects
       setErrors({});
     }
   }, [isOpen, product]);
@@ -120,12 +122,10 @@ const ModalEditProduct = ({
     });
   };
 
-  // 3. Sửa logic handleImageChange để hỗ trợ Crop (xử lý 1 file mỗi lần)
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    // Chỉ lấy file đầu tiên vì flow là chọn -> crop -> save -> lặp lại
     const file = files[0];
 
     const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -134,14 +134,13 @@ const ModalEditProduct = ({
       return;
     }
 
-    // Kiểm tra tổng số lượng ảnh (cũ + mới đang chờ)
-    const totalImages = existingImages.length + images.length + 1; // +1 là ảnh đang chọn
+    // ✅ Kiểm tra tổng số lượng ảnh (cũ + mới)
+    const totalImages = existingImages.length + imageObjects.length + 1;
     if (totalImages > 5) {
       toast.error("Tối đa 5 ảnh");
       return;
     }
 
-    // Đọc file và mở modal crop
     const reader = new FileReader();
     reader.onloadend = () => {
       setCurrentImageForCrop(reader.result as string);
@@ -150,31 +149,51 @@ const ModalEditProduct = ({
     };
     reader.readAsDataURL(file);
 
-    // Reset input để có thể chọn lại cùng 1 file nếu user hủy crop rồi chọn lại
     e.target.value = "";
   };
 
-  // 4. Hàm xử lý khi Crop xong
-  const handleCropComplete = (croppedBlob: Blob) => {
-    // Convert blob thành File object
-    const croppedFile = new File([croppedBlob], currentFileName, {
-      type: "image/jpeg", // Hoặc giữ nguyên type gốc nếu muốn
-      lastModified: Date.now(),
-    });
+  // ✅ Upload ảnh lên Cloudinary sau khi crop
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setIsUploading(true);
 
-    // Cập nhật state images (file để upload)
-    setImages((prev) => [...prev, croppedFile]);
+    try {
+      const croppedFile = new File([croppedBlob], currentFileName, {
+        type: "image/jpeg",
+        lastModified: Date.now(),
+      });
 
-    // Cập nhật state imagePreview (để hiển thị UI)
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview((prev) => [...prev, reader.result as string]);
-    };
-    reader.readAsDataURL(croppedFile);
+      // Upload lên Cloudinary
+      const result = await uploadImage(croppedFile);
+
+      // Lưu cả URL và publicId
+      setImageObjects((prev) => [
+        ...prev,
+        {
+          url: result.secureUrl,
+          publicId: result.publicId,
+        },
+      ]);
+
+      // Cập nhật preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview((prev) => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(croppedFile);
+
+      toast.success("Upload ảnh thành công!");
+    } catch (error: any) {
+      console.error("Upload failed:", error);
+      toast.error(
+        "Upload ảnh thất bại: " + (error.message || "Lỗi không xác định")
+      );
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const removeNewImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImageObjects((prev) => prev.filter((_, i) => i !== index));
     setImagePreview((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -208,7 +227,7 @@ const ModalEditProduct = ({
       status: "1",
     });
     setSelectedOccasions([]);
-    setImages([]);
+    setImageObjects([]);
     setImagePreview([]);
     setExistingImages([]);
     setErrors({});
@@ -222,20 +241,11 @@ const ModalEditProduct = ({
     setErrors({});
 
     try {
-      // Chuyển ảnh mới (đã crop) thành Base64 để gửi API
-      const newImageUrls: string[] = [];
-      for (const file of images) {
-        const reader = new FileReader();
-        const base64: string = await new Promise((resolve) => {
-          reader.onloadend = () => {
-            resolve(reader.result as string);
-          };
-          reader.readAsDataURL(file);
-        });
-        newImageUrls.push(base64);
-      }
-
-      const allImages = [...existingImages, ...newImageUrls];
+      // ✅ Gộp URL: ảnh cũ + ảnh mới (đã upload lên Cloudinary)
+      const allImageUrls = [
+        ...existingImages,
+        ...imageObjects.map((img) => img.url),
+      ];
 
       await updateProduct(
         product.id,
@@ -245,7 +255,7 @@ const ModalEditProduct = ({
         formData.description,
         formData.discount ? Number(formData.discount) : 0,
         formData.category,
-        allImages,
+        allImageUrls,
         formData.color,
         selectedOccasions,
         Number(formData.status)
@@ -289,7 +299,6 @@ const ModalEditProduct = ({
     <>
       <div className="modal-overlay" onClick={handleClose}>
         <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-          {/* Header */}
           <div className="modal-header">
             <div>
               <h2 className="modal-title">Chỉnh Sửa Sản Phẩm</h2>
@@ -302,7 +311,6 @@ const ModalEditProduct = ({
             </button>
           </div>
 
-          {/* Body */}
           <div className="modal-body">
             {errors.submit && (
               <div className="error-banner">
@@ -312,7 +320,6 @@ const ModalEditProduct = ({
             )}
 
             <div className="form-grid">
-              {/* --- CÁC INPUT TEXT GIỮ NGUYÊN --- */}
               <div className="form-group full-width">
                 <label>
                   Tên sản phẩm <span className="required">*</span>
@@ -453,13 +460,11 @@ const ModalEditProduct = ({
                 </div>
               </div>
 
-              {/* --- PHẦN HÌNH ẢNH ĐÃ SỬA --- */}
               <div className="form-group full-width">
                 <label>
                   Hình ảnh ({existingImages.length + imagePreview.length}/5)
                 </label>
 
-                {/* Hiển thị ảnh cũ */}
                 {existingImages.length > 0 && (
                   <>
                     <p
@@ -487,7 +492,6 @@ const ModalEditProduct = ({
                   </>
                 )}
 
-                {/* Upload ảnh mới */}
                 <div
                   className="upload-area full-width-2"
                   style={{ marginTop: "12px" }}
@@ -496,30 +500,37 @@ const ModalEditProduct = ({
                     type="file"
                     id="img-upload-edit"
                     accept="image/*"
-                    // BỎ 'multiple' để crop từng ảnh
                     onChange={handleImageChange}
                     hidden
-                    disabled={existingImages.length + images.length >= 5}
+                    disabled={
+                      existingImages.length + imageObjects.length >= 5 ||
+                      isUploading
+                    }
                   />
                   <label
                     htmlFor="img-upload-edit"
                     className={`upload-label ${
-                      existingImages.length + images.length >= 5
+                      existingImages.length + imageObjects.length >= 5 ||
+                      isUploading
                         ? "disabled"
                         : ""
                     }`}
                   >
                     <Upload size={32} />
                     <span>
-                      {existingImages.length + images.length >= 5
+                      {isUploading
+                        ? "Đang upload ảnh..."
+                        : existingImages.length + imageObjects.length >= 5
                         ? "Đã đạt giới hạn 5 ảnh"
-                        : "Thêm ảnh mới (Crop)"}
+                        : "Thêm ảnh mới (Crop & Upload)"}
                     </span>
-                    <small>Hỗ trợ JPG, PNG, WEBP</small>
+                    <small>
+                      Hỗ trợ JPG, PNG, WEBP - Ảnh sẽ được crop và upload lên
+                      Cloudinary
+                    </small>
                   </label>
                 </div>
 
-                {/* Hiển thị ảnh mới */}
                 {imagePreview.length > 0 && (
                   <>
                     <p
@@ -539,6 +550,7 @@ const ModalEditProduct = ({
                           <button
                             type="button"
                             onClick={() => removeNewImage(idx)}
+                            disabled={isUploading}
                           >
                             <Trash2 size={14} />
                           </button>
@@ -551,19 +563,18 @@ const ModalEditProduct = ({
             </div>
           </div>
 
-          {/* Footer */}
           <div className="modal-footer">
             <button
               className="btn-secondary"
               onClick={handleClose}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploading}
             >
               Hủy bỏ
             </button>
             <button
               className="btn-primary"
               onClick={handleSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploading}
             >
               {isSubmitting ? <span className="loader"></span> : "Cập Nhật"}
             </button>
@@ -571,7 +582,6 @@ const ModalEditProduct = ({
         </div>
       </div>
 
-      {/* 5. Render Modal Crop ở ngoài cùng */}
       <ImageCropModal
         isOpen={isCropModalOpen}
         imageUrl={currentImageForCrop}

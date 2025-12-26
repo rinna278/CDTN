@@ -8,7 +8,7 @@ interface Product {
   name: string;
   price: number;
   discount?: number;
-  images?: string[];
+  images?: any[];
   occasion?: string[];
   category?: string;
   color?: string;
@@ -35,11 +35,34 @@ const calculateDiscountedPrice = (price: number, discount?: number): number => {
   return price * (1 - discount / 100);
 };
 
+// Helper function để lấy URL ảnh - xử lý mọi trường hợp
+const getImageUrl = (images?: any[]): string => {
+  const defaultImage =
+    "https://flowercorner.b-cdn.net/image/cache/catalog/products/B%C3%B3%20Hoa/bo-hoa-hong-mat-nau.jpg.webp";
+
+  if (!images || images.length === 0) return defaultImage;
+
+  const firstImage = images[0];
+
+  // Trường hợp 1: Object {url, publicId} (backend mới)
+  if (firstImage && typeof firstImage === "object" && firstImage.url) {
+    return firstImage.url;
+  }
+
+  // Trường hợp 2: String URL trực tiếp (backend cũ hoặc đã convert)
+  if (typeof firstImage === "string") {
+    return firstImage;
+  }
+
+  return defaultImage;
+};
+
 const FlowerCard = ({ flower }: { flower: Product }) => {
-  const discountedPrice = calculateDiscountedPrice(flower.price, flower.discount);
-  const imageUrl = flower.images && flower.images.length > 0
-      ? flower.images[0]
-      : "https://flowercorner.b-cdn.net/image/cache/catalog/products/B%C3%B3%20Hoa/bo-hoa-hong-mat-nau.jpg.webp";
+  const discountedPrice = calculateDiscountedPrice(
+    flower.price,
+    flower.discount
+  );
+  const imageUrl = getImageUrl(flower.images);
 
   return (
     <div className="flip-card">
@@ -48,24 +71,22 @@ const FlowerCard = ({ flower }: { flower: Product }) => {
           <img alt={flower.name} src={imageUrl} className="title" />
         </div>
         <div className="flip-card-back">
-          {/* Hiện discount nếu > 0, ngược lại hiện div trống giữ chỗ */}
           {flower.discount && flower.discount > 0 ? (
             <p className="discount">Giảm {flower.discount}%</p>
           ) : (
             <div className="discount-empty"></div>
           )}
-          
+
           <p className="title">{flower.name}</p>
-          
-          {/* Hiện giá gốc nếu có discount, ngược lại hiện div trống giữ chỗ */}
+
           {flower.discount && flower.discount > 0 ? (
             <h4>{formatPrice(flower.price)}</h4>
           ) : (
             <div className="old-price-empty"></div>
           )}
-          
+
           <h3>{formatPrice(discountedPrice)}</h3>
-          
+
           <div className="btn">
             <button>Thêm vào giỏ</button>
             <button>Mua hàng</button>
@@ -88,18 +109,30 @@ const BirthdayFlower = () => {
   const scrollRef = useRef<HTMLHeadingElement>(null);
   const isFirstRender = useRef(true);
 
-  // Hàm chuyển đổi option thành params gửi lên API
+  // ✅ Mapping label cho sorting
+  const sortLabels: Record<string, string> = {
+    all: "Mới nhất",
+    "a-z": "Từ A -> Z",
+    "z-a": "Từ Z -> A",
+    "expensive-cheaper": "Giá cao -> thấp",
+    "cheaper-expensive": "Giá thấp -> cao",
+  };
+
   const getSortParams = (option: string) => {
     switch (option) {
-      case "a-z": return { sortBy: "name", sortOrder: "ASC" as const };
-      case "z-a": return { sortBy: "name", sortOrder: "DESC" as const };
-      case "expensive-cheaper": return { sortBy: "price", sortOrder: "DESC" as const };
-      case "cheaper-expensive": return { sortBy: "price", sortOrder: "ASC" as const };
-      default: return { sortBy: "createdAt", sortOrder: "DESC" as const };
+      case "a-z":
+        return { sortBy: "name", sortOrder: "ASC" as const };
+      case "z-a":
+        return { sortBy: "name", sortOrder: "DESC" as const };
+      case "expensive-cheaper":
+        return { sortBy: "price", sortOrder: "DESC" as const };
+      case "cheaper-expensive":
+        return { sortBy: "price", sortOrder: "ASC" as const };
+      default:
+        return { sortBy: "createdAt", sortOrder: "DESC" as const };
     }
   };
 
-  // Logic Fetch dữ liệu
   useEffect(() => {
     const fetchBirthdayFlowers = async () => {
       try {
@@ -116,9 +149,11 @@ const BirthdayFlower = () => {
         setFlowers(response.data);
         setTotalPages(response.totalPages);
 
-        // Cuộn mượt đến tiêu đề khi chuyển trang hoặc lọc (tránh cuộn lúc load trang lần đầu)
         if (!isFirstRender.current) {
-          scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          scrollRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
         } else {
           isFirstRender.current = false;
         }
@@ -130,9 +165,8 @@ const BirthdayFlower = () => {
     };
 
     fetchBirthdayFlowers();
-  }, [currentPage, sortOption]); 
+  }, [currentPage, sortOption]);
 
-  // Reset về trang 1 khi người dùng thay đổi bộ lọc sắp xếp
   const handleSortChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSortOption(event.target.id);
     setCurrentPage(1);
@@ -144,36 +178,96 @@ const BirthdayFlower = () => {
 
   return (
     <div className="birthday-flower-container">
-      <h1 className="message-1" ref={scrollRef}>Hoa Sinh Nhật</h1>
+      <h1 className="message-1" ref={scrollRef}>
+        Hoa Sinh Nhật
+      </h1>
 
       <div className="arrangement">
         <button disabled>Sắp xếp</button>
         <div className="select">
-          <div className="selected" data-default="Tất cả">
-            <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 512 512" className="arrow">
+          {/* ✅ SỬA Ở ĐÂY: Hiển thị text trực tiếp từ state thay vì dùng CSS attr() */}
+          <div className="selected">
+            <span>{sortLabels[sortOption] || "Mới nhất"}</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="1em"
+              viewBox="0 0 512 512"
+              className="arrow"
+            >
               <path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"></path>
             </svg>
           </div>
+
           <div className="options">
             <div title="Mới nhất">
-              <input id="all" name="option" type="radio" checked={sortOption === "all"} onChange={handleSortChange} />
-              <label className="option" htmlFor="all" data-txt="Mới nhất"></label>
+              <input
+                id="all"
+                name="option"
+                type="radio"
+                checked={sortOption === "all"}
+                onChange={handleSortChange}
+              />
+              <label
+                className="option"
+                htmlFor="all"
+                data-txt="Mới nhất"
+              ></label>
             </div>
             <div title="Từ A -> Z">
-              <input id="a-z" name="option" type="radio" checked={sortOption === "a-z"} onChange={handleSortChange} />
-              <label className="option" htmlFor="a-z" data-txt="Từ A -> Z"></label>
+              <input
+                id="a-z"
+                name="option"
+                type="radio"
+                checked={sortOption === "a-z"}
+                onChange={handleSortChange}
+              />
+              <label
+                className="option"
+                htmlFor="a-z"
+                data-txt="Từ A -> Z"
+              ></label>
             </div>
             <div title="Từ Z -> A">
-              <input id="z-a" name="option" type="radio" checked={sortOption === "z-a"} onChange={handleSortChange} />
-              <label className="option" htmlFor="z-a" data-txt="Từ Z -> A"></label>
+              <input
+                id="z-a"
+                name="option"
+                type="radio"
+                checked={sortOption === "z-a"}
+                onChange={handleSortChange}
+              />
+              <label
+                className="option"
+                htmlFor="z-a"
+                data-txt="Từ Z -> A"
+              ></label>
             </div>
             <div title="Giá cao -> thấp">
-              <input id="expensive-cheaper" name="option" type="radio" checked={sortOption === "expensive-cheaper"} onChange={handleSortChange} />
-              <label className="option" htmlFor="expensive-cheaper" data-txt="Giá cao -> thấp"></label>
+              <input
+                id="expensive-cheaper"
+                name="option"
+                type="radio"
+                checked={sortOption === "expensive-cheaper"}
+                onChange={handleSortChange}
+              />
+              <label
+                className="option"
+                htmlFor="expensive-cheaper"
+                data-txt="Giá cao -> thấp"
+              ></label>
             </div>
             <div title="Giá thấp -> cao">
-              <input id="cheaper-expensive" name="option" type="radio" checked={sortOption === "cheaper-expensive"} onChange={handleSortChange} />
-              <label className="option" htmlFor="cheaper-expensive" data-txt="Giá thấp -> cao"></label>
+              <input
+                id="cheaper-expensive"
+                name="option"
+                type="radio"
+                checked={sortOption === "cheaper-expensive"}
+                onChange={handleSortChange}
+              />
+              <label
+                className="option"
+                htmlFor="cheaper-expensive"
+                data-txt="Giá thấp -> cao"
+              ></label>
             </div>
           </div>
         </div>
@@ -189,7 +283,11 @@ const BirthdayFlower = () => {
         {error ? (
           <div className="error-box">{error}</div>
         ) : (
-          <div className={`cart-product-container ${loading ? "content-loading" : ""}`}>
+          <div
+            className={`cart-product-container ${
+              loading ? "content-loading" : ""
+            }`}
+          >
             {flowers.map((flower) => (
               <FlowerCard key={flower.id} flower={flower} />
             ))}

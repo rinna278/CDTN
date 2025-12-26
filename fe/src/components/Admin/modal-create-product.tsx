@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { X, Upload, Trash2, CheckCircle, AlertCircle } from "lucide-react";
 import "./modal-create-product.css";
-import { postCreateProduct } from "../../services/apiService";
+import { postCreateProduct, uploadImage } from "../../services/apiService";
 import { toast } from "react-toastify";
-import ImageCropModal from "./image-crop-modal"; // Import component crop
+import ImageCropModal from "./image-crop-modal";
 
 interface ModalCreateProductProps {
   isOpen: boolean;
@@ -16,6 +16,8 @@ const ModalCreateProduct = ({
   onClose,
   onSuccess,
 }: ModalCreateProductProps) => {
+
+  //Khai báo các state để quản lý 
   const [formData, setFormData] = useState({
     name: "",
     price: "",
@@ -28,18 +30,18 @@ const ModalCreateProduct = ({
   });
 
   const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
-  const [images, setImages] = useState<File[]>([]);
+  const [imageObjects, setImageObjects] = useState<
+    Array<{ url: string; publicId: string }>
+  >([]);
   const [imagePreview, setImagePreview] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-
-  // States cho crop modal
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const [currentImageForCrop, setCurrentImageForCrop] = useState<string>("");
   const [currentFileName, setCurrentFileName] = useState<string>("");
 
-  // Reset form khi đóng modal
   useEffect(() => {
     if (!isOpen) {
       setSuccessMessage("");
@@ -64,6 +66,7 @@ const ModalCreateProduct = ({
     { value: "funeral", label: "Tang lễ" },
   ];
 
+  //hàm nhận giá trị từ input khi người dùng nhập dữ liệu
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -76,6 +79,7 @@ const ModalCreateProduct = ({
     }
   };
 
+  // hàm nhận giá trị của occasions khi chọn một hoặc nhiều
   const handleOccasionToggle = (value: string) => {
     setSelectedOccasions((prev) => {
       if (prev.includes(value)) {
@@ -86,67 +90,84 @@ const ModalCreateProduct = ({
     });
   };
 
+  //hàm cho phép upload ảnh, nếu có ảnh upload thì form crop hiện lên
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    const file = files[0]; // Chỉ xử lý 1 ảnh tại một thời điểm
+    const file = files[0];
 
     if (
       !["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(
         file.type
       )
     ) {
-      setErrors((prev) => ({
-        ...prev,
-        images: "Chỉ chấp nhận ảnh (JPG, PNG, WEBP)",
-      }));
+      toast.error("Chỉ chấp nhận ảnh (JPG, PNG, WEBP)");
       return;
     }
 
-    if (images.length >= 5) {
-      setErrors((prev) => ({ ...prev, images: "Tối đa 5 ảnh" }));
+    if (imageObjects.length >= 5) {
+      toast.error("Tối đa 5 ảnh");
       return;
     }
-
-    // Đọc file và mở crop modal
     const reader = new FileReader();
     reader.onloadend = () => {
       setCurrentImageForCrop(reader.result as string);
       setCurrentFileName(file.name);
       setIsCropModalOpen(true);
     };
+    //set file như url
     reader.readAsDataURL(file);
 
     setErrors((prev) => ({ ...prev, images: "" }));
-
-    // Reset input để có thể chọn lại cùng file
     e.target.value = "";
   };
 
-  const handleCropComplete = (croppedBlob: Blob) => {
-    // Convert blob thành File
-    const croppedFile = new File([croppedBlob], currentFileName, {
-      type: "image/jpeg",
-      lastModified: Date.now(),
-    });
+  //hàm crop hình ảnh sau khi đã upload lên sau đó đẩy lên cloudinary
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setIsUploading(true);
 
-    // Thêm file đã crop vào danh sách
-    setImages((prev) => [...prev, croppedFile]);
+    try {
+      const croppedFile = new File([croppedBlob], currentFileName, {
+        type: "image/jpeg",
+        lastModified: Date.now(),
+      });
+      //gọi APi lưu ảnh lên cloudinary
+      const result = await uploadImage(croppedFile);
+      // ✅ LƯU CẢ URL VÀ PUBLIC_ID
+      setImageObjects((prev) => [
+        ...prev,
+        {
+          url: result.secureUrl,
+          publicId: result.publicId, 
+        },
+      ]);
 
-    // Tạo preview cho ảnh đã crop
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview((prev) => [...prev, reader.result as string]);
-    };
-    reader.readAsDataURL(croppedFile);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview((prev) => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(croppedFile);
+
+      toast.success("Upload ảnh thành công!");
+    } catch (error: any) {
+      console.error("Upload failed:", error);
+      toast.error(
+        "Upload ảnh thất bại: " + (error.message || "Lỗi không xác định")
+      );
+    } finally {
+      setIsUploading(false);
+    }
   };
 
+  //xóa ảnh
   const removeImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImageObjects((prev) => prev.filter((_, i) => i !== index));
     setImagePreview((prev) => prev.filter((_, i) => i !== index));
   };
 
+
+  //validate form trước khi gửi lên backend
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.name.trim()) newErrors.name = "Vui lòng nhập tên sản phẩm";
@@ -161,6 +182,7 @@ const ModalCreateProduct = ({
       Number(formData.discount) > 100
     )
       newErrors.discount = "Tỉ lệ khuyến mãi không hợp lệ";
+
     if (Number(formData.stock) > 0) {
       formData.status = "1";
     }
@@ -172,6 +194,7 @@ const ModalCreateProduct = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  //hàm đóng  (giống nút X)
   const handleClose = () => {
     setFormData({
       name: "",
@@ -184,12 +207,13 @@ const ModalCreateProduct = ({
       status: "",
     });
     setSelectedOccasions([]);
-    setImages([]);
+    setImageObjects([]);
     setImagePreview([]);
     setErrors({});
     onClose();
   };
 
+  //hàm xác nhận khi điền đủ thông tin vào form 
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
@@ -197,17 +221,6 @@ const ModalCreateProduct = ({
     setErrors({});
 
     try {
-      const imageUrls: string[] = [];
-      for (const file of images) {
-        const base64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(file);
-        });
-        imageUrls.push(base64);
-      }
-
-      // Chuẩn bị payload body
       const payload = {
         name: formData.name,
         price: Number(formData.price),
@@ -215,7 +228,7 @@ const ModalCreateProduct = ({
         description: formData.description,
         discount: formData.discount ? Number(formData.discount) : 0,
         category: formData.category,
-        images: imageUrls,
+        images: imageObjects,
         color: formData.color,
         occasions: selectedOccasions,
         status: Number(formData.status),
@@ -226,6 +239,7 @@ const ModalCreateProduct = ({
       if (response && response.status === 400) {
         throw new Error(response.error);
       }
+
       toast.success("Thêm sản phẩm thành công");
       setSuccessMessage("Thêm sản phẩm thành công!");
 
@@ -249,8 +263,7 @@ const ModalCreateProduct = ({
   return (
     <>
       <div className="modal-overlay" onClick={handleClose}>
-        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-          {/* Header */}
+        <div className="modal-content-create-product" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <div>
               <h2>Thêm Sản Phẩm Mới</h2>
@@ -263,7 +276,6 @@ const ModalCreateProduct = ({
             </button>
           </div>
 
-          {/* Body */}
           <div className="modal-body">
             {successMessage && (
               <div className="alert success">
@@ -276,7 +288,6 @@ const ModalCreateProduct = ({
               </div>
             )}
 
-            {/* Form Content */}
             <div className="form-grid">
               <div className="form-group full-width">
                 <label>
@@ -433,23 +444,25 @@ const ModalCreateProduct = ({
                     accept="image/*"
                     onChange={handleImageChange}
                     hidden
-                    disabled={images.length >= 5}
+                    disabled={imageObjects.length >= 5 || isUploading}
                   />
                   <label
                     htmlFor="img-upload"
                     className={`upload-label ${
-                      images.length >= 5 ? "disabled" : ""
+                      imageObjects.length >= 5 || isUploading ? "disabled" : ""
                     }`}
                   >
                     <Upload size={32} />
                     <span>
-                      {images.length >= 5
+                      {isUploading
+                        ? "Đang upload ảnh..."
+                        : imageObjects.length >= 5
                         ? "Đã đạt giới hạn 5 ảnh"
                         : "Click để chọn ảnh và chỉnh sửa"}
                     </span>
                     <small>
-                      Hỗ trợ JPG, PNG, WEBP - Mỗi ảnh sẽ được crop trước khi
-                      thêm
+                      Hỗ trợ JPG, PNG, WEBP - Ảnh sẽ được crop và upload lên
+                      Cloudinary
                     </small>
                   </label>
                 </div>
@@ -462,7 +475,11 @@ const ModalCreateProduct = ({
                     {imagePreview.map((src, idx) => (
                       <div key={idx} className="preview-item">
                         <img src={src} alt="Preview" />
-                        <button type="button" onClick={() => removeImage(idx)}>
+                        <button
+                          type="button"
+                          onClick={() => removeImage(idx)}
+                          disabled={isUploading}
+                        >
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -473,19 +490,18 @@ const ModalCreateProduct = ({
             </div>
           </div>
 
-          {/* Footer */}
           <div className="modal-footer">
             <button
               className="btn-secondary"
               onClick={handleClose}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploading}
             >
               Hủy bỏ
             </button>
             <button
               className="btn-primary"
               onClick={handleSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploading}
             >
               {isSubmitting ? <span className="loader"></span> : "Tạo Sản Phẩm"}
             </button>
@@ -493,7 +509,6 @@ const ModalCreateProduct = ({
         </div>
       </div>
 
-      {/* Image Crop Modal */}
       <ImageCropModal
         isOpen={isCropModalOpen}
         imageUrl={currentImageForCrop}
