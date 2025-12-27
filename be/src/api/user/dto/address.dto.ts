@@ -8,6 +8,18 @@ import {
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 
 export class CreateAddressDto {
+  @ApiProperty({ example: 'Nguyễn Văn A' })
+  @IsNotEmpty()
+  @IsString()
+  @Length(1, 100)
+  recipientName: string;
+
+  @ApiProperty({ example: '0901234567', required: false })
+  @IsOptional()
+  @IsString()
+  @Length(7, 20)
+  phoneNumber: string;
+
   @ApiProperty({ example: '123 Nguyễn Huệ' })
   @IsNotEmpty()
   @IsString()
