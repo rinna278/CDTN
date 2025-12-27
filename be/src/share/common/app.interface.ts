@@ -8,7 +8,7 @@ export interface IAdminPayload {
 
 export interface IUserPayload {
   id?: string;
-  sub?: number | string;
+  // sub?: number | string;
   name: string;
   email: string;
   createdBy: string;

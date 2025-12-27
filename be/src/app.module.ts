@@ -12,6 +12,7 @@ import { RedisModule } from './configs/redis/redis.module';
 import { ProductModule } from './api/product/product.module';
 import { SeederModule } from './api/seed/seeder.module';
 import { UploadModule } from './api/upload/upload.module';
+import { CartModule } from './api/cart/cart.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { UploadModule } from './api/upload/upload.module';
     ProductModule,
     SeederModule,
     UploadModule,
+    CartModule,
   ],
 })
 export class AppModule {
