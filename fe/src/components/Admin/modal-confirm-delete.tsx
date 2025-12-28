@@ -47,7 +47,7 @@ const ModalConfirmDelete = ({
           <div className="modal-actions">
             <button
               onClick={onClose}
-              className="btn-cancel"
+              className="btn-cancel-product"
               disabled={isDeleting}
             >
               Cancel

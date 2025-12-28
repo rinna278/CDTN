@@ -2,21 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import ReactPaginate from "react-paginate";
 import { getAllProduct } from "../../services/apiService";
 import "./birthday-flower.css";
+import { useNavigate } from "react-router-dom";
+import { Product } from "../../types/type";
 
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  discount?: number;
-  images?: any[];
-  occasion?: string[];
-  category?: string;
-  color?: string;
-  description?: string;
-  stock?: number;
-  soldCount?: number;
-  status?: number;
-}
+
 
 interface ApiResponse {
   data: Product[];
@@ -26,9 +15,11 @@ interface ApiResponse {
   totalPages: number;
 }
 
+
 const formatPrice = (price: number): string => {
   return new Intl.NumberFormat("vi-VN").format(price) + " VND";
 };
+
 
 const calculateDiscountedPrice = (price: number, discount?: number): number => {
   if (!discount || discount === 0) return price;
@@ -63,6 +54,13 @@ const FlowerCard = ({ flower }: { flower: Product }) => {
     flower.discount
   );
   const imageUrl = getImageUrl(flower.images);
+  const navigate = useNavigate();
+  
+  const handleDetailProduct = () => {
+    navigate(`/detail-product/${flower.id}`, {
+      state: {product: flower}
+    })
+  }
 
   return (
     <div className="flip-card">
@@ -88,7 +86,7 @@ const FlowerCard = ({ flower }: { flower: Product }) => {
           <h3>{formatPrice(discountedPrice)}</h3>
 
           <div className="btn">
-            <button>Thêm vào giỏ</button>
+            <button onClick={handleDetailProduct}>Xem chi tiết</button>
             <button>Mua hàng</button>
           </div>
         </div>

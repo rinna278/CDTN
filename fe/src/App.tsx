@@ -9,12 +9,25 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "./redux/store";
 import { getInfo } from "./services/apiService";
 import { setUserInfo, logout } from "./redux/reducer+action/userSlice";
+// ✅ Import AOS
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 
 function App() {
   const [selected, setSelected] = useState("");
 
   const dispatch = useDispatch();
   const accessToken = useSelector((state: RootState) => state.user.accessToken);
+
+  // ✅ Khởi tạo AOS (chạy 1 lần khi app mount)
+  useEffect(() => {
+    AOS.init({
+      duration: 1500, // Thời gian animation (ms)
+      easing: "ease-in-out", // Kiểu chuyển động
+      once: false, // Chỉ animate 1 lần
+      offset: 120, // Khoảng cách trigger (px)
+    });
+  }, []);
 
   // ✅ GỌI getInfo 1 LẦN DUY NHẤT
   useEffect(() => {

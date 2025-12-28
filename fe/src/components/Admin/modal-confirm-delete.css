@@ -101,7 +101,7 @@
   gap: 12px;
 }
 
-.btn-cancel,
+.btn-cancel-product,
 .btn-delete {
   flex: 1;
   padding: 12px 24px;
@@ -114,12 +114,12 @@
   font-family: inherit;
 }
 
-.btn-cancel {
+.btn-cancel-product {
   background: #f3f4f6;
   color: #374151;
 }
 
-.btn-cancel:hover:not(:disabled) {
+.btn-cancel-product:hover:not(:disabled) {
   background: #e5e7eb;
 }
 
@@ -134,7 +134,7 @@
   box-shadow: 0 6px 8px -1px rgba(220, 38, 38, 0.4);
 }
 
-.btn-cancel:disabled,
+.btn-cancel-product:disabled,
 .btn-delete:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -158,7 +158,7 @@
     flex-direction: column;
   }
 
-  .btn-cancel,
+  .btn-cancel-product,
   .btn-delete {
     width: 100%;
   }

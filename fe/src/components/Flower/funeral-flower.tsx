@@ -51,7 +51,7 @@ const FlowerCard = ({ flower }: { flower: Flower }) => (
                 <h4>{flower.oldPrice}</h4>
                 <h3>{flower.newPrice}</h3>
                 <div className='btn'>
-                    <button>Thêm vào giỏ</button>
+                    <button>Xem chi tiết</button>
                     <button>Mua hàng</button>
                 </div>
             </div>

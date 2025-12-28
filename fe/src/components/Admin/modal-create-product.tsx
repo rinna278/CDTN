@@ -4,6 +4,7 @@ import "./modal-create-product.css";
 import { postCreateProduct, uploadImage } from "../../services/apiService";
 import { toast } from "react-toastify";
 import ImageCropModal from "./image-crop-modal";
+import { useCategories } from "./useCategories"; // ✅ Import hook
 
 interface ModalCreateProductProps {
   isOpen: boolean;
@@ -16,8 +17,10 @@ const ModalCreateProduct = ({
   onClose,
   onSuccess,
 }: ModalCreateProductProps) => {
+  // ✅ Sử dụng hook để lấy categories động
+  const categories = useCategories();
 
-  //Khai báo các state để quản lý 
+  //Khai báo các state để quản lý
   const [formData, setFormData] = useState({
     name: "",
     price: "",
@@ -48,15 +51,6 @@ const ModalCreateProduct = ({
       setErrors({});
     }
   }, [isOpen]);
-
-  const categories = [
-    "Hoa Hồng",
-    "Hoa Tulip",
-    "Hoa Cúc",
-    "Hoa Ly",
-    "Hoa Lan",
-    "Hoa Hướng Dương",
-  ];
 
   const occasions = [
     { value: "birthday", label: "Sinh nhật" },
@@ -139,7 +133,7 @@ const ModalCreateProduct = ({
         ...prev,
         {
           url: result.secureUrl,
-          publicId: result.publicId, 
+          publicId: result.publicId,
         },
       ]);
 
@@ -165,7 +159,6 @@ const ModalCreateProduct = ({
     setImageObjects((prev) => prev.filter((_, i) => i !== index));
     setImagePreview((prev) => prev.filter((_, i) => i !== index));
   };
-
 
   //validate form trước khi gửi lên backend
   const validateForm = () => {
@@ -213,7 +206,7 @@ const ModalCreateProduct = ({
     onClose();
   };
 
-  //hàm xác nhận khi điền đủ thông tin vào form 
+  //hàm xác nhận khi điền đủ thông tin vào form
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
@@ -263,7 +256,10 @@ const ModalCreateProduct = ({
   return (
     <>
       <div className="modal-overlay" onClick={handleClose}>
-        <div className="modal-content-create-product" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="modal-content-create-product"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="modal-header">
             <div>
               <h2>Thêm Sản Phẩm Mới</h2>
@@ -352,6 +348,7 @@ const ModalCreateProduct = ({
                     <option value="" disabled>
                       -- Chọn danh mục --
                     </option>
+                    {/* ✅ Render categories động */}
                     {categories.map((cat) => (
                       <option key={cat} value={cat}>
                         {cat}

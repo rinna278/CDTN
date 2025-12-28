@@ -4,6 +4,7 @@ import "./modal-edit-product.css";
 import { updateProduct, uploadImage } from "../../services/apiService";
 import { toast } from "react-toastify";
 import ImageCropModal from "./image-crop-modal";
+import { useCategories } from "./useCategories";
 
 interface IProduct {
   id: string;
@@ -13,7 +14,7 @@ interface IProduct {
   category: string;
   description?: string;
   discount?: number;
-  images?: string[];
+  images?: (string | { url: string; publicId: string })[]; // ✅ Hỗ trợ cả 2 format
   color?: string;
   occasions?: string[];
   status?: number;
@@ -32,6 +33,8 @@ const ModalEditProduct = ({
   onSuccess,
   product,
 }: ModalEditProductProps) => {
+  const categories = useCategories();
+
   const [formData, setFormData] = useState({
     name: "",
     price: "",
@@ -44,8 +47,6 @@ const ModalEditProduct = ({
   });
 
   const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
-
-  // ✅ Thay đổi: Dùng imageObjects thay vì images (File[])
   const [imageObjects, setImageObjects] = useState<
     Array<{ url: string; publicId: string }>
   >([]);
@@ -53,20 +54,11 @@ const ModalEditProduct = ({
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploading, setIsUploading] = useState(false); // ✅ Thêm state upload
+  const [isUploading, setIsUploading] = useState(false);
 
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const [currentImageForCrop, setCurrentImageForCrop] = useState<string>("");
   const [currentFileName, setCurrentFileName] = useState<string>("");
-
-  const categories = [
-    "Hoa Hồng",
-    "Hoa Tulip",
-    "Hoa Cúc",
-    "Hoa Ly",
-    "Hoa Lan",
-    "Hoa Hướng Dương",
-  ];
 
   const occasionsList = [
     { value: "birthday", label: "Sinh nhật" },
@@ -76,8 +68,24 @@ const ModalEditProduct = ({
     { value: "funeral", label: "Tang lễ" },
   ];
 
+  // ✅ Helper function: Convert image to URL string
+  const normalizeImageURL = (
+    image: string | { url: string; publicId: string }
+  ): string => {
+    if (typeof image === "string") {
+      return image; // Already a string
+    }
+    if (image && typeof image === "object" && image.url) {
+      return image.url; // Extract URL from object
+    }
+    return ""; // Invalid format
+  };
+
   useEffect(() => {
     if (isOpen && product) {
+      console.log("📦 Product data:", product);
+      console.log("🖼️ Product images (raw):", product.images);
+
       setFormData({
         name: product.name || "",
         price: product.price.toString() || "",
@@ -90,9 +98,19 @@ const ModalEditProduct = ({
       });
 
       setSelectedOccasions(product.occasions || []);
-      setExistingImages(product.images || []);
+
+      // ✅ Normalize images - hỗ trợ cả string và object
+      const validImages = Array.isArray(product.images)
+        ? product.images
+            .map((img) => normalizeImageURL(img))
+            .filter((url) => url && url.trim() !== "")
+        : [];
+
+      console.log("✅ Normalized images:", validImages);
+      setExistingImages(validImages);
+
       setImagePreview([]);
-      setImageObjects([]); // ✅ Reset imageObjects
+      setImageObjects([]);
       setErrors({});
     }
   }, [isOpen, product]);
@@ -134,7 +152,6 @@ const ModalEditProduct = ({
       return;
     }
 
-    // ✅ Kiểm tra tổng số lượng ảnh (cũ + mới)
     const totalImages = existingImages.length + imageObjects.length + 1;
     if (totalImages > 5) {
       toast.error("Tối đa 5 ảnh");
@@ -152,7 +169,6 @@ const ModalEditProduct = ({
     e.target.value = "";
   };
 
-  // ✅ Upload ảnh lên Cloudinary sau khi crop
   const handleCropComplete = async (croppedBlob: Blob) => {
     setIsUploading(true);
 
@@ -162,10 +178,8 @@ const ModalEditProduct = ({
         lastModified: Date.now(),
       });
 
-      // Upload lên Cloudinary
       const result = await uploadImage(croppedFile);
 
-      // Lưu cả URL và publicId
       setImageObjects((prev) => [
         ...prev,
         {
@@ -174,7 +188,6 @@ const ModalEditProduct = ({
         },
       ]);
 
-      // Cập nhật preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview((prev) => [...prev, reader.result as string]);
@@ -241,11 +254,13 @@ const ModalEditProduct = ({
     setErrors({});
 
     try {
-      // ✅ Gộp URL: ảnh cũ + ảnh mới (đã upload lên Cloudinary)
+      // ✅ Chỉ gửi URL strings, không gửi objects
       const allImageUrls = [
-        ...existingImages,
-        ...imageObjects.map((img) => img.url),
+        ...existingImages, // Đã là strings
+        ...imageObjects.map((img) => img.url), // Chỉ lấy URL
       ];
+
+      console.log("📤 Submitting image URLs:", allImageUrls);
 
       await updateProduct(
         product.id,
@@ -255,7 +270,7 @@ const ModalEditProduct = ({
         formData.description,
         formData.discount ? Number(formData.discount) : 0,
         formData.category,
-        allImageUrls,
+        allImageUrls, // ✅ Array of strings
         formData.color,
         selectedOccasions,
         Number(formData.status)
@@ -479,10 +494,19 @@ const ModalEditProduct = ({
                     <div className="preview-grid">
                       {existingImages.map((src, idx) => (
                         <div key={`existing-${idx}`} className="preview-item">
-                          <img src={src} alt="Existing" />
+                          <img
+                            src={src}
+                            alt={`Existing ${idx + 1}`}
+                            onError={(e) => {
+                              console.error("❌ Failed to load:", src);
+                              e.currentTarget.style.display = "none";
+                            }}
+                            onLoad={() => console.log("✅ Loaded:", src)}
+                          />
                           <button
                             type="button"
                             onClick={() => removeExistingImage(idx)}
+                            className="remove-image-btn"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -546,11 +570,12 @@ const ModalEditProduct = ({
                     <div className="preview-grid">
                       {imagePreview.map((src, idx) => (
                         <div key={`new-${idx}`} className="preview-item">
-                          <img src={src} alt="New Preview" />
+                          <img src={src} alt={`New Preview ${idx + 1}`} />
                           <button
                             type="button"
                             onClick={() => removeNewImage(idx)}
                             disabled={isUploading}
+                            className="remove-image-btn"
                           >
                             <Trash2 size={14} />
                           </button>

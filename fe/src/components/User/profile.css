@@ -84,7 +84,7 @@
   justify-content: flex-end;
 }
 
-.profile-action button {
+.save-close button {
   display: inline-block;
   padding: 1.5vh 3vh;
   background-color: rgb(135, 10, 10);
@@ -107,7 +107,7 @@
   flex-direction: column;
 }
 
-.profile-password button {
+.profile-password button, .btn-edit {
   background-color: rgb(135, 10, 10);
   border-radius: 5px;
   cursor: pointer;
@@ -198,6 +198,7 @@
   color: white;
   border: none;
   padding: 10px 20px;
+  font-weight: bold;
   border-radius: 5px;
   cursor: pointer;
 }

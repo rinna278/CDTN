@@ -12,6 +12,7 @@ import Login from "../components/User/login";
 import Profile from "../components/User/profile";
 import Cart from "../components/Cart/cart";
 import ForgotPassword from "../components/User/forgot-password";
+import DetailProduct from "../components/Flower/detail-product";
 interface UserRoutesProps {
   selected: string;
   setSelected: Dispatch<SetStateAction<string>>;
@@ -32,6 +33,7 @@ const UserRoutes = ({ selected, setSelected }: UserRoutesProps) => {
         <Route path="/profile" element={<Profile selected={selected} setSelected={setSelected}/>}/>
         <Route path="/cart" element={<Cart selected={selected} setSelected={setSelected} />}/>
         <Route path="/forgot-password" element={<ForgotPassword selected={selected} setSelected={setSelected}/>} />
+        <Route path="/detail-product/:productID" element={<DetailProduct selected={selected} setSelected={setSelected}/>}/>
     </Routes>
   );
 };

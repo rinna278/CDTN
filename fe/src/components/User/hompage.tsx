@@ -56,7 +56,7 @@ const HomePage = () => {
 
   return (
     <div className="homepage-container">
-        <div className="slider">
+        <div className="slider" data-aos='fade-down'>
             {/* Dùng map để render tất cả các ảnh */}
             {sliderImages.map((image, index) => (
             <img
@@ -69,7 +69,7 @@ const HomePage = () => {
             />
             ))}
         </div>
-        <h1 className="button-ship">
+        <h1 className="button-ship" data-aos='fade-up'>
             <span className="button_lg">
                 <span className="button_sl"></span>
                 <span className="button_text">Giao Hàng Nhanh Chóng - Hoa Đẹp Tận Tay - Gọi Ngay AVICI Shop</span>
@@ -83,7 +83,7 @@ const HomePage = () => {
         :
         <>
           <h1 className='message-2'>HOA TƯƠI GIẢM ĐẾN 30%</h1>
-            <div className='cart-product-container'>
+            <div className='cart-product-container' data-aos='zoom-in'>
                 <div className="flip-card">
                     <div className="flip-card-inner">
                         <div className="flip-card-front">
@@ -256,7 +256,7 @@ const HomePage = () => {
                 </div>
             </div>
             <h1 className='message-3'>SẢN PHẨM MỚI</h1>
-            <div className='cart-product-container'>
+            <div className='cart-product-container' data-aos='zoom-in'>
                 <div className="flip-card">
                     <div className="flip-card-inner">
                         <div className="flip-card-front">
@@ -429,7 +429,7 @@ const HomePage = () => {
                 </div>
             </div>
             <h1 className='message-4'>HOA KHAI TRƯƠNG</h1>
-            <div className='cart-product-container'>
+            <div className='cart-product-container' data-aos='zoom-in'>
                 <div className="flip-card">
                     <div className="flip-card-inner">
                         <div className="flip-card-front">
@@ -603,7 +603,7 @@ const HomePage = () => {
             </div>
             <h1 className='message-5'>Shop Bán Hoa Avici.vn</h1>
             <div className='content-brand'>
-                <div className='content-brand-left'>
+                <div className='content-brand-left' data-aos='zoom-up-right'>
                     <div className='introduction'>
                         <h3>Giới thiệu về Avici.vn</h3>
                         <p>Shop Hoa Tươi Avici là một trong những tiệm hoa uy tín nhất tại TP.Hà Nội, Việt Nam. Chúng tôi cung cấp dịch vụ đặt hoa online giao tận nơi tại Hà Nội, trên các tỉnh thành phố khác. Với hệ thống cửa hàng liên kết khắp các tỉnh trên toàn quốc, chúng tôi có thể giúp bạn gửi tặng hoa cho người thân, bạn bè, người yêu ở bất cứ đâu tại Việt Nam.</p>
@@ -628,7 +628,7 @@ const HomePage = () => {
                         </ul>
                     </div>
                 </div>
-                <div className='content-brand-right'>
+                <div className='content-brand-right' data-aos='zoom-up-left'>
                     <div className='category'>
                         <h3>Danh mục sản phẩm</h3>
                         <p>Đến với cửa hàng hoa Avici Shop, bạn có thể thoải mái lựa chọn giữa hơn 500+ mẫu hoa tươi được thiết kế sẵn theo các chủ đề như: </p>
@@ -655,7 +655,7 @@ const HomePage = () => {
             </div>
         </>
         }
-        <div className="container">
+        <div className="container" data-aos='zoom-in'>
             <div className="title">
                 <h1>💐 Khách Hàng Yêu Thích 💐</h1>
                 <p>Những phản hồi chân thành từ khách hàng của chúng tôi</p>

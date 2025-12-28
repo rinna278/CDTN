@@ -3,7 +3,8 @@ import { getAllProduct, deleteProduct } from "../../services/apiService";
 import { useEffect, useState } from "react";
 import ModalCreateProduct from "./modal-create-product";
 import ModalEditProduct from "./modal-edit-product";
-import ModalConfirmDelete from "./modal-confirm-delete"; // Import modal mới
+import ModalConfirmDelete from "./modal-confirm-delete";
+import CategoryManager from "./manage-categories"; // ✅ Import CategoryManager
 import { toast } from "react-toastify";
 
 interface IProduct {
@@ -40,7 +41,7 @@ const ManageProduct = () => {
     try {
       let res = await getAllProduct({
         page: 1,
-        limit: 1000
+        limit: 1000,
       });
       console.log("Raw API Response:", res);
       console.log("First product:", res?.data?.[0]);
@@ -103,7 +104,7 @@ const ManageProduct = () => {
   // Xác nhận xóa sản phẩm
   const handleConfirmDelete = async () => {
     if (!productToDelete) return;
-    
+
     setIsDeleting(true);
     try {
       await deleteProduct(productToDelete.id);
@@ -253,46 +254,8 @@ const ManageProduct = () => {
           </table>
         </div>
       </div>
-      <div className="content-bottom-product">
-        <div className="title_bottom">
-          <h2>Quản Lý Danh Mục</h2>
-          <h5>Các danh mục sản phẩm</h5>
-        </div>
-        <div className="card-category">
-          <div className="item-cart-category">
-            <h4>Hoa Hồng</h4>
-            <p>12 sản phẩm</p>
-            <div className="btn_action">
-              <button>Sửa</button>
-              <button>Xóa</button>
-            </div>
-          </div>
-          <div className="item-cart-category">
-            <h4>Hoa TuLip</h4>
-            <p>12 sản phẩm</p>
-            <div className="btn_action">
-              <button>Sửa</button>
-              <button>Xóa</button>
-            </div>
-          </div>
-          <div className="item-cart-category">
-            <h4>Hoa Cúc</h4>
-            <p>12 sản phẩm</p>
-            <div className="btn_action">
-              <button>Sửa</button>
-              <button>Xóa</button>
-            </div>
-          </div>
-          <div className="item-cart-category">
-            <h4>Hoa Ly</h4>
-            <p>12 sản phẩm</p>
-            <div className="btn_action">
-              <button>Sửa</button>
-              <button>Xóa</button>
-            </div>
-          </div>
-        </div>
-      </div>
+
+      <CategoryManager />
 
       {/* Modal Create Product */}
       <ModalCreateProduct

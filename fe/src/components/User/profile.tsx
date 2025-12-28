@@ -360,12 +360,10 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
         return;
       }
       if (addressForm.street.length < 5) {
-        toast.warning('Địa chỉ chi tiết tối thiểu 5 kí tự');
+        toast.warning("Địa chỉ chi tiết tối thiểu 5 kí tự");
         return;
       }
-      
-      
-      
+
       if (editingAddressId) {
         // Update
         await updateAddress(editingAddressId, addressForm);
@@ -375,16 +373,15 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
         await createAddress(addressForm);
         toast.success("Thêm địa chỉ thành công");
       }
-      
+
       closeAddressModal();
       fetchAddresses();
     } catch (err: any) {
       const status = err.response?.status;
-      if (status === 400){
-        toast.warning('Mã bưu chính không vượt quá 20 kí tự');
-      }
-      else{
-        toast.error('Lỗi khi lưu địa chỉ!');
+      if (status === 400) {
+        toast.warning("Mã bưu chính không vượt quá 20 kí tự");
+      } else {
+        toast.error("Lỗi khi lưu địa chỉ!");
       }
     }
   };
@@ -513,6 +510,7 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
               </button>
             )}
           </div>
+          <div>----------------------------------------------------------------------</div>
           <div className="profile-password">
             <p>Password</p>
             <button

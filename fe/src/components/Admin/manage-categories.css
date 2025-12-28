@@ -1,0 +1,240 @@
+/* CSS cho nội dung cuối - Category Manager */
+.content-bottom-product {
+    height: auto;
+    margin: 2vh 0;
+    background: #fff;
+    border-radius: 10px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.title_bottom {
+    margin-bottom: 1rem;
+}
+
+.title_bottom h2 {
+    margin: 0 0 0.5rem 0;
+    color: #1f2937;
+}
+
+.title_bottom h5 {
+    margin: 0;
+    color: #6b7280;
+    font-weight: normal;
+}
+
+/* Nút thêm danh mục */
+.btn-add-category {
+    margin-bottom: 1.5rem;
+}
+
+.add-category-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(to right, #f43f5e, #ec4899);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(244, 63, 94, 0.2);
+}
+
+.add-category-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(244, 63, 94, 0.3);
+}
+
+.add-category-btn:active {
+    transform: translateY(0);
+}
+
+/* Cấu trúc của card danh mục sản phẩm */
+.card-category {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Mỗi card danh mục */
+.item-cart-category {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    transition: all 0.3s ease;
+    border: 1px solid #f3f4f6;
+}
+
+.item-cart-category:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.item-cart-category h4 {
+    font-size: 1.1rem;
+    color: #1f2937;
+    margin: 0;
+    font-weight: 600;
+}
+
+.item-cart-category p {
+    color: #6b7280;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.btn_action {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: auto;
+}
+
+.btn_action button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    color: #1f2937;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.btn_action button:first-child:hover {
+    background-color: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.btn_action button:last-child:hover {
+    background-color: #ef4444;
+    color: white;
+    border-color: #ef4444;
+}
+
+/* Modal Category */
+.modal-category {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.modal-header-category {
+    background: linear-gradient(to right, #f43f5e, #ec4899);
+    color: white;
+    padding: 1.5rem;
+}
+
+.modal-header-category h3 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.modal-body-category {
+    padding: 2rem;
+}
+
+.form-group-category {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group-category label {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 0.95rem;
+}
+
+.form-group-category .required {
+    color: #ef4444;
+}
+
+.form-group-category input {
+    padding: 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-group-category input:focus {
+    outline: none;
+    border-color: #f43f5e;
+    box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.1);
+}
+
+.error-text {
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.modal-footer-category {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+}
+
+.modal-footer-category button {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.btn-cancel-category {
+    background-color: #f3f4f6;
+    color: #1f2937;
+}
+
+.btn-cancel-category:hover {
+    background-color: #e5e7eb;
+}
+
+.btn-submit {
+    background: linear-gradient(to right, #f43f5e, #ec4899);
+    color: white;
+}
+
+.btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(244, 63, 94, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .card-category {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+
+    .item-cart-category {
+        padding: 1rem;
+    }
+
+    .modal-category {
+        width: 95%;
+    }
+}
