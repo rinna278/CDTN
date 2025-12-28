@@ -4,6 +4,9 @@ import { PermissionEntity } from '../api/permission/permission.entity';
 import { RoleEntity } from '../api/role/role.entity';
 import { UserEntity } from '../api/user/user.entity';
 import { AddressEntity } from 'src/api/user/address.entity';
+import { CartEntity } from 'src/api/cart/cart.entity';
+import { CartDetailEntity } from 'src/api/cart-detail/cart-detail.entity';
+import { ProductEntity } from 'src/api/product/product.entity';
 
 export default new DataSource({
   type: 'postgres',
@@ -12,7 +15,15 @@ export default new DataSource({
   username: DATABASE_CONFIG.username,
   password: DATABASE_CONFIG.password,
   database: DATABASE_CONFIG.database,
-  entities: [PermissionEntity, RoleEntity, UserEntity, AddressEntity],
+  entities: [
+    PermissionEntity,
+    RoleEntity,
+    UserEntity,
+    AddressEntity,
+    CartEntity,
+    CartDetailEntity,
+    ProductEntity,
+  ],
   migrations: [__dirname + '/../../migrations/*.ts'],
   synchronize: true,
   logging: DATABASE_CONFIG.logging,

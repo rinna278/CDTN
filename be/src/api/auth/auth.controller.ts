@@ -87,7 +87,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   @Post('logout')
-  logOut(@GetUser('sub') userId: string) {
+  logOut(@GetUser('id') userId: string) {
     return this.authService.removeRefreshToken(userId);
   }
 

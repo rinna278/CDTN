@@ -6,6 +6,9 @@ import { UserEntity } from '../../api/user/user.entity';
 import { DATABASE_CONFIG } from '../constant.config';
 import { databaseProviders } from './database.providers';
 import { AddressEntity } from 'src/api/user/address.entity';
+import { CartEntity } from 'src/api/cart/cart.entity';
+import { CartDetailEntity } from 'src/api/cart-detail/cart-detail.entity';
+import { ProductEntity } from 'src/api/product/product.entity';
 
 @Module({
   imports: [
@@ -17,7 +20,15 @@ import { AddressEntity } from 'src/api/user/address.entity';
         username: DATABASE_CONFIG.username,
         password: DATABASE_CONFIG.password,
         database: DATABASE_CONFIG.database,
-        entities: [PermissionEntity, RoleEntity, UserEntity, AddressEntity],
+        entities: [
+          PermissionEntity,
+          RoleEntity,
+          UserEntity,
+          AddressEntity,
+          CartEntity,
+          CartDetailEntity,
+          ProductEntity,
+        ],
         migrations: [__dirname + '/../../migrations/*.ts'],
         autoLoadEntities: true,
         synchronize: true,

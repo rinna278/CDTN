@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { AddressEntity } from './address.entity';
 import { CreateAddressDto, UpdateAddressDto } from './dto/address.dto';
 import { UserEntity } from './user.entity';
@@ -86,7 +86,7 @@ export class AddressService {
     // Nếu set isDefault=true, set các addresses khác thành false
     if (updateDto.isDefault) {
       await this.addressRepository.update(
-        { userId, id: { $ne: addressId } as any },
+        { userId, id: Not(addressId) },
         { isDefault: false },
       );
     }
@@ -104,7 +104,7 @@ export class AddressService {
     // Nếu xóa địa chỉ mặc định, set địa chỉ khác thành mặc định
     if (address.isDefault) {
       const anotherAddress = await this.addressRepository.findOne({
-        where: { userId, id: { $ne: addressId } as any },
+        where: { userId, id: Not(addressId) },
         order: { createdAt: 'DESC' },
       });
 
@@ -128,7 +128,7 @@ export class AddressService {
 
     // Set tất cả addresses khác thành false
     await this.addressRepository.update(
-      { userId, id: { $ne: addressId } as any },
+      { userId, id: Not(addressId) },
       { isDefault: false },
     );
 
