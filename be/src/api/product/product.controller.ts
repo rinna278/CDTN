@@ -115,6 +115,22 @@ export class ProductController {
     return this.productService.getRelatedProducts(param.id, limit);
   }
 
+  // NEW: Lấy màu có sẵn của 1 product
+  @ApiOperation({ summary: 'Lấy danh sách màu có sẵn của sản phẩm' })
+  @Get(':id/available-colors')
+  @HttpCode(HttpStatus.OK)
+  getAvailableColors(@Param() param: ParamIdBaseDto): Promise<string[]> {
+    return this.productService.getAvailableColors(param.id);
+  }
+
+  // NEW: Lấy thông tin variant theo màu
+  @ApiOperation({ summary: 'Lấy thông tin variant theo màu' })
+  @Get(':id/variant/:color')
+  @HttpCode(HttpStatus.OK)
+  getVariantByColor(@Param('id') id: string, @Param('color') color: string) {
+    return this.productService.getVariantByColor(id, color);
+  }
+
   // ========== ADMIN ENDPOINTS (Require Authentication & Permission) ==========
 
   @ApiOperation({ summary: '[ADMIN] Tạo sản phẩm mới' })
@@ -157,7 +173,11 @@ export class ProductController {
     return this.productService.remove(param.id);
   }
 
-  @ApiOperation({ summary: '[ADMIN] Cập nhật tồn kho' })
+  // UPDATED: Cập nhật stock theo màu
+  @ApiOperation({
+    summary: '[ADMIN] Cập nhật tồn kho theo màu',
+    description: 'Cập nhật stock của một variant cụ thể (theo màu)',
+  })
   @ApiOkResponse({ description: 'Update stock successfully' })
   @Patch(':id/stock')
   @HttpCode(HttpStatus.OK)
@@ -168,6 +188,10 @@ export class ProductController {
     @Param() param: ParamIdBaseDto,
     @Body() updateStockDto: UpdateStockDto,
   ): Promise<ProductEntity> {
-    return this.productService.updateStock(param.id, updateStockDto);
+    return this.productService.updateVariantStock(
+      param.id,
+      updateStockDto.color,
+      updateStockDto.quantity,
+    );
   }
 }

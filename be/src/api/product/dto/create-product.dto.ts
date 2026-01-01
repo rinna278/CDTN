@@ -13,6 +13,35 @@ import {
 import { ProductStatus, IProductImage } from '../product.constant';
 import { Type } from 'class-transformer';
 
+export class ProductImageDto implements IProductImage {
+  @ApiProperty({ example: 'https://res.cloudinary.com/xxx/image.jpg' })
+  @IsString()
+  url: string;
+
+  @ApiProperty({ example: 'products/image-id' })
+  @IsString()
+  publicId: string;
+}
+
+export class ProductVariantDto {
+  @ApiProperty({ example: 'Đỏ', description: 'Tên màu' })
+  @IsString()
+  color: string;
+
+  @ApiProperty({
+    type: ProductImageDto,
+    description: '1 ảnh đại diện cho màu này',
+  })
+  @ValidateNested()
+  @Type(() => ProductImageDto)
+  image: ProductImageDto;
+
+  @ApiProperty({ example: 100, description: 'Số lượng tồn kho của màu này' })
+  @IsNumber()
+  @Min(0)
+  stock: number;
+}
+
 export class CreateProductDto {
   @ApiProperty({ example: 'Ecuador roses', description: 'Name of product' })
   @IsString()
@@ -45,12 +74,6 @@ export class CreateProductDto {
   @Type(() => Number)
   discount?: number;
 
-  @ApiProperty({ example: 100 })
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
-  stock: number;
-
   @ApiPropertyOptional({
     example: 'Roses',
     description: 'Type or category of the product',
@@ -75,15 +98,6 @@ export class CreateProductDto {
   images?: IProductImage[];
 
   @ApiPropertyOptional({
-    example: 'Red',
-    description: 'Color of the product',
-  })
-  @IsString()
-  @MaxLength(50)
-  @IsOptional()
-  color?: string;
-
-  @ApiPropertyOptional({
     example: ['Birthday', 'Graduation'],
     type: [String],
   })
@@ -91,6 +105,15 @@ export class CreateProductDto {
   @IsString({ each: true })
   @IsOptional()
   occasions?: string[];
+
+  @ApiProperty({
+    type: [ProductVariantDto],
+    description: 'Danh sách màu sắc, mỗi màu có ảnh và stock riêng',
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductVariantDto)
+  variants: ProductVariantDto[];
 
   @ApiPropertyOptional({
     example: ProductStatus.ACTIVE,
@@ -101,14 +124,4 @@ export class CreateProductDto {
   @IsOptional()
   @Type(() => Number)
   status?: number;
-}
-
-export class ProductImageDto implements IProductImage {
-  @ApiProperty({ example: 'https://example.com/image.jpg' })
-  @IsString()
-  url: string;
-
-  @ApiProperty({ example: 'folder/image-id' })
-  @IsString()
-  publicId: string;
 }

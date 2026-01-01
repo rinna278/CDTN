@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsUUID, Min } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, IsUUID, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class AddToCartDto {
@@ -10,6 +10,13 @@ export class AddToCartDto {
   @IsNotEmpty()
   @IsUUID()
   productId: string;
+
+  @ApiProperty({
+    example: 'Đỏ',
+    description: 'Màu sắc được chọn',
+  })
+  @IsString()
+  color: string;
 
   @ApiProperty({
     description: 'Quantity to add',
