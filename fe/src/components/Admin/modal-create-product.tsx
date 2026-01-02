@@ -260,7 +260,7 @@ const ModalCreateProduct = ({
           className="modal-content-create-product"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="modal-header">
+          <div className="modal-header-create-product">
             <div>
               <h2>Thêm Sản Phẩm Mới</h2>
               <p className="modal-subtitle">

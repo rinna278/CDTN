@@ -315,8 +315,7 @@
 
 .btn-add-cart,
 .btn-buy-now {
-  flex: 1;
-  height: 55px;
+  height: 60px;
   border: none;
   border-radius: 8px;
   font-size: 16px;

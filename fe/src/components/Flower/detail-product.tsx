@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { getProductByID, getAllProduct } from "../../services/apiService";
+import { getProductByID, getAllProduct, postAddToCart } from "../../services/apiService";
 import "./detail-product.css";
+import { toast } from "react-toastify";
 
 interface Product {
   id: string;
@@ -9,18 +10,18 @@ interface Product {
   price: number;
   discount?: number;
   images?: any[];
-  occasion?: string[];
-  category?: string;
+  occasions?: string[];
+  category: string;
   color?: string;
   description?: string;
-  stock?: number;
+  stock: number;
   soldCount?: number;
   status?: number;
 }
 
 interface DetailProductProps {
-  selected: string;
-  setSelected: React.Dispatch<React.SetStateAction<string>>;
+  selected?: string;
+  setSelected?: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const formatPrice = (price: number): string => {
@@ -30,6 +31,7 @@ const formatPrice = (price: number): string => {
 const getImageUrl = (images?: any[]): string => {
   const defaultImage =
     "https://flowercorner.b-cdn.net/image/cache/catalog/products/B%C3%B3%20Hoa/bo-hoa-hong-mat-nau.jpg.webp";
+
   if (!images || images.length === 0) return defaultImage;
   const firstImage = images[0];
   if (firstImage && typeof firstImage === "object" && firstImage.url) {
@@ -45,30 +47,30 @@ const DetailProduct: React.FC<DetailProductProps> = ({
   selected,
   setSelected,
 }) => {
-  const { productId } = useParams<{ productId: string }>();
+  const { productID } = useParams<{ productID: string }>();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // State management
   const [product, setProduct] = useState<Product | null>(
     location.state?.product || null
   );
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedSize, setSelectedSize] = useState("M");
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(!product);
+  const [loading, setLoading] = useState(!location.state?.product);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch product by ID nếu không có trong state
   useEffect(() => {
-    if (product) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    if (location.state?.product && location.state.product.id === productID) {
+      setProduct(location.state.product);
       setLoading(false);
       return;
     }
 
-    if (!productId) {
+    if (!productID) {
       setError("Không tìm thấy ID sản phẩm");
       setLoading(false);
       return;
@@ -78,16 +80,13 @@ const DetailProduct: React.FC<DetailProductProps> = ({
       try {
         setLoading(true);
         setError(null);
-        const response = await getProductByID(productId);
-
-        // Kiểm tra response structure
+        const response = await getProductByID(productID);
         if (response && response.data) {
           setProduct(response.data);
-        }  else {
+        } else {
           throw new Error("Không tìm thấy sản phẩm");
         }
       } catch (err: any) {
-        console.error("Error fetching product:", err);
         setError(err.message || "Không thể tải thông tin sản phẩm");
       } finally {
         setLoading(false);
@@ -95,22 +94,18 @@ const DetailProduct: React.FC<DetailProductProps> = ({
     };
 
     fetchProduct();
-  }, [productId, product]);
+  }, [productID, location.state]);
 
-  // Fetch similar products
   useEffect(() => {
     if (!product) return;
-
     const fetchSimilarProducts = async () => {
       try {
         const response = await getAllProduct({
           page: 1,
           limit: 8,
-          occasions: product.occasion,
+          occasions: product.occasions,
           status: 1,
         });
-
-        // Filter out current product
         const filtered = (response.data || []).filter(
           (p: Product) => p.id !== product.id
         );
@@ -119,118 +114,96 @@ const DetailProduct: React.FC<DetailProductProps> = ({
         console.error("Error fetching similar products:", err);
       }
     };
-
     fetchSimilarProducts();
   }, [product]);
 
-  // Scroll to top when component mounts
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+    setSelectedImage(0);
+    setQuantity(1);
+    setActiveTab("description");
+  }, [productID]);
 
-  // Loading state
   if (loading) {
     return (
-      <div className="detail-product-page">
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p>Đang tải thông tin sản phẩm...</p>
-        </div>
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Đang tải thông tin sản phẩm...</p>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <div className="detail-product-page">
-        <div className="error-container">
-          <h2>Có lỗi xảy ra</h2>
-          <p>{error}</p>
-          <button className="btn-back" onClick={() => navigate(-1)}>
-            Quay lại
-          </button>
-        </div>
+      <div className="error-container">
+        <h2>Có lỗi xảy ra</h2>
+        <p>{error}</p>
+        <button className="btn-back" onClick={() => navigate(-1)}>
+          Quay lại
+        </button>
       </div>
     );
   }
 
-  // No product found
   if (!product) {
     return (
-      <div className="detail-product-page">
-        <div className="error-container">
-          <h2>Không tìm thấy sản phẩm</h2>
-          <button className="btn-back" onClick={() => navigate(-1)}>
-            Quay lại
-          </button>
-        </div>
+      <div className="error-container">
+        <h2>Không tìm thấy sản phẩm</h2>
+        <button className="btn-back" onClick={() => navigate(-1)}>
+          Quay lại
+        </button>
       </div>
     );
   }
 
-  // Calculate prices
   const discountedPrice = product.discount
     ? product.price * (1 - product.discount / 100)
     : product.price;
 
-  // Get all images
   const images = product.images || [];
   const imageUrls =
     images.length > 0
       ? images.map((img) => getImageUrl([img]))
       : [getImageUrl()];
 
-  const sizes = ["XS", "S", "M", "L", "XL"];
   const colors = ["#000000", "#4B5563", "#8B4513", "#DC143C"];
 
-  // Handlers
-  const handleAddToCart = () => {
-    console.log("Add to cart:", {
-      productId: product.id,
-      size: selectedSize,
-      quantity,
-    });
-    alert(`Đã thêm ${quantity} sản phẩm vào giỏ hàng!`);
+
+  const handleAddToCart = async() => {
+    if (!product?.id) {
+      console.error("Product ID không tồn tại");
+      return;
+    }
+
+    try {
+      const response = await postAddToCart(product.id, quantity);
+      console.log("Thông tin sản phẩm thêm vào cart", response);
+      toast.success('Đã thêm vào giỏ hàng');
+    } catch (error: any) {
+      console.error("Lỗi thêm vào giỏ hàng:", error);
+      toast.error('Không thể thêm vào giỏ hàng. Vui lòng thử lại!');
+    }
   };
 
   const handleBuyNow = () => {
-    console.log("Buy now:", {
-      productId: product.id,
-      size: selectedSize,
-      quantity,
-    });
     alert("Chức năng mua hàng đang được phát triển!");
   };
 
   const handleSimilarProductClick = (similarProduct: Product) => {
-    // Scroll to top
-    window.scrollTo(0, 0);
-    // Navigate with new product
     navigate(`/detail-product/${similarProduct.id}`, {
       state: { product: similarProduct },
+      replace: false,
     });
-    // Reset states
-    setProduct(similarProduct);
-    setSelectedImage(0);
-    setQuantity(1);
-    setActiveTab("description");
   };
 
   return (
     <div className="detail-product-page">
-      {/* Breadcrumb */}
       <div className="breadcrumb">
         <span onClick={() => navigate("/")}>Shop</span>
-        <span className="separator">&gt;</span>
-        <span onClick={() => navigate(-1)}>{product.category || "Hoa"}</span>
-        <span className="separator">&gt;</span>
-        <span className="active">{product.occasion?.[0] || "Sản phẩm"}</span>
+        <span>/</span>
+        <span className="active">{product.occasions?.[0] || product.name}</span>
       </div>
 
-      {/* Main Product Section */}
       <div className="product-main-section">
-        {/* Left: Images */}
         <div className="product-images">
           <div className="thumbnail-list">
             {imageUrls.slice(0, 4).map((url, index) => (
@@ -246,34 +219,25 @@ const DetailProduct: React.FC<DetailProductProps> = ({
             ))}
           </div>
           <div className="main-image">
-            <img
-              src={imageUrls[selectedImage] || imageUrls[0]}
-              alt={product.name}
-            />
+            <img src={imageUrls[selectedImage]} alt={product.name} />
           </div>
         </div>
 
-        {/* Right: Product Info */}
         <div className="product-info">
           <h1 className="product-title">{product.name}</h1>
 
           <div className="product-rating">
-            <div className="stars">
-              {"★★★★★".split("").map((star, i) => (
-                <span key={i} className="star filled">
-                  ★
-                </span>
-              ))}
-            </div>
-            <span className="rating-count">5.0</span>
+            <div className="stars">★★★★★</div>
+            <span className="rating-count">5.0 (100 đánh giá)</span>
             <span className="comment-count">
-              {product.soldCount || 0} đã bán
+              {" "}
+              | {product.soldCount || 0} đã bán
             </span>
           </div>
 
           <div className="product-price-section">
             {product.discount && product.discount > 0 && (
-              <div className="discount-badge">-{product.discount}%</div>
+              <span className="discount-badge">-{product.discount}%</span>
             )}
             <div className="prices">
               {product.discount && product.discount > 0 && (
@@ -285,28 +249,8 @@ const DetailProduct: React.FC<DetailProductProps> = ({
             </div>
           </div>
 
-          <div className="size-selector">
-            <div className="size-header">
-              <span className="label">Chọn kích thước</span>
-              <span className="size-guide">Hướng dẫn chọn size</span>
-            </div>
-            <div className="size-buttons">
-              {sizes.map((size) => (
-                <button
-                  key={size}
-                  className={`size-btn ${
-                    selectedSize === size ? "active" : ""
-                  }`}
-                  onClick={() => setSelectedSize(size)}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="color-selector">
-            <span className="label">Màu sắc có sẵn</span>
+            <span className="label">Màu sắc</span>
             <div className="color-options">
               {colors.map((color, index) => (
                 <div
@@ -339,42 +283,39 @@ const DetailProduct: React.FC<DetailProductProps> = ({
               Thêm vào giỏ hàng
             </button>
             <button className="btn-buy-now" onClick={handleBuyNow}>
-              Mua ngay - {formatPrice(discountedPrice * quantity)}
+              Mua ngay
             </button>
           </div>
 
           <div className="product-features">
             <div className="feature-item">
-              <span className="icon">🔒</span>
-              <span>Thanh toán an toàn</span>
+              <span className="icon">🔒</span> Thanh toán an toàn
             </div>
             <div className="feature-item">
-              <span className="icon">📏</span>
-              <span>Đổi trả miễn phí</span>
+              <span className="icon">📏</span> Đổi trả miễn phí
             </div>
             <div className="feature-item">
-              <span className="icon">🚚</span>
-              <span>Miễn phí vận chuyển</span>
+              <span className="icon">🚚</span> Miễn phí vận chuyển
             </div>
             <div className="feature-item">
-              <span className="icon">✓</span>
-              <span>Chất lượng đảm bảo</span>
+              <span className="icon">✓</span> Hàng chính hãng
             </div>
           </div>
 
-          {product.stock !== undefined && (
-            <div className="stock-info">
-              {product.stock > 0 ? (
-                <span className="in-stock">Còn {product.stock} sản phẩm</span>
-              ) : (
-                <span className="out-of-stock">Hết hàng</span>
-              )}
-            </div>
-          )}
+          <div className="stock-info">
+            {product.stock !== undefined && (
+              <>
+                {product.stock > 0 ? (
+                  <span className="in-stock">Còn {product.stock} sản phẩm</span>
+                ) : (
+                  <span className="out-of-stock">Hết hàng</span>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Product Description Tabs */}
       <div className="product-description-section">
         <div className="tabs">
           <button
@@ -408,37 +349,24 @@ const DetailProduct: React.FC<DetailProductProps> = ({
               <div className="product-details-table">
                 <div className="detail-row">
                   <span className="detail-label">Danh mục</span>
-                  <span className="detail-value">
-                    {product.category || "Hoa tươi"}
-                  </span>
+                  <span className="detail-value">{product.category}</span>
                   <span className="detail-label">Dịp</span>
                   <span className="detail-value">
-                    {product.occasion?.join(", ") || "Mọi dịp"}
+                    {product.occasions?.join(", ")}
                   </span>
                 </div>
                 <div className="detail-row">
-                  <span className="detail-label">Màu sắc</span>
-                  <span className="detail-value">
-                    {product.color || "Đa dạng"}
-                  </span>
                   <span className="detail-label">Tình trạng</span>
                   <span className="detail-value">
                     {product.status === 1 ? "Còn hàng" : "Hết hàng"}
                   </span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Đã bán</span>
-                  <span className="detail-value">
-                    {product.soldCount || 0} sản phẩm
-                  </span>
                   <span className="detail-label">Kho</span>
-                  <span className="detail-value">
-                    {product.stock || 0} sản phẩm
-                  </span>
+                  <span className="detail-value">{product.stock}</span>
                 </div>
               </div>
             </div>
           )}
+
           {activeTab === "comments" && (
             <div className="comments-content">
               <p className="empty-state">
@@ -447,6 +375,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
               <button className="btn-review">Viết đánh giá đầu tiên</button>
             </div>
           )}
+
           {activeTab === "qa" && (
             <div className="qa-content">
               <p className="empty-state">Chưa có câu hỏi nào.</p>
@@ -456,16 +385,6 @@ const DetailProduct: React.FC<DetailProductProps> = ({
         </div>
       </div>
 
-      {/* Video/Image Section */}
-      <div className="video-section">
-        <div className="video-container">
-          <img src={imageUrls[0]} alt={product.name} />
-          <div className="play-button">▶</div>
-          <div className="video-text">{product.name}</div>
-        </div>
-      </div>
-
-      {/* Similar Products */}
       {similarProducts.length > 0 && (
         <div className="similar-products-section">
           <h2>Sản phẩm tương tự</h2>
@@ -482,7 +401,6 @@ const DetailProduct: React.FC<DetailProductProps> = ({
                     className="wishlist-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log("Add to wishlist:", item.id);
                     }}
                   >
                     ♡

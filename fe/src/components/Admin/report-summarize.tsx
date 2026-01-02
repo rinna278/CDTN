@@ -283,8 +283,8 @@ const ReportSummarize = () => {
       </div>
       <div className='content-bottom-report'>
           <div className="top-selling-products">
-            <h3>Sản phẩm bán chạy nhất</h3>
-            <p className="sub-title">Top 4 sản phẩm có doanh số cao nhất</p>
+            <h3>Danh mục bán chạy nhất</h3>
+            <p className="sub-title">Top 4 danh mục có doanh số cao nhất</p>
 
             <div className="product-item">
               <div className="rank">1</div>

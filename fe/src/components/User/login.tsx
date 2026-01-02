@@ -196,8 +196,8 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
       {/* Modal Forgot Password */}
       {showForgotModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+          <div className="modal-content-login" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-login">
               <h3>Forgot Password</h3>
               <button className="close-btn" onClick={handleCloseModal}>
                 ×

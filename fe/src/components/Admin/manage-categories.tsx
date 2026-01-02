@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Edit2, Trash2, Plus } from "lucide-react";
 import "./manage-categories.css";
-import ModalConfirmDeleteCategory from "./modal-confirm-delete-category"; // ✅ Import modal
+import ModalConfirmDeleteCategory from "./modal-confirm-delete-category";
 import { toast } from "react-toastify";
 
 interface Category {
@@ -36,7 +36,7 @@ const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) => {
     } else {
       // Danh mục mặc định
       const defaultCategories: Category[] = [
-        { id: "1", name: "Hoa Hồng", productCount: 12 },
+        { id: "1", name: "Hoa Hồng", productCount: 0 },
         { id: "2", name: "Hoa Tulip", productCount: 8 },
         { id: "3", name: "Hoa Cúc", productCount: 15 },
         { id: "4", name: "Hoa Ly", productCount: 10 },
@@ -115,7 +115,7 @@ const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) => {
           : cat
       );
       saveCategories(updatedCategories);
-      toast.success('Cập nhật danh mục thành công')
+      toast.success("Cập nhật danh mục thành công");
     } else {
       // Thêm danh mục mới
       const newCategory: Category = {
@@ -124,7 +124,7 @@ const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) => {
         productCount: 0,
       };
       saveCategories([...categories, newCategory]);
-      toast.success('Thêm danh mục thành công');
+      toast.success("Thêm danh mục thành công");
     }
 
     handleCloseModal();
@@ -158,6 +158,7 @@ const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) => {
       setIsDeleting(false);
       setIsDeleteModalOpen(false);
       setCategoryToDelete(null);
+      toast.success("Đã xóa danh mục");
     }, 500);
   };
 
@@ -181,13 +182,32 @@ const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) => {
             <div key={category.id} className="item-cart-category">
               <h4>{category.name}</h4>
               <p>{category.productCount} sản phẩm</p>
+
               <div className="btn_action">
                 <button onClick={() => handleOpenEditModal(category)}>
                   <Edit2 size={16} />
                   Sửa
                 </button>
-                <button onClick={() => handleOpenDeleteModal(category)}>
-                  <Trash2 size={16} />
+
+                {/* ✅ LOGIC SỬA ĐỔI TẠI ĐÂY */}
+                <button
+                  onClick={() => handleOpenDeleteModal(category)}
+                  disabled={category.productCount > 0} 
+                  title={
+                    category.productCount > 0
+                      ? "Không thể xóa danh mục đang có sản phẩm"
+                      : "Xóa danh mục"
+                  }
+                  style={{
+                    opacity: category.productCount > 0 ? 0.5 : 1,
+                    cursor:
+                      category.productCount > 0 ? "not-allowed" : "pointer",
+                  }}
+                >
+                  <Trash2 style={{
+                    opacity: category.productCount > 0 ? 0.5 : 1,
+                    cursor: category.productCount > 0 ? "not-allowed" : "pointer",
+                  }} size={16} />
                   Xóa
                 </button>
               </div>
@@ -224,7 +244,10 @@ const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) => {
             </div>
 
             <div className="modal-footer-category">
-              <button className="btn-cancel-category" onClick={handleCloseModal}>
+              <button
+                className="btn-cancel-category"
+                onClick={handleCloseModal}
+              >
                 Hủy
               </button>
               <button className="btn-submit" onClick={handleSubmit}>

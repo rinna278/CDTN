@@ -5,7 +5,7 @@ export interface Product {
   price: number;
   discount?: number;
   images?: any[];
-  occasion?: string[];
+  occasions?: string[];
   category: string;
   color?: string;
   description?: string;
@@ -72,6 +72,8 @@ export interface Ward {
 
 //Mẫu response trả về cả 3 tỉnh, huyện, xã gộp vào (update profile)
 export interface AddressData {
+  recipientName: string;
+  phoneNumber: string;
   street: string;
   ward: string;
   district: string;
@@ -94,4 +96,29 @@ export interface GetProductsParams {
   color?: string;
   minPrice?: number;
   maxPrice?: number;
+}
+
+
+
+export interface CartItem {
+  id: string;
+  productId: string;
+  productName: string;
+  productImage: string;
+  quantity: number;
+  price: number;
+  discount?: number;
+  subtotal: number;
+  stock: number;
+}
+
+export interface Cart {
+  id: string;
+  userId: string;
+  status: number;
+  totalItems: number;
+  totalPrice: number;
+  items: CartItem[];
+  createdAt: string;
+  updatedAt: string;
 }

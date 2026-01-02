@@ -15,7 +15,6 @@ import codauThuImage from '../../assets/co-dau-thu.png';
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from "../../redux/store";
-import { getAllProduct } from '../../services/apiService';
 
 // Danh sách các ảnh bạn muốn hiển thị
 const sliderImages = [
@@ -95,7 +94,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -112,7 +111,7 @@ const HomePage = () => {
                             <h4>690.000VND</h4>
                             <h3>560.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -129,7 +128,7 @@ const HomePage = () => {
                             <h4>710.000VND</h4>
                             <h3>630.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -146,7 +145,7 @@ const HomePage = () => {
                             <h4>810.000VND</h4>
                             <h3>720.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -163,7 +162,7 @@ const HomePage = () => {
                             <h4>760.000VND</h4>
                             <h3>630.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -180,7 +179,7 @@ const HomePage = () => {
                             <h4>800.000VND</h4>
                             <h3>660.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -197,7 +196,7 @@ const HomePage = () => {
                             <h4>830.000VND</h4>
                             <h3>660.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -214,7 +213,7 @@ const HomePage = () => {
                             <h4>1.110.000VND</h4>
                             <h3>910.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -231,7 +230,7 @@ const HomePage = () => {
                             {/* <h4>Đã hết đợt giảm giá</h4> */}
                             <h3>1.200.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -248,7 +247,7 @@ const HomePage = () => {
                             <h4>530.000VND</h4>
                             <h3>490.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -268,7 +267,7 @@ const HomePage = () => {
                             <h4>740.000VND</h4>
                             <h3>680.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -285,7 +284,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -302,7 +301,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -319,7 +318,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -336,7 +335,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -353,7 +352,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -370,7 +369,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -387,7 +386,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -404,7 +403,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -421,7 +420,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -441,7 +440,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -458,7 +457,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -475,7 +474,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -492,7 +491,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -509,7 +508,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -526,7 +525,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -543,7 +542,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -560,7 +559,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -577,7 +576,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>
@@ -594,7 +593,7 @@ const HomePage = () => {
                             <h4>590.000VND</h4>
                             <h3>530.000VND</h3>
                             <div className='btn'>
-                                <button onClick={handleAddCart}>Thêm vào giỏ</button>
+                                <button onClick={handleAddCart}>Xem chi tiết</button>
                                 <button>Mua hàng</button>
                             </div>
                         </div>

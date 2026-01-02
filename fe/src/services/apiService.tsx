@@ -201,7 +201,7 @@ const updateProduct = async (
   description?: string,
   discount?: number,
   category?: string,
-  images?: string[],
+  images?: any[],
   color?: string,
   occasions?: string[],
   status?: number
@@ -283,6 +283,35 @@ const getSignedUploadParams = async () => {
 };
 
 
+//Thêm sản phẩm vào giỏ
+const postAddToCart = async (productID: string, quantity: number) => {
+  const response = await instance.post('api/v1/cart/items',{
+    productId : productID,
+    quantity: quantity
+  })
+  return response.data;
+}
+
+//Lấy tất cả item trong giỏ
+const getAllItemInCart = async() => {
+  const response = await instance.get('api/v1/cart');
+  return response.data;
+}
+
+const updateCart = async (itemId: string, quantity: number) => {
+  const response = await instance.patch(`api/v1/cart/items/${itemId}`,{
+    quantity: quantity
+  })
+  return response.data;
+}
+
+
+const deleteItemInCart = async (itemId: string) => {
+  const response = await instance.delete(`api/v1/cart/items/${itemId}`)
+  return response.data;
+}
+
+
 
 
 export {
@@ -314,5 +343,9 @@ export {
   createAddress,
   updateAddress,
   deleteAddress,
-  setAsDefaultAddress
+  setAsDefaultAddress,
+  postAddToCart,
+  getAllItemInCart,
+  updateCart,
+  deleteItemInCart,
 };

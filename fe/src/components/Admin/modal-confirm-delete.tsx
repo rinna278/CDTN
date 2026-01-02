@@ -21,7 +21,7 @@ const ModalConfirmDelete = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-container-confirm-delete-product" onClick={(e) => e.stopPropagation()}>
         {/* Header with Back Button */}
         <div className="modal-header">
           <button

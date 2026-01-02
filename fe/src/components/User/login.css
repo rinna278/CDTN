@@ -149,7 +149,7 @@
           z-index: 1000;
         }
 
-        .modal-content {
+        .modal-content-login {
           background: white;
           border-radius: 8px;
           width: 90%;
@@ -157,7 +157,7 @@
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .modal-header {
+        .modal-header-login {
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -165,7 +165,7 @@
           border-bottom: 1px solid #e5e7eb;
         }
 
-        .modal-header h3 {
+        .modal-header-login h3 {
           margin: 0;
           font-size: 20px;
           font-weight: 600;
