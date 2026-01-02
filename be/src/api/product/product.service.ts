@@ -10,7 +10,6 @@ import { ProductEntity } from './product.entity';
 import { BaseService } from '../../share/database/base.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { UpdateStockDto } from './dto/update-stock.dto';
 import { ProductStatus } from './product.constant';
 import { QueryProductDto } from './dto/query-product.dto';
 
@@ -27,7 +26,6 @@ export class ProductService extends BaseService<ProductEntity> {
     createDto: CreateProductDto,
     userId: string,
   ): Promise<ProductEntity> {
-    // Kiểm tra discount hợp lệ
     if (
       createDto.discount &&
       (createDto.discount < 0 || createDto.discount > 100)
@@ -35,8 +33,20 @@ export class ProductService extends BaseService<ProductEntity> {
       throw new BadRequestException('Discount must be between 0 and 100');
     }
 
+    // Validate ít nhất phải có 1 variant
+    if (!createDto.variants || createDto.variants.length === 0) {
+      throw new BadRequestException('Product must have at least one variant');
+    }
+
+    // Tính tổng stock từ các variants
+    const totalStock = createDto.variants.reduce(
+      (sum, variant) => sum + variant.stock,
+      0,
+    );
+
     const product = this.productRepository.create({
       ...createDto,
+      totalStock,
       createdBy: userId,
       updatedBy: userId,
     });
@@ -61,12 +71,10 @@ export class ProductService extends BaseService<ProductEntity> {
 
     const queryBuilder = this.productRepository.createQueryBuilder('product');
 
-    // Filter by status (nếu không truyền status thì lấy tất cả)
     if (status !== undefined) {
       queryBuilder.andWhere('product.status = :status', { status });
     }
 
-    // Search by name or description
     if (search) {
       queryBuilder.andWhere(
         '(product.name LIKE :search OR product.description LIKE :search)',
@@ -74,24 +82,27 @@ export class ProductService extends BaseService<ProductEntity> {
       );
     }
 
-    // Filter by category
     if (category) {
       queryBuilder.andWhere('product.category = :category', { category });
     }
 
-    // Filter by color
+    // Filter by color - check trong variants
     if (color) {
-      queryBuilder.andWhere('product.color = :color', { color });
+      queryBuilder.andWhere(
+        `JSON_SEARCH(product.variants, 'one', :color, NULL, '$[*].color') IS NOT NULL`,
+        { color },
+      );
     }
 
-    // Filter by occasions - check if any occasion matches (OR logic)
     if (occasions && occasions.length > 0) {
       const occasionConditions = occasions
-        .map((_, index) => `product.occasions::jsonb ? :occasion${index}`)
+        .map(
+          (_, index) => `JSON_CONTAINS(product.occasions, :occasion${index})`,
+        )
         .join(' OR ');
       const params = occasions.reduce(
         (acc, occasion, index) => {
-          acc[`occasion${index}`] = occasion;
+          acc[`occasion${index}`] = JSON.stringify(occasion);
           return acc;
         },
         {} as Record<string, string>,
@@ -99,7 +110,6 @@ export class ProductService extends BaseService<ProductEntity> {
       queryBuilder.andWhere(`(${occasionConditions})`, params);
     }
 
-    // Filter by price range
     if (minPrice !== undefined) {
       queryBuilder.andWhere('product.price >= :minPrice', { minPrice });
     }
@@ -108,7 +118,6 @@ export class ProductService extends BaseService<ProductEntity> {
       queryBuilder.andWhere('product.price <= :maxPrice', { maxPrice });
     }
 
-    // Sorting
     const allowedSortFields = ['price', 'createdAt', 'soldCount', 'name'];
     const sortColumn = allowedSortFields.includes(sortBy)
       ? sortBy
@@ -118,7 +127,6 @@ export class ProductService extends BaseService<ProductEntity> {
       (sortOrder as 'ASC' | 'DESC') || 'DESC',
     );
 
-    // Pagination
     queryBuilder.skip((page - 1) * limit).take(limit);
 
     const [data, total] = await queryBuilder.getManyAndCount();
@@ -153,9 +161,8 @@ export class ProductService extends BaseService<ProductEntity> {
     updateDto: UpdateProductDto,
     userId: string,
   ): Promise<boolean> {
-    const product = await this.findOne(id);
+    await this.findOne(id);
 
-    // Kiểm tra discount hợp lệ
     if (
       updateDto.discount !== undefined &&
       (updateDto.discount < 0 || updateDto.discount > 100)
@@ -163,74 +170,105 @@ export class ProductService extends BaseService<ProductEntity> {
       throw new BadRequestException('Discount must be between 0 and 100');
     }
 
-    // Nếu cập nhật stock = 0 thì tự động chuyển status thành OUT_OF_STOCK
-    if (updateDto.stock === 0) {
-      updateDto.status = ProductStatus.OUT_OF_STOCK;
-    }
-
-    // Nếu cập nhật stock > 0 và status đang là OUT_OF_STOCK thì chuyển về ACTIVE
-    if (
-      updateDto.stock &&
-      updateDto.stock > 0 &&
-      product.status === ProductStatus.OUT_OF_STOCK
-    ) {
-      updateDto.status = ProductStatus.ACTIVE;
+    // Nếu update variants, tính lại totalStock
+    let totalStock: number | undefined;
+    if (updateDto.variants) {
+      totalStock = updateDto.variants.reduce(
+        (sum, variant) => sum + variant.stock,
+        0,
+      );
     }
 
     const result = await this.productRepository.update(id, {
       ...updateDto,
+      ...(totalStock !== undefined && { totalStock }),
       updatedBy: userId,
     });
 
-    // Return true if rows were affected
     return (result?.affected ?? 0) > 0;
   }
 
   async remove(id: string): Promise<boolean> {
-    await this.findOne(id); // Verify product exists
+    await this.findOne(id);
     await this.productRepository.softDelete(id);
     return true;
   }
 
-  async updateStock(
-    id: string,
-    updateStockDto: UpdateStockDto,
+  // Cập nhật stock cho một variant cụ thể
+  async updateVariantStock(
+    productId: string,
+    color: string,
+    quantity: number, // số lượng thay đổi (+ hoặc -)
   ): Promise<ProductEntity> {
-    const product = await this.findOne(id);
-    const { quantity } = updateStockDto;
+    const product = await this.findOne(productId);
 
-    // Kiểm tra nếu giảm stock thì không được vượt quá số lượng hiện có
-    if (quantity < 0 && Math.abs(quantity) > product.stock) {
+    const variantIndex = product.variants.findIndex((v) => v.color === color);
+
+    if (variantIndex === -1) {
+      throw new NotFoundException(
+        `Variant with color "${color}" not found in product`,
+      );
+    }
+
+    const variant = product.variants[variantIndex];
+
+    // Kiểm tra nếu giảm stock
+    if (quantity < 0 && Math.abs(quantity) > variant.stock) {
       throw new BadRequestException(
-        `Not enough stock. Current stock: ${product.stock}, requested: ${Math.abs(quantity)}`,
+        `Not enough stock for color "${color}". Current stock: ${variant.stock}, requested: ${Math.abs(quantity)}`,
       );
     }
 
     // Cập nhật stock
-    product.stock += quantity;
+    variant.stock += quantity;
+    product.variants[variantIndex] = variant;
 
-    // Auto update status based on stock
-    if (product.stock === 0) {
+    // Tính lại totalStock
+    product.totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+
+    // Kiểm tra nếu tất cả variants hết hàng
+    if (product.totalStock === 0) {
       product.status = ProductStatus.OUT_OF_STOCK;
-    } else if (
-      product.stock > 0 &&
-      product.status === ProductStatus.OUT_OF_STOCK
-    ) {
+    } else if (product.status === ProductStatus.OUT_OF_STOCK) {
       product.status = ProductStatus.ACTIVE;
     }
 
     return await this.productRepository.save(product);
   }
 
-  async incrementSoldCount(id: string, quantity: number): Promise<void> {
+  // Tăng sold count và giảm stock
+  async incrementSoldCount(
+    id: string,
+    color: string,
+    quantity: number,
+  ): Promise<void> {
     await this.productRepository.increment({ id }, 'soldCount', quantity);
-
-    // Verify product exists and update stock
-    await this.findOne(id);
-    await this.updateStock(id, { quantity: -quantity });
+    await this.updateVariantStock(id, color, -quantity);
   }
 
-  // Lấy danh sách sản phẩm bán chạy
+  // Lấy danh sách màu có sẵn (còn stock > 0)
+  async getAvailableColors(productId: string): Promise<string[]> {
+    const product = await this.findOne(productId);
+    return product.variants.filter((v) => v.stock > 0).map((v) => v.color);
+  }
+
+  // Lấy variant cụ thể theo màu
+  async getVariantByColor(productId: string, color: string) {
+    const product = await this.findOne(productId);
+    const variant = product.variants.find((v) => v.color === color);
+
+    if (!variant) {
+      throw new NotFoundException(`Variant with color "${color}" not found`);
+    }
+
+    return variant;
+  }
+
+  // Lấy tổng stock của tất cả variants
+  getTotalStock(product: ProductEntity): number {
+    return product.variants.reduce((sum, variant) => sum + variant.stock, 0);
+  }
+
   async getBestSellers(limit: number = 10): Promise<ProductEntity[]> {
     return await this.productRepository.find({
       where: { status: ProductStatus.ACTIVE },
@@ -239,7 +277,6 @@ export class ProductService extends BaseService<ProductEntity> {
     });
   }
 
-  // Lấy danh sách sản phẩm mới nhất
   async getLatestProducts(limit: number = 10): Promise<ProductEntity[]> {
     return await this.productRepository.find({
       where: { status: ProductStatus.ACTIVE },
@@ -248,7 +285,6 @@ export class ProductService extends BaseService<ProductEntity> {
     });
   }
 
-  // Lấy danh sách sản phẩm giảm giá
   async getDiscountProducts(limit: number = 10): Promise<ProductEntity[]> {
     const queryBuilder = this.productRepository.createQueryBuilder('product');
 
@@ -260,7 +296,6 @@ export class ProductService extends BaseService<ProductEntity> {
       .getMany();
   }
 
-  // Lấy danh sách categories
   async getCategories(): Promise<string[]> {
     const result = await this.productRepository
       .createQueryBuilder('product')
@@ -272,19 +307,24 @@ export class ProductService extends BaseService<ProductEntity> {
     return result.map((item) => item.category);
   }
 
-  // Lấy danh sách colors
+  // Lấy tất cả màu có sẵn (từ tất cả products)
   async getColors(): Promise<string[]> {
-    const result = await this.productRepository
-      .createQueryBuilder('product')
-      .select('DISTINCT product.color', 'color')
-      .where('product.color IS NOT NULL')
-      .andWhere('product.status = :status', { status: ProductStatus.ACTIVE })
-      .getRawMany();
+    const products = await this.productRepository.find({
+      where: { status: ProductStatus.ACTIVE },
+    });
 
-    return result.map((item) => item.color);
+    const colorsSet = new Set<string>();
+    products.forEach((product) => {
+      product.variants.forEach((variant) => {
+        if (variant.stock > 0) {
+          colorsSet.add(variant.color);
+        }
+      });
+    });
+
+    return Array.from(colorsSet);
   }
 
-  // Lấy sản phẩm liên quan (cùng category hoặc occasion)
   async getRelatedProducts(
     id: string,
     limit: number = 6,
@@ -296,13 +336,7 @@ export class ProductService extends BaseService<ProductEntity> {
     queryBuilder
       .where('product.id != :id', { id })
       .andWhere('product.status = :status', { status: ProductStatus.ACTIVE })
-      .andWhere(
-        '(product.category = :category OR JSON_OVERLAPS(product.occasions, :occasions))',
-        {
-          category: product.category,
-          occasions: JSON.stringify(product.occasions || []),
-        },
-      )
+      .andWhere('product.category = :category', { category: product.category })
       .orderBy('RAND()')
       .take(limit);
 

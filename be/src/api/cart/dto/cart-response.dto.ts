@@ -16,6 +16,10 @@ export class CartItemResponseDto {
 
   @ApiProperty()
   @Expose()
+  color: string;
+
+  @ApiProperty()
+  @Expose()
   productImage: string;
 
   @ApiProperty()

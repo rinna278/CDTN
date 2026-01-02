@@ -12,6 +12,9 @@ export class CartDetailEntity extends BaseEntity {
   @Column({ type: 'uuid', name: 'product_id' })
   productId: string;
 
+  @Column({ type: 'varchar', length: 50 })
+  color: string;
+
   @Column({ type: 'int', default: 1 })
   quantity: number;
 

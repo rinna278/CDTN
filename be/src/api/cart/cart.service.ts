@@ -1,3 +1,4 @@
+// cart.service.ts
 import {
   BadRequestException,
   Injectable,
@@ -51,9 +52,9 @@ export class CartService {
     userId: string,
     addToCartDto: AddToCartDto,
   ): Promise<CartResponseDto> {
-    const { productId, quantity } = addToCartDto;
+    const { productId, color, quantity } = addToCartDto;
 
-    // Validate product exists and has stock
+    // Validate product tồn tại
     const product = await this.productRepository.findOne({
       where: { id: productId },
     });
@@ -62,25 +63,37 @@ export class CartService {
       throw new NotFoundException(`Product with ID ${productId} not found`);
     }
 
-    if (product.stock < quantity) {
+    // Tìm variant theo màu
+    const variant = product.variants.find((v) => v.color === color);
+
+    if (!variant) {
+      throw new NotFoundException(
+        `Color "${color}" not available for this product`,
+      );
+    }
+
+    // Kiểm tra stock của variant
+    if (variant.stock < quantity) {
       throw new BadRequestException(
-        `Not enough stock. Available: ${product.stock}`,
+        `Not enough stock for color "${color}". Available: ${variant.stock}`,
       );
     }
 
     // Get or create cart
     const cart = await this.getOrCreateCart(userId);
 
-    // Check if product already exists in cart
-    let cartDetail = cart.items?.find((item) => item.productId === productId);
+    // Kiểm tra đã có product + color này trong cart chưa
+    let cartDetail = cart.items?.find(
+      (item) => item.productId === productId && item.color === color,
+    );
 
     if (cartDetail) {
       // Update existing cart item
       const newQuantity = cartDetail.quantity + quantity;
 
-      if (product.stock < newQuantity) {
+      if (variant.stock < newQuantity) {
         throw new BadRequestException(
-          `Not enough stock. Available: ${product.stock}, Current in cart: ${cartDetail.quantity}`,
+          `Not enough stock for color "${color}". Available: ${variant.stock}, Current in cart: ${cartDetail.quantity}`,
         );
       }
 
@@ -96,6 +109,7 @@ export class CartService {
       cartDetail = this.cartDetailRepository.create({
         cartId: cart.id,
         productId: product.id,
+        color: color,
         quantity,
         price: Number(product.price),
         discount: product.discount,
@@ -137,10 +151,21 @@ export class CartService {
       throw new NotFoundException('Cart item not found');
     }
 
+    // Tìm variant theo màu
+    const variant = cartDetail.product.variants.find(
+      (v) => v.color === cartDetail.color,
+    );
+
+    if (!variant) {
+      throw new NotFoundException(
+        `Color "${cartDetail.color}" no longer available`,
+      );
+    }
+
     // Validate stock
-    if (cartDetail.product.stock < updateDto.quantity) {
+    if (variant.stock < updateDto.quantity) {
       throw new BadRequestException(
-        `Not enough stock. Available: ${cartDetail.product.stock}`,
+        `Not enough stock for color "${cartDetail.color}". Available: ${variant.stock}`,
       );
     }
 
@@ -199,10 +224,8 @@ export class CartService {
       return true;
     }
 
-    // Xóa tất cả cart items
     await this.cartDetailRepository.delete({ cartId: cart.id });
 
-    // Reset cart totals
     cart.totalItems = 0;
     cart.totalPrice = 0;
 
@@ -246,16 +269,22 @@ export class CartService {
   private transformCartToResponse(cart: CartEntity): CartResponseDto {
     const items: CartItemResponseDto[] =
       cart.items?.map((item) => {
+        // Tìm variant tương ứng để lấy ảnh đúng màu
+        const variant = item.product?.variants?.find(
+          (v) => v.color === item.color,
+        );
+
         const itemResponse = plainToInstance(CartItemResponseDto, {
           id: item.id,
           productId: item.productId,
           productName: item.product?.name || '',
-          productImage: item.product?.images?.[0]?.url || '',
+          color: item.color,
+          productImage: variant?.image?.url || '', // Lấy ảnh theo màu
           quantity: item.quantity,
           price: Number(item.price),
           discount: item.discount,
           subtotal: Number(item.subtotal),
-          stock: item.product?.stock || 0,
+          stock: variant?.stock || 0, // Stock theo màu
         });
         return itemResponse;
       }) || [];

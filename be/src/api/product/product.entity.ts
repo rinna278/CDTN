@@ -5,6 +5,7 @@ import {
   ProductStatus,
   PRODUCT_CONST,
   IProductImage,
+  IProductVariant,
 } from './product.constant';
 import { BaseEntity } from '../../share/database/base.entity';
 
@@ -23,7 +24,7 @@ export class ProductEntity extends BaseEntity {
   discount: number;
 
   @Column({ type: 'int', default: 0 })
-  stock: number;
+  totalStock: number;
 
   @Column({ length: 100, nullable: true })
   category: string;
@@ -31,8 +32,8 @@ export class ProductEntity extends BaseEntity {
   @Column({ type: 'simple-json', nullable: true })
   images: IProductImage[];
 
-  @Column({ length: 50, nullable: true })
-  color: string;
+  @Column({ type: 'simple-json' })
+  variants: IProductVariant[];
 
   @Column({ type: 'simple-json', nullable: true })
   occasions: string[];

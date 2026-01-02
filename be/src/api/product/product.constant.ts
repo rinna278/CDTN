@@ -13,6 +13,12 @@ export interface IProductImage {
   publicId: string;
 }
 
+export interface IProductVariant {
+  color: string; // Tên màu: "Đỏ", "Xanh", "Trắng"
+  image: IProductImage;
+  stock: number; // Số lượng tồn kho của màu này
+}
+
 export enum ProductStatus {
   ACTIVE = 1,
   INACTIVE = 0,
@@ -37,15 +43,36 @@ export const PRODUCT_SWAGGER_RESPONSE = {
     schema: {
       example: {
         id: 'uuid',
-        name: 'Product name',
-        description: 'Product description',
+        name: 'Hoa Hồng Ecuador',
+        description: 'Hoa hồng nhập khẩu cao cấp',
         price: 100000,
         discount: 10,
-        stock: 50,
         category: 'Flower',
-        images: ['image1.jpg', 'image2.jpg'],
-        color: 'Red',
+        // ẢNH CHUNG CỦA PRODUCT (hiển thị đầu tiên)
+        images: [
+          { url: 'main-1.jpg', publicId: 'products/main-1' },
+          { url: 'main-2.jpg', publicId: 'products/main-2' },
+          { url: 'main-3.jpg', publicId: 'products/main-3' },
+        ],
         occasions: ['Birthday', 'Anniversary'],
+        // CÁC VARIANTS - MỖI MÀU CÓ 1 ẢNH RIÊNG
+        variants: [
+          {
+            color: 'Đỏ',
+            image: { url: 'red-rose.jpg', publicId: 'products/red-rose' },
+            stock: 50,
+          },
+          {
+            color: 'Trắng',
+            image: { url: 'white-rose.jpg', publicId: 'products/white-rose' },
+            stock: 30,
+          },
+          {
+            color: 'Hồng',
+            image: { url: 'pink-rose.jpg', publicId: 'products/pink-rose' },
+            stock: 40,
+          },
+        ],
         status: 1,
         soldCount: 5,
         createdAt: '2024-01-01T00:00:00Z',
@@ -55,24 +82,6 @@ export const PRODUCT_SWAGGER_RESPONSE = {
   },
   CREATE_SUCCESS: {
     description: 'Product created successfully',
-    schema: {
-      example: {
-        id: 'uuid',
-        name: 'New Product',
-        description: 'Product description',
-        price: 100000,
-        discount: 0,
-        stock: 100,
-        category: 'Flower',
-        images: [],
-        color: 'Red',
-        occasions: [],
-        status: 1,
-        soldCount: 0,
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
-      },
-    },
   },
   UPDATE_SUCCESS: {
     description: 'Product updated successfully',
