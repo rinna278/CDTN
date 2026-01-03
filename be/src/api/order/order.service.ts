@@ -82,6 +82,14 @@ export class OrderService {
     // 1. Lấy cart
     const cart = await this.cartService.getCart(userId);
 
+    const checkedItems = cart.items?.filter((item) => item.isChecked) || [];
+
+    if (checkedItems.length === 0) {
+      throw new BadRequestException(
+        'Vui lòng chọn ít nhất 1 sản phẩm để đặt hàng',
+      );
+    }
+
     if (!cart.items || cart.items.length === 0) {
       throw new BadRequestException(ERROR_ORDER.CART_EMPTY.MESSAGE);
     }
@@ -107,15 +115,22 @@ export class OrderService {
     }
 
     // 4. Tính toán
-    const subtotal = cart.totalPrice;
-    const discountAmount = 0; // TODO: Apply discount code logic
+    const subtotal = checkedItems.reduce(
+      (sum, item) => sum + Number(item.subtotal),
+      0,
+    );
+    const totalItems = checkedItems.reduce(
+      (sum, item) => sum + item.quantity,
+      0,
+    );
+    const discountAmount = 0;
     const shippingFee = this.calculateShippingFee(address.city, subtotal);
     const totalAmount = subtotal - discountAmount + shippingFee;
 
     // 5. Generate order code
     const orderCode = await this.generateOrderCode();
 
-    // 6. Tạo order (chưa có items)
+    // 6. Tạo order
     const order = this.orderRepository.create({
       orderCode,
       userId,
@@ -126,7 +141,7 @@ export class OrderService {
       district: address.district,
       city: address.city,
       notes: createDto.notes,
-      totalItems: cart.totalItems,
+      totalItems,
       subtotal,
       discountAmount,
       discountCode: createDto.discountCode,
@@ -141,7 +156,7 @@ export class OrderService {
     const savedOrder = await this.orderRepository.save(order);
 
     // 8. Tạo order details với orderId
-    const orderDetails = cart.items.map((item) =>
+    const orderDetails = checkedItems.map((item) =>
       this.orderDetailRepository.create({
         orderId: savedOrder.id,
         productId: item.productId,
@@ -166,16 +181,16 @@ export class OrderService {
 
     // 11. Xử lý theo payment method
     if (createDto.paymentMethod === PaymentMethod.COD) {
-      // COD: Giảm stock ngay, clear cart
-      for (const item of cart.items) {
+      for (const item of checkedItems) {
         await this.productService.incrementSoldCount(
           item.productId,
           item.color,
           item.quantity,
         );
-      }
 
-      await this.cartService.clearCart(userId);
+        // Xóa item khỏi cart
+        await this.cartService.removeCartItem(userId, item.id);
+      }
 
       // TODO: Send email confirmation
 
@@ -263,9 +278,17 @@ export class OrderService {
       }
 
       // Clear cart
-      await this.cartService.clearCart(order.userId);
-
-      // TODO: Send email
+      const cart = await this.cartService.getCart(order.userId);
+      for (const orderItem of order.items) {
+        const cartItem = cart.items.find(
+          (ci) =>
+            ci.productId === orderItem.productId &&
+            ci.color === orderItem.color,
+        );
+        if (cartItem) {
+          await this.cartService.removeCartItem(order.userId, cartItem.id);
+        }
+      }
 
       return this.transformToResponse(order);
     } else {

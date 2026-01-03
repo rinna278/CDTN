@@ -76,7 +76,6 @@ export class AddressResponseDto {
 
   @ApiProperty()
   street: string;
-  
 
   @ApiProperty()
   ward: string;
