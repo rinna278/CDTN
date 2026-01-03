@@ -9,6 +9,8 @@ import { AddressEntity } from 'src/api/user/address.entity';
 import { CartEntity } from 'src/api/cart/cart.entity';
 import { CartDetailEntity } from 'src/api/cart-detail/cart-detail.entity';
 import { ProductEntity } from 'src/api/product/product.entity';
+import { OrderEntity } from 'src/api/order/order.entity';
+import { OrderDetailEntity } from 'src/api/order-detail/order-detail.entity';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { ProductEntity } from 'src/api/product/product.entity';
           CartEntity,
           CartDetailEntity,
           ProductEntity,
+          OrderEntity,
+          OrderDetailEntity,
         ],
         migrations: [__dirname + '/../../migrations/*.ts'],
         autoLoadEntities: true,

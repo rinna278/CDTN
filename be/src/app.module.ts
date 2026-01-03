@@ -13,6 +13,7 @@ import { ProductModule } from './api/product/product.module';
 import { SeederModule } from './api/seed/seeder.module';
 import { UploadModule } from './api/upload/upload.module';
 import { CartModule } from './api/cart/cart.module';
+import { OrderModule } from './api/order/order.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { CartModule } from './api/cart/cart.module';
     SeederModule,
     UploadModule,
     CartModule,
+    OrderModule,
   ],
 })
 export class AppModule {
