@@ -204,3 +204,136 @@
 .content-right-cart .payment p{
     color: gainsboro;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ✅ Thêm vào cuối file cart.css của bạn */
+
+/* Smooth transition cho buttons */
+.action-item-cart-product button {
+  transition: all 0.2s ease;
+}
+
+.action-item-cart-product button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-item-cart-product button:not(:disabled):hover {
+  transform: scale(1.05);
+}
+
+/* Smooth transition cho số lượng */
+.action-item-cart-product h4 {
+  transition: all 0.2s ease;
+  min-width: 30px;
+  text-align: center;
+}
+
+/* Animation khi số lượng thay đổi */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.action-item-cart-product h4.updating {
+  animation: pulse 0.3s ease;
+  color: #FC2B76;
+}
+
+/* Smooth transition cho tổng tiền */
+.infor-item-cart-product h3,
+.total-price h3 {
+  transition: all 0.3s ease;
+}
+
+/* Fade in/out cho cart items */
+.item-cart {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading state cho buttons */
+.action-item-cart-product button:disabled {
+  position: relative;
+}
+
+.action-item-cart-product button:disabled::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  top: 50%;
+  left: 50%;
+  margin-left: -6px;
+  margin-top: -6px;
+  border: 2px solid transparent;
+  border-top-color: #FC2B76;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  opacity: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

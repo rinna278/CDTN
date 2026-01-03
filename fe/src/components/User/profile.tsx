@@ -14,6 +14,7 @@ import {
 } from "../../services/apiService";
 import "./profile.css";
 import { toast } from "react-toastify";
+import { AddressData } from "../../types/type";
 
 interface HeaderProps {
   selected: string;
@@ -35,15 +36,11 @@ interface Ward {
   name: string;
 }
 
-interface Address {
+interface Address extends AddressData {
   id: string;
-  street: string;
-  ward: string;
-  district: string;
-  city: string;
-  isDefault?: boolean;
-  postalCode?: string;
-  notes?: string;
+  userId?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 const Profile = ({ selected, setSelected }: HeaderProps) => {
@@ -68,6 +65,10 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
 
+  // State cho modal xóa địa chỉ
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingAddress, setDeletingAddress] = useState<Address | null>(null);
+
   // State cho cascade selection
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
@@ -75,6 +76,8 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
 
   // State form địa chỉ
   const [addressForm, setAddressForm] = useState({
+    recipientName: "",
+    phoneNumber: "",
     street: "",
     ward: "",
     district: "",
@@ -113,14 +116,12 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
     fetchUserInfo();
   }, []);
 
-  // Load danh sách địa chỉ
   useEffect(() => {
     if (selectedMenu === "addresses") {
       fetchAddresses();
     }
   }, [selectedMenu]);
 
-  // Load provinces khi mở modal
   useEffect(() => {
     if (showAddressModal) {
       fetchProvinces();
@@ -237,9 +238,10 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
 
   const openAddressModal = (address?: Address) => {
     if (address) {
-      // Edit mode
       setEditingAddressId(address.id);
       setAddressForm({
+        recipientName: address.recipientName || "",
+        phoneNumber: address.phoneNumber || "",
         street: address.street,
         ward: address.ward,
         district: address.district,
@@ -249,9 +251,10 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
         notes: address.notes || "",
       });
     } else {
-      // Create mode
       setEditingAddressId(null);
       setAddressForm({
+        recipientName: "",
+        phoneNumber: "",
         street: "",
         ward: "",
         district: "",
@@ -272,6 +275,8 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
     setShowAddressModal(false);
     setEditingAddressId(null);
     setAddressForm({
+      recipientName: "",
+      phoneNumber: "",
       street: "",
       ward: "",
       district: "",
@@ -351,50 +356,88 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   const handleSaveAddress = async () => {
     try {
       if (
+        !addressForm.recipientName ||
+        !addressForm.phoneNumber ||
         !addressForm.street ||
         !addressForm.city ||
         !addressForm.district ||
         !addressForm.ward
       ) {
-        toast.warning("Vui lòng điền đầy đủ thông tin");
+        toast.warning("Vui lòng điền đầy đủ thông tin bắt buộc");
         return;
       }
-      if (addressForm.street.length < 5) {
-        toast.warning('Địa chỉ chi tiết tối thiểu 5 kí tự');
+
+      if (addressForm.recipientName.trim().length < 2) {
+        toast.warning("Tên người nhận tối thiểu 2 ký tự");
         return;
       }
-      
-      
-      
+
+      if (addressForm.street.trim().length < 5) {
+        toast.warning("Địa chỉ chi tiết tối thiểu 5 ký tự");
+        return;
+      }
+
+      const phoneRegex = /^[0-9]{7,20}$/;
+      if (!phoneRegex.test(addressForm.phoneNumber.replace(/\s/g, ""))) {
+        toast.warning("Số điện thoại không hợp lệ (7-20 chữ số)");
+        return;
+      }
+
+      const dataToSend: any = {
+        recipientName: addressForm.recipientName.trim(),
+        phoneNumber: addressForm.phoneNumber.trim(),
+        street: addressForm.street.trim(),
+        ward: addressForm.ward,
+        district: addressForm.district,
+        city: addressForm.city,
+        isDefault: addressForm.isDefault,
+      };
+
+      if (addressForm.postalCode && addressForm.postalCode.trim()) {
+        dataToSend.postalCode = addressForm.postalCode.trim();
+      }
+
+      if (addressForm.notes && addressForm.notes.trim()) {
+        dataToSend.notes = addressForm.notes.trim();
+      }
+
       if (editingAddressId) {
-        // Update
-        await updateAddress(editingAddressId, addressForm);
+        await updateAddress(editingAddressId, dataToSend);
         toast.success("Cập nhật địa chỉ thành công");
       } else {
-        // Create
-        await createAddress(addressForm);
+        await createAddress(dataToSend);
         toast.success("Thêm địa chỉ thành công");
       }
-      
+
       closeAddressModal();
       fetchAddresses();
     } catch (err: any) {
-      const status = err.response?.status;
-      if (status === 400){
-        toast.warning('Mã bưu chính không vượt quá 20 kí tự');
-      }
-      else{
-        toast.error('Lỗi khi lưu địa chỉ!');
-      }
+      console.error("Error saving address:", err);
+      const errorMessage = err.response?.data?.message || "Lỗi khi lưu địa chỉ";
+      toast.error(errorMessage);
     }
   };
 
-  const handleDeleteAddress = async (addressId: string) => {
-    if (!window.confirm("Bạn có chắc muốn xóa địa chỉ này?")) return;
+  // Mở modal xác nhận xóa
+  const openDeleteModal = (address: Address) => {
+    setDeletingAddress(address);
+    setShowDeleteModal(true);
+  };
+
+  // Đóng modal xác nhận xóa
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeletingAddress(null);
+  };
+
+  // Xác nhận xóa địa chỉ
+  const confirmDeleteAddress = async () => {
+    if (!deletingAddress) return;
 
     try {
-      await deleteAddress(addressId);
+      await deleteAddress(deletingAddress.id);
       toast.success("Xóa địa chỉ thành công");
+      closeDeleteModal();
       fetchAddresses();
     } catch (err: any) {
       toast.error("Không thể xóa địa chỉ");
@@ -513,6 +556,7 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
               </button>
             )}
           </div>
+          <hr className="profile-line" />
           <div className="profile-password">
             <p>Password</p>
             <button
@@ -549,9 +593,17 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                     <span className="badge-default">Mặc định</span>
                   )}
                   <div className="address-info">
+                    <p className="recipient-info">
+                      <strong>{addr.recipientName}</strong> | {addr.phoneNumber}
+                    </p>
                     <p className="full-address">
                       {addr.street}, {addr.ward}, {addr.district}, {addr.city}
                     </p>
+                    {addr.postalCode && (
+                      <p className="postal-code">
+                        Mã bưu chính: {addr.postalCode}
+                      </p>
+                    )}
                     {addr.notes && (
                       <p className="notes">Ghi chú: {addr.notes}</p>
                     )}
@@ -572,7 +624,7 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                       </button>
                     )}
                     <button
-                      onClick={() => handleDeleteAddress(addr.id)}
+                      onClick={() => openDeleteModal(addr)}
                       className="btn-delete-addr"
                     >
                       Xóa
@@ -595,7 +647,7 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
       {/* MODAL ĐỔI MẬT KHẨU */}
       {showPasswordModal && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div className="modal-content-profile">
             <h3>Đổi mật khẩu</h3>
             <div className="modal-input-group">
               <label>Mật khẩu cũ</label>
@@ -639,13 +691,49 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
       {/* MODAL THÊM/SỬA ĐỊA CHỈ */}
       {showAddressModal && (
         <div className="modal-overlay">
-          <div className="modal-content address-modal">
+          <div className="modal-content-address address-modal">
             <h3>
               {editingAddressId ? "Cập nhật địa chỉ" : "Thêm địa chỉ mới"}
             </h3>
 
             <div className="modal-input-group">
-              <label>Tỉnh/Thành phố</label>
+              <label>
+                Tên người nhận <span style={{ color: "red" }}>*</span>
+              </label>
+              <input
+                type="text"
+                value={addressForm.recipientName}
+                onChange={(e) =>
+                  setAddressForm({
+                    ...addressForm,
+                    recipientName: e.target.value,
+                  })
+                }
+                placeholder="Nhập tên người nhận"
+              />
+            </div>
+
+            <div className="modal-input-group">
+              <label>
+                Số điện thoại <span style={{ color: "red" }}>*</span>
+              </label>
+              <input
+                type="tel"
+                value={addressForm.phoneNumber}
+                onChange={(e) =>
+                  setAddressForm({
+                    ...addressForm,
+                    phoneNumber: e.target.value,
+                  })
+                }
+                placeholder="Nhập số điện thoại"
+              />
+            </div>
+
+            <div className="modal-input-group">
+              <label>
+                Tỉnh/Thành phố <span style={{ color: "red" }}>*</span>
+              </label>
               <select
                 value={selectedProvinceCode || ""}
                 onChange={handleProvinceChange}
@@ -660,7 +748,9 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
             </div>
 
             <div className="modal-input-group">
-              <label>Quận/Huyện</label>
+              <label>
+                Quận/Huyện <span style={{ color: "red" }}>*</span>
+              </label>
               <select
                 value={selectedDistrictCode || ""}
                 onChange={handleDistrictChange}
@@ -676,7 +766,9 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
             </div>
 
             <div className="modal-input-group">
-              <label>Phường/Xã</label>
+              <label>
+                Phường/Xã <span style={{ color: "red" }}>*</span>
+              </label>
               <select
                 value={
                   wards.find((w) => w.name === addressForm.ward)?.code || ""
@@ -694,7 +786,9 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
             </div>
 
             <div className="modal-input-group">
-              <label>Địa chỉ chi tiết</label>
+              <label>
+                Địa chỉ chi tiết <span style={{ color: "red" }}>*</span>
+              </label>
               <input
                 type="text"
                 value={addressForm.street}
@@ -751,6 +845,55 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
               </button>
               <button onClick={closeAddressModal} className="btn-modal-cancel">
                 Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL XÁC NHẬN XÓA ĐỊA CHỈ */}
+      {showDeleteModal && deletingAddress && (
+        <div className="modal-overlay">
+          <div className="modal-content-delete-address">
+            <div className="delete-icon-address">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <h3>Xác nhận xóa địa chỉ</h3>
+            <p className="delete-warning-address">
+              Bạn có chắc chắn muốn xóa địa chỉ này không?
+            </p>
+            <div className="delete-address-preview">
+              <p>
+                <strong>{deletingAddress.recipientName}</strong> |{" "}
+                {deletingAddress.phoneNumber}
+              </p>
+              <p>
+                {deletingAddress.street}, {deletingAddress.ward},{" "}
+                {deletingAddress.district}, {deletingAddress.city}
+              </p>
+            </div>
+            <p className="delete-note-address">Hành động này không thể hoàn tác!</p>
+            <div className="modal-actions-address">
+              <button
+                onClick={confirmDeleteAddress}
+                className="btn-confirm-delete-address"
+              >
+                Xóa địa chỉ
+              </button>
+              <button onClick={closeDeleteModal} className="btn-cancel-delete-address">
+                Hủy bỏ
               </button>
             </div>
           </div>

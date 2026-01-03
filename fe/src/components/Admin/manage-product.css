@@ -152,6 +152,12 @@ table tr:hover {
 }
 
 /* Nút "Edit" và "Delete" */
+
+td:last-child {
+    display: flex;
+    justify-content: space-evenly;
+}
+
 td:last-child button {
     border: none;
     cursor: pointer;
@@ -269,3 +275,5 @@ button svg {
 .btn_action button.delete:hover {
     background-color: #dc3545;
 }
+
+

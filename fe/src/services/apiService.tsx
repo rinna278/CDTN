@@ -1,44 +1,14 @@
 import axios from "axios";
 import instance from "../utils/axiosCustomize";
-
+import { AllUserResponse, Product } from "../types/type";
+import { Province } from "../types/type";
+import { District } from "../types/type";
+import { Ward } from "../types/type";
+import { AddressData } from "../types/type";
+import { GetProductsParams } from "../types/type";
 const PROVINCE_API_BASE = "https://provinces.open-api.vn/api";
 
 
-interface Province {
-  code: number;
-  name: string;
-  name_en: string;
-  full_name: string;
-  full_name_en: string;
-}
-
-interface District {
-  code: number;
-  name: string;
-  name_en: string;
-  full_name: string;
-  full_name_en: string;
-  province_code: number;
-}
-
-interface Ward {
-  code: number;
-  name: string;
-  name_en: string;
-  full_name: string;
-  full_name_en: string;
-  district_code: number;
-}
-
-interface AddressData {
-  street: string;
-  ward: string;
-  district: string;
-  city: string;
-  isDefault?: boolean;
-  postalCode?: string;
-  notes?: string;
-}
 
 interface AddressResponse extends AddressData {
   id: string;
@@ -48,26 +18,18 @@ interface AddressResponse extends AddressData {
 }
 
 
-interface GetProductsParams {
-  page?: number;
-  limit?: number;
-  occasions?: string[];
-  sortBy?: string;
-  sortOrder?: "ASC" | "DESC";
-  status?: number; 
-  search?: string;
-  category?: string;
-  color?: string;
-  minPrice?: number;
-  maxPrice?: number;
-}
-
 export interface ProductResponse {
-  data: any[]; 
+  data: Product[]; 
   total: number;
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export interface SingleProductResponse {
+  data: Product; 
+  success?: boolean;
+  message?: string;
 }
 
 //Người dùng
@@ -118,6 +80,12 @@ const postSubmitChangePassword = (
 
 const getInfo = () => {
   return instance.get(`api/v1/users/info`);
+};
+
+const getAllUser = async () => {
+  const response = await instance.get(`api/v1/users`);
+  console.log("Thông tin response.data:", response.data);
+  return response.data as AllUserResponse; // ✅ Trả về đúng cấu trúc
 };
 
 const PatchUpdateUser = (id: string, name: string, phone: string) => {
@@ -213,6 +181,11 @@ const getAllProduct = async (params: GetProductsParams) => {
   return response.data as ProductResponse;
 };
 
+const getProductByID = async (productID : string) => {
+  const  response = await instance.get(`api/v1/products/${productID}`);
+  return response.data as SingleProductResponse;
+}
+
 const postCreateProduct = async (payload: any) => {
   const response = await instance.post(`api/v1/products`, {
     ...payload
@@ -228,7 +201,7 @@ const updateProduct = async (
   description?: string,
   discount?: number,
   category?: string,
-  images?: string[],
+  images?: any[],
   color?: string,
   occasions?: string[],
   status?: number
@@ -310,6 +283,35 @@ const getSignedUploadParams = async () => {
 };
 
 
+//Thêm sản phẩm vào giỏ
+const postAddToCart = async (productID: string, quantity: number) => {
+  const response = await instance.post('api/v1/cart/items',{
+    productId : productID,
+    quantity: quantity
+  })
+  return response.data;
+}
+
+//Lấy tất cả item trong giỏ
+const getAllItemInCart = async() => {
+  const response = await instance.get('api/v1/cart');
+  return response.data;
+}
+
+const updateCart = async (itemId: string, quantity: number) => {
+  const response = await instance.patch(`api/v1/cart/items/${itemId}`,{
+    quantity: quantity
+  })
+  return response.data;
+}
+
+
+const deleteItemInCart = async (itemId: string) => {
+  const response = await instance.delete(`api/v1/cart/items/${itemId}`)
+  return response.data;
+}
+
+
 
 
 export {
@@ -319,9 +321,11 @@ export {
   postSendOTPChangePassword,
   postSubmitChangePassword,
   getInfo,
+  getAllUser,
   PatchUpdatePassword,
   PatchUpdateUser,
   getAllProduct,
+  getProductByID,
   postCreateProduct,
   updateProduct,
   deleteProduct,
@@ -339,5 +343,9 @@ export {
   createAddress,
   updateAddress,
   deleteAddress,
-  setAsDefaultAddress
+  setAsDefaultAddress,
+  postAddToCart,
+  getAllItemInCart,
+  updateCart,
+  deleteItemInCart,
 };

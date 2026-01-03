@@ -1,6 +1,49 @@
 .content-middle-customer{
     width: 100%;
 }
+
+.btn-deleted-user-and-title{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-deleted-user-and-title .deleted-user{
+    height: 55px;
+    border-radius: 10px;
+    background-color: aquamarine;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+}
+
+.deleted-user:hover{
+    background-color: rgb(90, 242, 191);
+    cursor: pointer;
+}
+
+.btn-restore-and-return{
+    display: flex;
+    gap: 20px;
+}
+.btn-restore-and-return .btn-restore-all, .btn-return{
+    height: 55px;
+    border-radius: 10px;
+    background-color: #0bef5b;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+}
+.btn-return{
+    background-color: #d0cdcd;
+}
+.btn-return:hover{
+    background-color: #b0adad ;
+}
+.btn-restore-and-return .btn-restore-all:hover{
+    background-color: #06d34e;
+}
+
 .item-customer{
     display: flex;
     justify-content: space-between;
@@ -101,22 +144,14 @@ td:last-child button {
     justify-content: space-evenly;
 }
 
-button.edit {
-    color: #007bff;
-    background-color: #e7f3ff;
-}
 
-button.delete {
+button.delete, button.btn-restore {
     color: #dc3545;
     background-color: #ffe7e7;
 }
 
-button.edit:hover {
-    background-color: #007bff;
-    color: white;
-}
 
-button.delete:hover {
+button.delete:hover, button.btn-restore:hover {
     background-color: #dc3545;
     color: white;
 }

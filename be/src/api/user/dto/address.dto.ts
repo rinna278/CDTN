@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { StringUtil } from 'src/share/utils/string.util';
 
 export class CreateAddressDto {
   @ApiProperty({ example: 'Nguyễn Văn A' })
@@ -68,7 +69,14 @@ export class AddressResponseDto {
   id: string;
 
   @ApiProperty()
+  recipientName: string;
+
+  @ApiProperty()
+  phoneNumber: string;
+
+  @ApiProperty()
   street: string;
+  
 
   @ApiProperty()
   ward: string;
