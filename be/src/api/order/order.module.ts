@@ -8,13 +8,16 @@ import { OrderController } from './order.controller';
 import { CartModule } from '../cart/cart.module';
 import { UserModule } from '../user/user.module';
 import { ProductModule } from '../product/product.module';
+import { UserEntity } from '../user/user.entity';
+import { QueueModule } from '../queue/queue.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([OrderEntity, OrderDetailEntity]),
+    TypeOrmModule.forFeature([OrderEntity, OrderDetailEntity, UserEntity]),
     CartModule,
     UserModule,
     ProductModule,
+    QueueModule,
   ],
   controllers: [OrderController],
   providers: [OrderService],

@@ -1,4 +1,3 @@
-// api/queue/queue.module.ts
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -7,6 +6,10 @@ import { EmailQueueProcessor } from './email-queue.processor';
 import { EmailQueueService } from './email-queue.service';
 import { QueueCleanupService } from './queue-cleanup.service';
 import { EmailModule } from '../email/email.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { OrderEntity } from '../order/order.entity';
+import { OrderQueueService } from './order-queue.service';
+import { OrderProcessor } from './order.processor';
 
 @Module({
   imports: [
@@ -35,9 +38,19 @@ import { EmailModule } from '../email/email.module';
     BullModule.registerQueue({
       name: 'otp-email-queue',
     }),
+    BullModule.registerQueue({
+      name: 'order-queue',
+    }),
     EmailModule,
+    TypeOrmModule.forFeature([OrderEntity]),
   ],
-  providers: [EmailQueueProcessor, EmailQueueService, QueueCleanupService],
-  exports: [EmailQueueService],
+  providers: [
+    EmailQueueProcessor,
+    EmailQueueService,
+    QueueCleanupService,
+    OrderQueueService,
+    OrderProcessor,
+  ],
+  exports: [EmailQueueService, OrderQueueService],
 })
 export class QueueModule {}

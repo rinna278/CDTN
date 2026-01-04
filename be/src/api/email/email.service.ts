@@ -3,6 +3,37 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmailSendType } from 'src/share/common/app.interface';
 
+export interface OrderEmailData {
+  email: string;
+  orderCode: string;
+  recipientName: string;
+  phoneNumber: string;
+  street: string;
+  ward: string;
+  district: string;
+  city: string;
+  items: Array<{
+    productName: string;
+    productImage: string;
+    color: string;
+    quantity: number;
+    price: number;
+    discount: number;
+    subtotal: number;
+  }>;
+  subtotal: number;
+  discountAmount: number;
+  discountCode?: string;
+  shippingFee: number;
+  totalAmount: number;
+  paymentMethod: string;
+  paymentMethodText: string;
+  isPaid: boolean;
+  isVNPay: boolean;
+  notes?: string;
+  trackingUrl: string;
+}
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -55,6 +86,59 @@ export class EmailService {
       return true;
     } catch (error) {
       this.logger.error(`Failed to send OTP email to ${email}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Send order confirmation email
+   */
+  async sendOrderConfirmationEmail(data: OrderEmailData): Promise<boolean> {
+    try {
+      const appName = this.configService.get('APP_NAME', 'AVICI');
+
+      // Helper để format currency
+      const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('vi-VN', {
+          style: 'currency',
+          currency: 'VND',
+        }).format(amount);
+      };
+
+      // Format dữ liệu trước khi gửi template
+      const formattedData = {
+        ...data,
+        subtotal: formatCurrency(data.subtotal),
+        discountAmount: formatCurrency(data.discountAmount),
+        shippingFee: formatCurrency(data.shippingFee),
+        totalAmount: formatCurrency(data.totalAmount),
+        items: data.items.map((item) => ({
+          ...item,
+          price: formatCurrency(item.price),
+          subtotal: formatCurrency(item.subtotal),
+          discount: formatCurrency(item.discount),
+        })),
+      };
+
+      await this.mailerService.sendMail({
+        to: data.email,
+        subject: `${appName} - Xác Nhận Đơn Hàng #${data.orderCode}`,
+        template: './order-confirmation',
+        context: {
+          ...formattedData,
+          appName,
+        },
+      });
+
+      this.logger.log(
+        `Order confirmation email sent to ${data.email} for order ${data.orderCode}`,
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send order confirmation email to ${data.email}:`,
+        error,
+      );
       return false;
     }
   }

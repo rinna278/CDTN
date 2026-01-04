@@ -124,4 +124,13 @@ export class OrderResponseDto {
 
   @Expose()
   updatedAt: Date;
+
+  @Expose()
+  expirationTime?: {
+    remainingSeconds: number;
+    remainingMinutes: number;
+    remainingHours: number;
+    isExpired: boolean;
+    expiresAt: Date;
+  };
 }

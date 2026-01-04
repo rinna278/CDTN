@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác Nhận Đơn Hàng</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif; background-color: #f7fafc;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f7fafc; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" border="0" cellspacing="0" cellpadding="0" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1); max-width: 600px;">
+                    
+                    <!-- HEADER -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 50px 40px; text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+                            <h1 style="color: white; font-size: 28px; font-weight: 700; margin: 0;">Đặt Hàng Thành Công!</h1>
+                            <p style="color: rgba(255,255,255,0.9); font-size: 16px; margin-top: 8px;">Cảm ơn bạn đã tin tưởng {{appName}}</p>
+                        </td>
+                    </tr>
+
+                    <!-- ORDER INFO -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            
+                            <!-- Order Code -->
+                            <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 30px;">
+                                <tr>
+                                    <td style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 12px; padding: 20px; text-align: center; border: 2px solid #10b981;">
+                                        <div style="color: #065f46; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+                                            Mã Đơn Hàng
+                                        </div>
+                                        <div style="color: #10b981; font-size: 24px; font-weight: 800; font-family: 'Courier New', monospace; letter-spacing: 2px;">
+                                            {{orderCode}}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Delivery Address -->
+                            <div style="margin-bottom: 30px;">
+                                <h3 style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0 0 15px 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                                    📍 Địa Chỉ Giao Hàng
+                                </h3>
+                                <div style="color: #4b5563; font-size: 14px; line-height: 1.8;">
+                                    <strong>{{recipientName}}</strong><br>
+                                    {{phoneNumber}}<br>
+                                    {{street}}, {{ward}}<br>
+                                    {{district}}, {{city}}
+                                </div>
+                            </div>
+
+                            <!-- Order Items -->
+                            <div style="margin-bottom: 30px;">
+                                <h3 style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0 0 15px 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                                    🛍️ Sản Phẩm Đã Đặt
+                                </h3>
+                                
+                                {{#each items}}
+                                <div style="display: flex; margin-bottom: 15px; padding: 15px; background: #f9fafb; border-radius: 8px;">
+                                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                        <tr>
+                                            <td width="60" style="padding-right: 15px;">
+                                                <img src="{{this.productImage}}" alt="{{this.productName}}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb;">
+                                            </td>
+                                            <td>
+                                                <div style="color: #1f2937; font-weight: 600; font-size: 14px; margin-bottom: 4px;">{{this.productName}}</div>
+                                                <div style="color: #6b7280; font-size: 13px;">Màu: {{this.color}} | SL: {{this.quantity}}</div>
+                                            </td>
+                                            <td align="right" style="white-space: nowrap;">
+                                                <div style="color: #10b981; font-weight: 700; font-size: 15px;">{{this.subtotal}}</div>
+                                                {{#if this.discount}}
+                                                <div style="color: #9ca3af; font-size: 12px; text-decoration: line-through;">{{this.price}}</div>
+                                                {{/if}}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                {{/each}}
+                            </div>
+
+                            <!-- Order Summary -->
+                            <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 12px; padding: 20px; margin-bottom: 30px;">
+                                <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                    <tr>
+                                        <td style="color: #4b5563; font-size: 14px; padding: 8px 0;">Tạm tính:</td>
+                                        <td align="right" style="color: #1f2937; font-size: 14px; font-weight: 600;">{{subtotal}}</td>
+                                    </tr>
+                                    {{#if discountAmount}}
+                                    <tr>
+                                        <td style="color: #4b5563; font-size: 14px; padding: 8px 0;">Giảm giá {{#if discountCode}}({{discountCode}}){{/if}}:</td>
+                                        <td align="right" style="color: #ef4444; font-size: 14px; font-weight: 600;">-{{discountAmount}}</td>
+                                    </tr>
+                                    {{/if}}
+                                    <tr>
+                                        <td style="color: #4b5563; font-size: 14px; padding: 8px 0;">Phí vận chuyển:</td>
+                                        <td align="right" style="color: #1f2937; font-size: 14px; font-weight: 600;">
+                                            {{#if shippingFee}}
+                                            {{shippingFee}}
+                                            {{else}}
+                                            Miễn phí
+                                            {{/if}}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" style="padding: 12px 0;">
+                                            <div style="height: 1px; background: linear-gradient(90deg, transparent, #10b981, transparent);"></div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #1f2937; font-size: 16px; font-weight: 700; padding: 8px 0;">Tổng cộng:</td>
+                                        <td align="right" style="color: #10b981; font-size: 20px; font-weight: 800;">{{totalAmount}}</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Payment Info -->
+                            <div style="margin-bottom: 30px;">
+                                <h3 style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0 0 15px 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                                    💳 Thanh Toán
+                                </h3>
+                                <div style="color: #4b5563; font-size: 14px; line-height: 1.8;">
+                                    <strong>Phương thức:</strong> {{paymentMethodText}}<br>
+                                    <strong>Trạng thái:</strong> 
+                                    {{#if isPaid}}
+                                    <span style="color: #10b981; font-weight: 600;">✓ Đã thanh toán</span>
+                                    {{else}}
+                                    <span style="color: #f59e0b; font-weight: 600;">⏳ Chờ thanh toán</span>
+                                    {{/if}}
+                                </div>
+                            </div>
+
+                            <!-- Payment Warning for VNPay -->
+                            {{#if isVNPay}}
+                            <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 30px;">
+                                <tr>
+                                    <td style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 20px; border-left: 4px solid #f59e0b;">
+                                        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                            <tr>
+                                                <td width="40" valign="top" style="font-size: 24px;">⏰</td>
+                                                <td style="color: #92400e; font-size: 14px; line-height: 1.6;">
+                                                    <strong>Lưu ý quan trọng:</strong><br>
+                                                    Đơn hàng sẽ tự động hủy sau <strong>24 giờ</strong> nếu chưa thanh toán. Vui lòng hoàn tất thanh toán để đảm bảo đơn hàng được xử lý.
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            {{/if}}
+
+                            <!-- Notes -->
+                            {{#if notes}}
+                            <div style="background: #f9fafb; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                                <div style="color: #6b7280; font-size: 13px; font-weight: 600; margin-bottom: 5px;">Ghi chú:</div>
+                                <div style="color: #4b5563; font-size: 14px;">{{notes}}</div>
+                            </div>
+                            {{/if}}
+
+                            <!-- Track Order Button -->
+                            <div style="text-align: center; margin-top: 30px;">
+                                <a href="{{trackingUrl}}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+                                    Theo Dõi Đơn Hàng
+                                </a>
+                            </div>
+
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 30px 40px; text-align: center; border-top: 1px solid rgba(226, 232, 240, 0.5);">
+                            <div style="color: #2d3748; font-size: 15px; font-weight: 600; margin-bottom: 8px;">
+                                Cảm ơn bạn đã mua hàng!
+                            </div>
+                            <div style="color: #10b981; font-size: 14px; font-weight: 500; margin-bottom: 15px;">
+                                Đội Ngũ {{appName}}
+                            </div>
+                            <div style="color: #a0aec0; font-size: 12px; line-height: 1.6;">
+                                Cần hỗ trợ? <a href="mailto:support@avici.com" style="color: #10b981; text-decoration: none; font-weight: 500;">Liên hệ chúng tôi</a><br>
+                                Hotline: 1900-xxxx
+                            </div>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

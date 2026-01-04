@@ -68,7 +68,6 @@ export class AuthController {
     required: true,
   })
   sendOtp(@Body() data: SendOtpDto) {
-    console.log('🔥 sendOtp method called with data:', data);
     return this.authService.sendOtp(data);
   }
 

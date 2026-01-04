@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { EmailSendType } from 'src/share/common/app.interface';
+import { OrderEmailData } from '../email/email.service';
 
 export interface OtpEmailJobData {
   email: string;
@@ -31,6 +32,23 @@ export class EmailQueueService {
 
       // Unique job ID to prevent duplicates
       jobId: `otp-${data.email}-${Date.now()}`,
+    });
+  }
+
+  /**
+   * Add order confirmation email job to queue
+   */
+  async addOrderConfirmationEmailJob(data: OrderEmailData): Promise<void> {
+    await this.otpEmailQueue.add('send-order-confirmation', data, {
+      attempts: 3,
+      delay: 500, // Send immediately
+      backoff: {
+        type: 'exponential',
+        delay: 2000,
+      },
+      removeOnComplete: true,
+      removeOnFail: false,
+      jobId: `order-${data.orderCode}-${Date.now()}`,
     });
   }
 

@@ -24,7 +24,12 @@ import {
   PaymentStatus,
   ORDER_STATUS_TRANSITIONS,
   ERROR_ORDER,
+  ORDER_CONST,
 } from './order.constant';
+import { EmailQueueService } from '../queue/email-queue.service';
+import { OrderQueueService } from '../queue/order-queue.service';
+import { OrderEmailData } from '../email/email.service';
+import { UserEntity } from '../user/user.entity';
 // import { VNPayHelper } from 'src/share/helper/vnpay.helper';
 
 @Injectable()
@@ -34,10 +39,88 @@ export class OrderService {
     private readonly orderRepository: Repository<OrderEntity>,
     @InjectRepository(OrderDetailEntity)
     private readonly orderDetailRepository: Repository<OrderDetailEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
     private readonly cartService: CartService,
     private readonly addressService: AddressService,
     private readonly productService: ProductService,
+    private readonly emailQueueService: EmailQueueService,
+    private readonly orderQueueService: OrderQueueService,
   ) {}
+
+  private prepareOrderEmailData(
+    order: OrderEntity,
+    userEmail: string,
+  ): OrderEmailData {
+    const paymentMethodMap = {
+      cod: 'Thanh toán khi nhận hàng (COD)',
+      vnpay: 'VNPay',
+      momo: 'MoMo',
+      zalopay: 'ZaloPay',
+      bank_transfer: 'Chuyển khoản ngân hàng',
+    };
+
+    return {
+      email: userEmail,
+      orderCode: order.orderCode,
+      recipientName: order.recipientName,
+      phoneNumber: order.phoneNumber,
+      street: order.street,
+      ward: order.ward,
+      district: order.district,
+      city: order.city,
+      items: order.items.map((item) => ({
+        productName: item.productName,
+        productImage: item.productImage,
+        color: item.color,
+        quantity: item.quantity,
+        price: Number(item.price),
+        discount: item.discount,
+        subtotal: Number(item.subtotal),
+      })),
+      subtotal: Number(order.subtotal),
+      discountAmount: Number(order.discountAmount),
+      discountCode: order.discountCode,
+      shippingFee: Number(order.shippingFee),
+      totalAmount: Number(order.totalAmount),
+      paymentMethod: order.paymentMethod,
+      paymentMethodText:
+        paymentMethodMap[order.paymentMethod] || order.paymentMethod,
+      isPaid: order.paymentStatus === PaymentStatus.PAID,
+      isVNPay: order.paymentMethod === PaymentMethod.VNPAY,
+      notes: order.notes,
+      trackingUrl: `${process.env.FRONTEND_URL}/orders/${order.id}`,
+    };
+  }
+
+  /**
+   * Tính thời gian còn lại trước khi order hết hạn
+   * Order hết hạn sau 24 giờ kể từ lúc tạo (nếu chưa thanh toán)
+   */
+  private calculateExpirationTime(order: OrderEntity) {
+    // Chỉ tính hết hạn cho order PENDING chưa thanh toán
+    if (
+      order.orderStatus !== OrderStatus.PENDING ||
+      order.paymentStatus === PaymentStatus.PAID
+    ) {
+      return null;
+    }
+
+    const expiresAt = new Date(
+      order.createdAt.getTime() + ORDER_CONST.EXPIRATION_TIME,
+    );
+    const now = new Date();
+    const remainingMs = expiresAt.getTime() - now.getTime();
+    const isExpired = remainingMs <= 0;
+
+    return {
+      remainingSeconds: Math.max(0, Math.floor(remainingMs / 1000)),
+      remainingMinutes: Math.max(0, Math.floor(remainingMs / (1000 * 60))),
+      remainingHours: Math.max(0, Math.floor(remainingMs / (1000 * 60 * 60))),
+      isExpired,
+      expiresAt,
+    };
+  }
 
   // Generate order code: ORD-20240101-0001
   private async generateOrderCode(): Promise<string> {
@@ -193,11 +276,43 @@ export class OrderService {
       }
 
       // TODO: Send email confirmation
+      try {
+        const user = await this.userRepository.findOne({
+          where: { id: userId },
+        });
+        const emailData = this.prepareOrderEmailData(completeOrder, user.email);
+        await this.emailQueueService.addOrderConfirmationEmailJob(emailData);
+      } catch (error) {
+        console.error('Failed to queue order confirmation email:', error);
+        // Don't block order creation if email fails
+      }
 
       return this.transformToResponse(completeOrder);
     } else if (createDto.paymentMethod === PaymentMethod.VNPAY) {
       // VNPay: Tạo payment URL, chưa giảm stock
       const paymentUrl = await this.createVNPayPaymentUrl(completeOrder);
+
+      // SCHEDULE AUTO-CANCEL AFTER 24H (THÊM MỚI)
+      try {
+        await this.orderQueueService.scheduleAutoCancelOrder(
+          completeOrder.id,
+          completeOrder.orderCode,
+        );
+      } catch (error) {
+        console.error('Failed to schedule auto-cancel job:', error);
+        // Don't block order creation
+      }
+
+      // GỬI EMAIL VỚI CẢNH BÁO 24H (THÊM MỚI)
+      try {
+        const user = await this.userRepository.findOne({
+          where: { id: userId },
+        });
+        const emailData = this.prepareOrderEmailData(completeOrder, user.email);
+        await this.emailQueueService.addOrderConfirmationEmailJob(emailData);
+      } catch (error) {
+        console.error('Failed to queue order confirmation email:', error);
+      }
 
       return {
         paymentUrl,
@@ -268,6 +383,11 @@ export class OrderService {
 
       await this.orderRepository.save(order);
 
+      try {
+        await this.orderQueueService.cancelAutoCancelJob(orderId);
+      } catch (error) {
+        console.error('Failed to cancel auto-cancel job:', error);
+      }
       // Giảm stock
       for (const item of order.items) {
         await this.productService.incrementSoldCount(
@@ -288,6 +408,16 @@ export class OrderService {
         if (cartItem) {
           await this.cartService.removeCartItem(order.userId, cartItem.id);
         }
+      }
+
+      try {
+        const user = await this.userRepository.findOne({
+          where: { id: order.userId },
+        });
+        const emailData = this.prepareOrderEmailData(order, user.email);
+        await this.emailQueueService.addOrderConfirmationEmailJob(emailData);
+      } catch (error) {
+        console.error('Failed to queue payment confirmation email:', error);
       }
 
       return this.transformToResponse(order);
@@ -441,6 +571,12 @@ export class OrderService {
       order.cancelledAt = new Date();
       order.cancelReason = updateDto.reason;
 
+      try {
+        await this.orderQueueService.cancelAutoCancelJob(id);
+      } catch (error) {
+        console.error('Failed to cancel auto-cancel job:', error);
+      }
+
       // Hoàn stock nếu đã giảm
       if (order.paymentStatus === PaymentStatus.PAID) {
         for (const item of order.items) {
@@ -506,8 +642,13 @@ export class OrderService {
 
   // Transform to response DTO
   private transformToResponse(order: OrderEntity): OrderResponseDto {
-    return plainToInstance(OrderResponseDto, order, {
+    const response = plainToInstance(OrderResponseDto, order, {
       excludeExtraneousValues: true,
     });
+
+    // Thêm thông tin thời gian hết hạn
+    response.expirationTime = this.calculateExpirationTime(order);
+
+    return response;
   }
 }
