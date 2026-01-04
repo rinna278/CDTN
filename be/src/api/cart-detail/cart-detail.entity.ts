@@ -32,6 +32,10 @@ export class CartDetailEntity extends BaseEntity {
   })
   subtotal: number;
 
+  // đánh dấu đã chọn để thanh toán
+  @Column({ type: 'boolean', default: true, name: 'is_checked' })
+  isChecked: boolean;
+
   // Relations
   @ManyToOne(() => CartEntity, (cart) => cart.items, {
     onDelete: 'CASCADE',
