@@ -201,9 +201,9 @@ const updateProduct = async (
   description?: string,
   discount?: number,
   category?: string,
-  images?: any[],
-  color?: string,
+  images?: Array<{url: string, publicId: string}>,
   occasions?: string[],
+  variants?: Array<{color: string, image: {url: string; publicId: string}; stock: number}>,
   status?: number
 ) => {
   const response = await instance.patch(`api/v1/products/${id}`, {
@@ -214,12 +214,39 @@ const updateProduct = async (
     discount,
     category,
     images,
-    color,
     occasions,
+    variants,
     status,
   });
   return response.data;
 };
+
+// ✅ Thêm hàm update stock cho variant cụ thể
+const updateVariantStock = async (
+  productId: string,
+  color: string,
+  quantity: number
+) => {
+  const response = await instance.patch(`api/v1/products/${productId}/stock`, {
+    color,
+    quantity,
+  });
+  return response.data;
+};
+
+
+// ✅ Thêm hàm lấy available colors
+const getAvailableColors = async (productId: string) => {
+  const response = await instance.get(`api/v1/products/${productId}/available-colors`);
+  return response.data as string[];
+};
+
+// ✅ Thêm hàm lấy variant theo màu
+const getVariantByColor = async (productId: string, color: string) => {
+  const response = await instance.get(`api/v1/products/${productId}/variant/${color}`);
+  return response.data;
+};
+
 const deleteProduct = async (id: string) => {
   const response = await instance.delete(`api/v1/products/${id}`);
   return response.data;
@@ -283,14 +310,15 @@ const getSignedUploadParams = async () => {
 };
 
 
-//Thêm sản phẩm vào giỏ
-const postAddToCart = async (productID: string, quantity: number) => {
-  const response = await instance.post('api/v1/cart/items',{
-    productId : productID,
-    quantity: quantity
-  })
+// ✅ Cập nhật postAddToCart để hỗ trợ color
+const postAddToCart = async (productID: string, quantity: number, color: string) => {
+  const response = await instance.post('api/v1/cart/items', {
+    productId: productID,
+    quantity: quantity,
+    color: color, // ✅ Thêm màu
+  });
   return response.data;
-}
+};
 
 //Lấy tất cả item trong giỏ
 const getAllItemInCart = async() => {
@@ -348,4 +376,7 @@ export {
   getAllItemInCart,
   updateCart,
   deleteItemInCart,
+  getAvailableColors,
+  getVariantByColor,
+  updateVariantStock
 };

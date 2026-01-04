@@ -1,30 +1,34 @@
 import { useState, useEffect } from "react";
-import { X, Upload, Trash2, AlertCircle } from "lucide-react";
+import { X, Upload, Trash2, AlertCircle, Plus } from "lucide-react";
 import "./modal-edit-product.css";
 import { updateProduct, uploadImage } from "../../services/apiService";
 import { toast } from "react-toastify";
 import ImageCropModal from "./image-crop-modal";
 import { useCategories } from "./useCategories";
 
-// Định nghĩa kiểu dữ liệu chuẩn cho ảnh để đồng nhất
 interface IImage {
   url: string;
   publicId: string;
+}
+
+interface IVariant {
+  color: string;
+  image: IImage;
+  stock: number;
 }
 
 interface IProduct {
   id: string;
   name: string;
   price: string | number;
-  stock: number;
   category: string;
   description?: string;
   discount?: number;
-  // Hỗ trợ cả 2 format đầu vào, nhưng sẽ chuẩn hóa về IImage
   images?: (string | IImage)[];
-  color?: string;
   occasions?: string[];
   status?: number;
+  variants: IVariant[];
+  totalStock: number;
 }
 
 interface ModalEditProductProps {
@@ -34,35 +38,32 @@ interface ModalEditProductProps {
   product: IProduct | null;
 }
 
-const ModalEditProduct = ({
+const ModalEditProduct: React.FC<ModalEditProductProps> = ({
   isOpen,
   onClose,
   onSuccess,
   product,
-}: ModalEditProductProps) => {
+}) => {
   const categories = useCategories();
 
   const [formData, setFormData] = useState({
     name: "",
     price: "",
-    stock: "",
     category: "",
     description: "",
     discount: "",
-    color: "",
     status: "1",
   });
 
   const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
 
-  // State quản lý ảnh mới upload (đã có publicId từ Cloudinary)
+  // Ảnh chung
   const [imageObjects, setImageObjects] = useState<IImage[]>([]);
-
-  // State quản lý preview ảnh mới (base64 để hiển thị ngay)
   const [imagePreview, setImagePreview] = useState<string[]>([]);
-
-  // State quản lý ảnh cũ: SỬA THÀNH MẢNG OBJECT
   const [existingImages, setExistingImages] = useState<IImage[]>([]);
+
+  // ✅ Variants
+  const [variants, setVariants] = useState<IVariant[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,6 +72,10 @@ const ModalEditProduct = ({
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const [currentImageForCrop, setCurrentImageForCrop] = useState<string>("");
   const [currentFileName, setCurrentFileName] = useState<string>("");
+  const [cropTarget, setCropTarget] = useState<{
+    type: "general" | "variant";
+    variantIndex?: number;
+  }>({ type: "general" });
 
   const occasionsList = [
     { value: "birthday", label: "Sinh nhật" },
@@ -87,30 +92,27 @@ const ModalEditProduct = ({
       setFormData({
         name: product.name || "",
         price: product.price.toString() || "",
-        stock: product.stock.toString() || "",
         category: product.category || "",
         description: product.description || "",
         discount: product.discount?.toString() || "",
-        color: product.color || "",
         status: product.status?.toString() || "1",
       });
 
       setSelectedOccasions(product.occasions || []);
 
-      // ✅ LOGIC MỚI: Chuẩn hóa mọi ảnh về dạng Object { url, publicId }
+      // Normalize ảnh chung
       const validImages: IImage[] = Array.isArray(product.images)
         ? product.images.map((img) => {
-            // Nếu ảnh lưu dạng string, tạo object giả lập với publicId rỗng
             if (typeof img === "string") {
               return { url: img, publicId: "" };
             }
-            // Nếu đã là object thì giữ nguyên
             return img;
           })
         : [];
-
-      console.log("✅ Normalized images:", validImages);
       setExistingImages(validImages);
+
+      // ✅ Set variants từ product
+      setVariants(product.variants || []);
 
       setImagePreview([]);
       setImageObjects([]);
@@ -124,10 +126,7 @@ const ModalEditProduct = ({
     >
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -143,12 +142,12 @@ const ModalEditProduct = ({
     });
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Upload ảnh chung
+  const handleGeneralImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     const file = files[0];
-
     const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!validTypes.includes(file.type)) {
       toast.error("Chỉ chấp nhận ảnh (JPG, PNG, WEBP)");
@@ -157,7 +156,7 @@ const ModalEditProduct = ({
 
     const totalImages = existingImages.length + imageObjects.length + 1;
     if (totalImages > 5) {
-      toast.error("Tối đa 5 ảnh");
+      toast.error("Tối đa 5 ảnh chung");
       return;
     }
 
@@ -165,10 +164,36 @@ const ModalEditProduct = ({
     reader.onloadend = () => {
       setCurrentImageForCrop(reader.result as string);
       setCurrentFileName(file.name);
+      setCropTarget({ type: "general" });
       setIsCropModalOpen(true);
     };
     reader.readAsDataURL(file);
+    e.target.value = "";
+  };
 
+  // Upload ảnh cho variant
+  const handleVariantImageChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const file = files[0];
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Chỉ chấp nhận ảnh (JPG, PNG, WEBP)");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCurrentImageForCrop(reader.result as string);
+      setCurrentFileName(file.name);
+      setCropTarget({ type: "variant", variantIndex: index });
+      setIsCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
     e.target.value = "";
   };
 
@@ -183,20 +208,30 @@ const ModalEditProduct = ({
 
       const result = await uploadImage(croppedFile);
 
-      // Lưu object ảnh mới trả về từ Cloudinary
-      setImageObjects((prev) => [
-        ...prev,
-        {
-          url: result.secureUrl,
-          publicId: result.publicId,
-        },
-      ]);
+      if (cropTarget.type === "general") {
+        setImageObjects((prev) => [
+          ...prev,
+          { url: result.secureUrl, publicId: result.publicId },
+        ]);
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview((prev) => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(croppedFile);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview((prev) => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(croppedFile);
+      } else if (
+        cropTarget.type === "variant" &&
+        cropTarget.variantIndex !== undefined
+      ) {
+        setVariants((prev) => {
+          const updated = [...prev];
+          updated[cropTarget.variantIndex!] = {
+            ...updated[cropTarget.variantIndex!],
+            image: { url: result.secureUrl, publicId: result.publicId },
+          };
+          return updated;
+        });
+      }
 
       toast.success("Upload ảnh thành công!");
     } catch (error: any) {
@@ -218,15 +253,60 @@ const ModalEditProduct = ({
     setExistingImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // ✅ Quản lý variants
+  const handleVariantChange = (
+    index: number,
+    field: "color" | "stock",
+    value: string | number
+  ) => {
+    setVariants((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const addVariant = () => {
+    setVariants((prev) => [
+      ...prev,
+      { color: "", image: { url: "", publicId: "" }, stock: 0 },
+    ]);
+  };
+
+  const removeVariant = (index: number) => {
+    if (variants.length === 1) {
+      toast.error("Phải có ít nhất 1 variant");
+      return;
+    }
+    setVariants((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeVariantImage = (index: number) => {
+    setVariants((prev) => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        image: { url: "", publicId: "" },
+      };
+      return updated;
+    });
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) newErrors.name = "Vui lòng nhập tên sản phẩm";
     if (!formData.price || Number(formData.price) <= 0)
       newErrors.price = "Giá không hợp lệ";
-    if (!formData.stock || Number(formData.stock) < 0)
-      newErrors.stock = "Số lượng không hợp lệ";
     if (!formData.category) newErrors.category = "Vui lòng chọn danh mục";
+
+    // Validate variants
+    const validVariants = variants.filter(
+      (v) => v.color.trim() && v.image.url && v.stock >= 0
+    );
+    if (validVariants.length === 0) {
+      newErrors.variants = "Phải có ít nhất 1 variant hợp lệ";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -236,17 +316,16 @@ const ModalEditProduct = ({
     setFormData({
       name: "",
       price: "",
-      stock: "",
       category: "",
       description: "",
       discount: "",
-      color: "",
       status: "1",
     });
     setSelectedOccasions([]);
     setImageObjects([]);
     setImagePreview([]);
     setExistingImages([]);
+    setVariants([]);
     setErrors({});
     onClose();
   };
@@ -258,25 +337,27 @@ const ModalEditProduct = ({
     setErrors({});
 
     try {
-      // ✅ LOGIC MỚI: Gộp ảnh cũ và mới thành mảng Object hoàn chỉnh
-      const allImages = [
-        ...existingImages, // Đã là object { url, publicId }
-        ...imageObjects, // Đã là object { url, publicId }
-      ];
+      const allImages = [...existingImages, ...imageObjects];
 
-      console.log("📤 Submitting images (Objects):", allImages);
+      // Lọc variants hợp lệ
+      const validVariants = variants.filter(
+        (v) => v.color.trim() && v.image.url && v.stock >= 0
+      );
+
+      // ✅ Tính tổng stock từ tất cả variants
+      const totalStock = validVariants.reduce((sum, v) => sum + v.stock, 0);
 
       await updateProduct(
         product.id,
         formData.name,
         Number(formData.price),
-        Number(formData.stock),
+        totalStock, // ✅ Thêm tham số stock (tổng từ variants)
         formData.description,
         formData.discount ? Number(formData.discount) : 0,
         formData.category,
-        allImages, // Gửi mảng object để server xử lý đúng
-        formData.color,
+        allImages,
         selectedOccasions,
+        validVariants, // ✅ Gửi variants
         Number(formData.status)
       );
 
@@ -373,20 +454,16 @@ const ModalEditProduct = ({
               </div>
 
               <div className="form-group width-input-small-1">
-                <label>
-                  Tồn kho <span className="required">*</span>
-                </label>
+                <label>Giảm giá (%)</label>
                 <input
                   type="number"
-                  name="stock"
-                  value={formData.stock}
+                  name="discount"
+                  value={formData.discount}
                   onChange={handleChange}
-                  placeholder="Số lượng tồn kho"
+                  placeholder="Nhập % giảm giá"
                   min="0"
+                  max="100"
                 />
-                {errors.stock && (
-                  <span className="error-text">{errors.stock}</span>
-                )}
               </div>
 
               <div className="form-group width-input-small-2">
@@ -417,9 +494,6 @@ const ModalEditProduct = ({
                   value={formData.status}
                   onChange={handleChange}
                 >
-                  <option value="" disabled>
-                    -- Chọn trạng thái mặt hàng --
-                  </option>
                   <option value="1">Đang bán</option>
                   <option value="0">Ngừng bán</option>
                   <option value="2">Hết hàng</option>
@@ -434,30 +508,6 @@ const ModalEditProduct = ({
                   onChange={handleChange}
                   rows={3}
                   placeholder="Mô tả chi tiết về sản phẩm..."
-                />
-              </div>
-
-              <div className="form-group width-input-small-1">
-                <label>Giảm giá (%)</label>
-                <input
-                  type="number"
-                  name="discount"
-                  value={formData.discount}
-                  onChange={handleChange}
-                  placeholder="Nhập % giảm giá"
-                  min="0"
-                  max="100"
-                />
-              </div>
-
-              <div className="form-group width-input-small-1">
-                <label>Màu sắc</label>
-                <input
-                  type="text"
-                  name="color"
-                  value={formData.color}
-                  onChange={handleChange}
-                  placeholder="Màu sản phẩm"
                 />
               </div>
 
@@ -479,9 +529,11 @@ const ModalEditProduct = ({
                 </div>
               </div>
 
+              {/* Ảnh chung */}
               <div className="form-group full-width">
                 <label>
-                  Hình ảnh ({existingImages.length + imagePreview.length}/5)
+                  Hình ảnh chung ({existingImages.length + imagePreview.length}
+                  /5)
                 </label>
 
                 {existingImages.length > 0 && (
@@ -498,15 +550,7 @@ const ModalEditProduct = ({
                     <div className="preview-grid">
                       {existingImages.map((imgObj, idx) => (
                         <div key={`existing-${idx}`} className="preview-item">
-                          {/* Sửa: Truy cập vào thuộc tính .url */}
-                          <img
-                            src={imgObj.url}
-                            alt={`Existing ${idx + 1}`}
-                            onError={(e) => {
-                              console.error("❌ Failed to load:", imgObj.url);
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
+                          <img src={imgObj.url} alt={`Existing ${idx + 1}`} />
                           <button
                             type="button"
                             onClick={() => removeExistingImage(idx)}
@@ -528,7 +572,7 @@ const ModalEditProduct = ({
                     type="file"
                     id="img-upload-edit"
                     accept="image/*"
-                    onChange={handleImageChange}
+                    onChange={handleGeneralImageChange}
                     hidden
                     disabled={
                       existingImages.length + imageObjects.length >= 5 ||
@@ -548,14 +592,8 @@ const ModalEditProduct = ({
                     <span>
                       {isUploading
                         ? "Đang upload ảnh..."
-                        : existingImages.length + imageObjects.length >= 5
-                        ? "Đã đạt giới hạn 5 ảnh"
-                        : "Thêm ảnh mới (Crop & Upload)"}
+                        : "Thêm ảnh chung mới"}
                     </span>
-                    <small>
-                      Hỗ trợ JPG, PNG, WEBP - Ảnh sẽ được crop và upload lên
-                      Cloudinary
-                    </small>
                   </label>
                 </div>
 
@@ -588,6 +626,106 @@ const ModalEditProduct = ({
                     </div>
                   </>
                 )}
+              </div>
+
+              {/* ✅ Variants Section */}
+              <div className="form-group full-width">
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <label>
+                    Màu sắc & Tồn kho <span className="required">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    className="btn-add-variant"
+                    onClick={addVariant}
+                    disabled={isUploading}
+                  >
+                    <Plus size={16} /> Thêm màu
+                  </button>
+                </div>
+                {errors.variants && (
+                  <span className="error-text">{errors.variants}</span>
+                )}
+
+                <div className="variants-container">
+                  {variants.map((variant, index) => (
+                    <div key={index} className="variant-item">
+                      <div className="variant-header">
+                        <span>Màu {index + 1}</span>
+                        {variants.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeVariant(index)}
+                            className="btn-remove-variant"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="variant-fields">
+                        <input
+                          type="text"
+                          placeholder="Tên màu (VD: Đỏ, Xanh)"
+                          value={variant.color}
+                          onChange={(e) =>
+                            handleVariantChange(index, "color", e.target.value)
+                          }
+                        />
+                        <input
+                          type="number"
+                          placeholder="Tồn kho"
+                          value={variant.stock}
+                          onChange={(e) =>
+                            handleVariantChange(
+                              index,
+                              "stock",
+                              Number(e.target.value)
+                            )
+                          }
+                          min="0"
+                        />
+                      </div>
+
+                      <div className="variant-image-upload">
+                        <input
+                          type="file"
+                          id={`variant-img-edit-${index}`}
+                          accept="image/*"
+                          onChange={(e) => handleVariantImageChange(e, index)}
+                          hidden
+                          disabled={isUploading}
+                        />
+                        {variant.image && variant.image.url ? (
+                          <div className="variant-image-preview">
+                            <img src={variant.image.url} alt={variant.color} />
+                            <button
+                              type="button"
+                              onClick={() => removeVariantImage(index)}
+                              className="btn-remove-image"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <label
+                            htmlFor={`variant-img-edit-${index}`}
+                            className="variant-upload-label"
+                          >
+                            <Upload size={20} />
+                            <span>Upload ảnh cho màu này</span>
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

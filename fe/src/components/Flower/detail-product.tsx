@@ -1,22 +1,37 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { getProductByID, getAllProduct, postAddToCart } from "../../services/apiService";
+import {
+  getProductByID,
+  getAllProduct,
+  postAddToCart,
+  getAvailableColors,
+  getVariantByColor,
+} from "../../services/apiService";
 import "./detail-product.css";
 import { toast } from "react-toastify";
+
+interface ProductVariant {
+  color: string;
+  image: {
+    url: string;
+    publicId: string;
+  };
+  stock: number;
+}
 
 interface Product {
   id: string;
   name: string;
   price: number;
   discount?: number;
-  images?: any[];
+  images?: Array<{ url: string; publicId: string }>;
   occasions?: string[];
   category: string;
-  color?: string;
   description?: string;
-  stock: number;
   soldCount?: number;
   status?: number;
+  variants: ProductVariant[];
+  totalStock: number;
 }
 
 interface DetailProductProps {
@@ -34,6 +49,7 @@ const getImageUrl = (images?: any[]): string => {
 
   if (!images || images.length === 0) return defaultImage;
   const firstImage = images[0];
+
   if (firstImage && typeof firstImage === "object" && firstImage.url) {
     return firstImage.url;
   }
@@ -61,11 +77,20 @@ const DetailProduct: React.FC<DetailProductProps> = ({
   const [loading, setLoading] = useState(!location.state?.product);
   const [error, setError] = useState<string | null>(null);
 
+  // ✅ State cho variant/màu sắc
+  const [selectedColor, setSelectedColor] = useState<string>("");
+  const [availableColors, setAvailableColors] = useState<string[]>([]);
+  const [currentVariant, setCurrentVariant] = useState<ProductVariant | null>(
+    null
+  );
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
 
     if (location.state?.product && location.state.product.id === productID) {
-      setProduct(location.state.product);
+      const prod = location.state.product;
+      setProduct(prod);
+      initializeVariants(prod);
       setLoading(false);
       return;
     }
@@ -83,6 +108,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
         const response = await getProductByID(productID);
         if (response && response.data) {
           setProduct(response.data);
+          initializeVariants(response.data);
         } else {
           throw new Error("Không tìm thấy sản phẩm");
         }
@@ -95,6 +121,35 @@ const DetailProduct: React.FC<DetailProductProps> = ({
 
     fetchProduct();
   }, [productID, location.state]);
+
+  // ✅ Khởi tạo variants khi load product
+  const initializeVariants = (prod: Product) => {
+    if (prod.variants && prod.variants.length > 0) {
+      // Lấy danh sách màu có sẵn (stock > 0)
+      const colors = prod.variants
+        .filter((v) => v.stock > 0)
+        .map((v) => v.color);
+      setAvailableColors(colors);
+
+      // Chọn màu đầu tiên có sẵn
+      if (colors.length > 0) {
+        const firstColor = colors[0];
+        setSelectedColor(firstColor);
+        const variant = prod.variants.find((v) => v.color === firstColor);
+        setCurrentVariant(variant || null);
+      }
+    }
+  };
+
+  // ✅ Xử lý khi chọn màu khác
+  const handleColorSelect = (color: string) => {
+    if (!product) return;
+
+    setSelectedColor(color);
+    const variant = product.variants.find((v) => v.color === color);
+    setCurrentVariant(variant || null);
+    setQuantity(1); // Reset quantity
+  };
 
   useEffect(() => {
     if (!product) return;
@@ -159,32 +214,50 @@ const DetailProduct: React.FC<DetailProductProps> = ({
     ? product.price * (1 - product.discount / 100)
     : product.price;
 
-  const images = product.images || [];
+  // ✅ Hiển thị ảnh: Ưu tiên ảnh của variant đang chọn, fallback sang ảnh chung
+  const displayImages = currentVariant?.image
+    ? [currentVariant.image, ...(product.images || [])]
+    : product.images || [];
+
   const imageUrls =
-    images.length > 0
-      ? images.map((img) => getImageUrl([img]))
+    displayImages.length > 0
+      ? displayImages.map((img) => getImageUrl([img]))
       : [getImageUrl()];
 
-  const colors = ["#000000", "#4B5563", "#8B4513", "#DC143C"];
-
-
-  const handleAddToCart = async() => {
+  const handleAddToCart = async () => {
     if (!product?.id) {
-      console.error("Product ID không tồn tại");
+      toast.error("Sản phẩm không tồn tại");
+      return;
+    }
+
+    if (!selectedColor) {
+      toast.error("Vui lòng chọn màu sắc");
+      return;
+    }
+
+    if (!currentVariant || currentVariant.stock < quantity) {
+      toast.error("Không đủ hàng trong kho");
       return;
     }
 
     try {
-      const response = await postAddToCart(product.id, quantity);
-      console.log("Thông tin sản phẩm thêm vào cart", response);
-      toast.success('Đã thêm vào giỏ hàng');
+      await postAddToCart(product.id, quantity, selectedColor);
+      toast.success(
+        `Đã thêm ${quantity} sản phẩm màu ${selectedColor} vào giỏ hàng`
+      );
     } catch (error: any) {
       console.error("Lỗi thêm vào giỏ hàng:", error);
-      toast.error('Không thể thêm vào giỏ hàng. Vui lòng thử lại!');
+      toast.error(
+        error.response?.data?.message || "Không thể thêm vào giỏ hàng"
+      );
     }
   };
 
   const handleBuyNow = () => {
+    if (!selectedColor) {
+      toast.error("Vui lòng chọn màu sắc");
+      return;
+    }
     alert("Chức năng mua hàng đang được phát triển!");
   };
 
@@ -249,40 +322,92 @@ const DetailProduct: React.FC<DetailProductProps> = ({
             </div>
           </div>
 
+          {/* ✅ Color Selector với variants thật */}
           <div className="color-selector">
-            <span className="label">Màu sắc</span>
+            <span className="label">
+              Màu sắc: {selectedColor && <strong>{selectedColor}</strong>}
+            </span>
             <div className="color-options">
-              {colors.map((color, index) => (
-                <div
-                  key={index}
-                  className={`color-dot ${index === 0 ? "active" : ""}`}
-                  style={{ backgroundColor: color }}
-                  onClick={() => {}}
-                ></div>
-              ))}
+              {product.variants && product.variants.length > 0 ? (
+                product.variants.map((variant, index) => (
+                  <div
+                    key={index}
+                    className={`color-option ${
+                      selectedColor === variant.color ? "active" : ""
+                    } ${variant.stock === 0 ? "out-of-stock" : ""}`}
+                    onClick={() =>
+                      variant.stock > 0 && handleColorSelect(variant.color)
+                    }
+                    title={
+                      variant.stock > 0
+                        ? `${variant.color} - Còn ${variant.stock} sản phẩm`
+                        : `${variant.color} - Hết hàng`
+                    }
+                  >
+                    <img
+                      src={variant.image.url}
+                      alt={variant.color}
+                      className="color-image"
+                    />
+                    <span className="color-name">{variant.color}</span>
+                    {variant.stock === 0 && (
+                      <span className="sold-out-badge">Hết</span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p style={{ fontSize: "14px", color: "#999" }}>
+                  Không có màu sắc khả dụng
+                </p>
+              )}
             </div>
           </div>
 
           <div className="quantity-selector">
-            <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>
+            <button
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              disabled={!currentVariant}
+            >
               -
             </button>
             <input
               type="number"
               value={quantity}
               onChange={(e) =>
-                setQuantity(Math.max(1, parseInt(e.target.value) || 1))
+                setQuantity(
+                  Math.min(
+                    Math.max(1, parseInt(e.target.value) || 1),
+                    currentVariant?.stock || 1
+                  )
+                )
               }
               min="1"
+              max={currentVariant?.stock || 1}
+              disabled={!currentVariant}
             />
-            <button onClick={() => setQuantity(quantity + 1)}>+</button>
+            <button
+              onClick={() =>
+                setQuantity(Math.min(quantity + 1, currentVariant?.stock || 1))
+              }
+              disabled={!currentVariant}
+            >
+              +
+            </button>
           </div>
 
           <div className="action-buttons">
-            <button className="btn-add-cart" onClick={handleAddToCart}>
+            <button
+              className="btn-add-cart"
+              onClick={handleAddToCart}
+              disabled={!currentVariant || currentVariant.stock === 0}
+            >
               Thêm vào giỏ hàng
             </button>
-            <button className="btn-buy-now" onClick={handleBuyNow}>
+            <button
+              className="btn-buy-now"
+              onClick={handleBuyNow}
+              disabled={!currentVariant || currentVariant.stock === 0}
+            >
               Mua ngay
             </button>
           </div>
@@ -302,15 +427,20 @@ const DetailProduct: React.FC<DetailProductProps> = ({
             </div>
           </div>
 
+          {/* ✅ Stock info cho variant hiện tại */}
           <div className="stock-info">
-            {product.stock !== undefined && (
-              <>
-                {product.stock > 0 ? (
-                  <span className="in-stock">Còn {product.stock} sản phẩm</span>
-                ) : (
-                  <span className="out-of-stock">Hết hàng</span>
-                )}
-              </>
+            {currentVariant ? (
+              currentVariant.stock > 0 ? (
+                <span className="in-stock">
+                  Còn {currentVariant.stock} sản phẩm (Màu {selectedColor})
+                </span>
+              ) : (
+                <span className="out-of-stock">
+                  Màu {selectedColor} đã hết hàng
+                </span>
+              )
+            ) : (
+              <span className="out-of-stock">Vui lòng chọn màu sắc</span>
             )}
           </div>
         </div>
@@ -343,7 +473,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
             <div className="description-content">
               <p>
                 {product.description ||
-                  "Sản phẩm chất lượng cao, được chọn lọc kỹ lưỡng. Mang đến sự hài lòng tuyệt đối cho khách hàng."}
+                  "Sản phẩm chất lượng cao, được chọn lọc kỹ lưỡng."}
               </p>
 
               <div className="product-details-table">
@@ -356,12 +486,12 @@ const DetailProduct: React.FC<DetailProductProps> = ({
                   </span>
                 </div>
                 <div className="detail-row">
-                  <span className="detail-label">Tình trạng</span>
+                  <span className="detail-label">Tổng kho</span>
+                  <span className="detail-value">{product.totalStock}</span>
+                  <span className="detail-label">Màu sắc</span>
                   <span className="detail-value">
-                    {product.status === 1 ? "Còn hàng" : "Hết hàng"}
+                    {product.variants.map((v) => v.color).join(", ")}
                   </span>
-                  <span className="detail-label">Kho</span>
-                  <span className="detail-value">{product.stock}</span>
                 </div>
               </div>
             </div>
