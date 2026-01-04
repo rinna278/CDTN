@@ -424,3 +424,303 @@ button {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+
+
+
+/* ===== VARIANTS STYLING ===== */
+
+/* Variants Container */
+.variants-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+/* Variant Item */
+.variant-item {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.variant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.variant-header span {
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+}
+
+.btn-remove-variant {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.btn-remove-variant:hover {
+  background: #c82333;
+}
+
+/* Variant Fields */
+.variant-fields {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.variant-fields input {
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.variant-fields input:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Variant Image Upload */
+.variant-image-upload {
+  margin-top: 8px;
+}
+
+.variant-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  border: 2px dashed #ced4da;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.variant-upload-label:hover {
+  border-color: #80bdff;
+  background: #f0f8ff;
+}
+
+.variant-upload-label span {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #6c757d;
+}
+
+.variant-image-preview {
+  position: relative;
+  width: 100%;
+  max-width: 200px;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.variant-image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.btn-remove-image {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(220, 53, 69, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-remove-image:hover {
+  background: rgba(200, 35, 51, 1);
+}
+
+/* Add Variant Button */
+.btn-add-variant {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-add-variant:hover {
+  background: #218838;
+}
+
+.btn-add-variant:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ===== COLOR SELECTOR IN DETAIL PAGE ===== */
+
+.color-selector {
+  margin: 24px 0;
+}
+
+.color-selector .label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #495057;
+  font-weight: 500;
+}
+
+.color-selector .label strong {
+  color: #212529;
+  font-weight: 600;
+}
+
+.color-options {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.color-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  min-width: 80px;
+}
+
+.color-option:hover {
+  border-color: #80bdff;
+  transform: translateY(-2px);
+}
+
+.color-option.active {
+  border-color: #007bff;
+  background: #f0f8ff;
+}
+
+.color-option.out-of-stock {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.color-option.out-of-stock:hover {
+  transform: none;
+  border-color: #e9ecef;
+}
+
+.color-image {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.color-name {
+  font-size: 12px;
+  color: #495057;
+  font-weight: 500;
+  text-align: center;
+}
+
+.sold-out-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: #dc3545;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+/* ===== STOCK INFO ===== */
+
+.stock-info {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.in-stock {
+  color: #28a745;
+  background: #d4edda;
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+.out-of-stock {
+  color: #dc3545;
+  background: #f8d7da;
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+  .variant-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .color-options {
+    gap: 8px;
+  }
+
+  .color-option {
+    min-width: 70px;
+    padding: 6px;
+  }
+
+  .color-image {
+    width: 40px;
+    height: 40px;
+  }
+
+  .variants-container {
+    gap: 12px;
+  }
+}

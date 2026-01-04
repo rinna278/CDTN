@@ -1,4 +1,14 @@
 //Mẫu response trả về với product (giao diện hiển thị sản phẩm và quản lý sản phẩm bên admin)
+export interface ProductVariant {
+  color: string;
+  image: {
+    url: string;
+    publicId: string;
+  };
+  stock: number;
+}
+
+
 export interface Product {
   id: string;
   name: string;
@@ -12,6 +22,9 @@ export interface Product {
   stock: number;
   soldCount?: number;
   status?: number;
+  // ✅ Thêm variants và totalStock
+  variants: ProductVariant[];
+  totalStock: number;
 }
 
 //Mẫu response trả về với tất cả người dùng (admin) (data)
@@ -110,6 +123,7 @@ export interface CartItem {
   discount?: number;
   subtotal: number;
   stock: number;
+  color?: string;
 }
 
 export interface Cart {
