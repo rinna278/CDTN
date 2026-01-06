@@ -1,31 +1,68 @@
-//Mẫu response trả về với product (giao diện hiển thị sản phẩm và quản lý sản phẩm bên admin)
-export interface ProductVariant {
-  color: string;
-  image: {
+
+export interface CreateProductPayload {
+  name: string;
+  price: number;
+  description?: string;
+  discount?: number;
+  category?: string;
+
+  images?: Array<{
     url: string;
     publicId: string;
-  };
-  stock: number;
+  }>;
+
+  occasions?: string[];
+
+  variants: Array<{
+    color: string;
+    image: {
+      url: string;
+      publicId: string;
+    };
+    stock: number;
+  }>;
+
+  status?: number;
 }
+
+
+export type UpdateProductPayload = Partial<CreateProductPayload>;
 
 
 export interface Product {
   id: string;
+
   name: string;
   price: number;
-  discount?: number;
-  images?: any[];
-  occasions?: string[];
-  category: string;
-  color?: string;
   description?: string;
-  stock: number;
-  soldCount?: number;
-  status?: number;
-  // ✅ Thêm variants và totalStock
-  variants: ProductVariant[];
+  discount?: number;
+  category?: string;
+
+  images?: Array<{
+    url: string;
+    publicId: string;
+  }>;
+
+  occasions?: string[];
+
+  variants?: Array<{
+    color: string;
+    image: {
+      url: string;
+      publicId: string;
+    };
+    stock: number;
+  }>;
+
+  status: number;
+
   totalStock: number;
+  soldCount: number;
+
+  createdAt: string;
+  updatedAt: string;
 }
+
 
 //Mẫu response trả về với tất cả người dùng (admin) (data)
 export interface AllUser {
@@ -44,6 +81,7 @@ export interface AllUser {
     isSuperAdmin: boolean;
   };
 }
+
 // Trả về người dùng kèm phân trang
 export interface AllUserResponse {
   data: AllUser[];
@@ -52,7 +90,6 @@ export interface AllUserResponse {
   totalPage: number;
   totalItem: number;
 }
-
 
 //Mẫu response trả về tỉnh thành (update profile)
 export interface Province {
@@ -111,8 +148,6 @@ export interface GetProductsParams {
   maxPrice?: number;
 }
 
-
-
 export interface CartItem {
   id: string;
   productId: string;
@@ -135,4 +170,108 @@ export interface Cart {
   items: CartItem[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CreateOrderPayload {
+  addressId: string;
+  paymentMethod: "cod" | "vnpay" | "momo" | "bank_transfer";
+  notes?: string;
+  discountCode?: string;
+  cartItemIds: string[]; // 👈 Thêm field này
+}
+
+
+export enum PaymentMethod {
+  COD = "cod",
+  VNPAY = "vnpay",
+  MOMO = "momo",
+  ZALOPAY = "zalopay",
+  BANK_TRANSFER = "bank_transfer",
+}
+
+
+export interface GetMyOrdersParams {
+  page?: number;
+  limit?: number;
+  orderStatus?: string;
+  paymentStatus?: string;
+}
+
+
+export interface CancelOrderPayload{
+  reason: string;
+}
+
+//Lấy tất cả đơn hàng (admin)
+export interface GetAllOrdersParams {
+  page?: number;
+  limit?: number;
+  orderStatus?: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  orderCode?: string;
+}
+
+export interface UpdateOrderStatusPayload {
+  status: string; // 'pending' | 'confirmed' | 'processing' | 'shipping' | 'delivered' | 'cancelled'
+  reason?: string; // Bắt buộc nếu status = 'cancelled'
+}
+
+// Cập nhật thông tin vận chuyển (Admin)
+export interface UpdateShippingPayload {
+  shippingProvider?: string; // 'GHN' | 'GHTK' | 'J&T' | 'ViettelPost'
+  trackingNumber?: string;
+}
+
+
+
+export enum OrderStatus {
+  PENDING = "pending",
+  CONFIRMED = "confirmed",
+  PROCESSING = "processing",
+  SHIPPING = "shipping",
+  DELIVERED = "delivered",
+  CANCELLED = "cancelled",
+  REFUNDED = "refunded",
+}
+
+export enum PaymentStatus {
+  PENDING = "pending",
+  PAID = "paid",
+  FAILED = "failed",
+}
+
+export interface OrderItem {
+  id: string;
+  productId: string;
+  productName: string;
+  productImage: string;
+  color: string;
+  price: number;
+  discount: number;
+  quantity: number;
+  subtotal: number;
+}
+
+export interface Order {
+  id: string;
+  orderCode: string;
+  userId: string;
+  orderStatus: OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymentMethod: PaymentMethod;
+
+  items: OrderItem[];
+  totalItems: number;
+  totalAmount: number;
+
+  orderDate: string;
+  createdAt: string;
+}
+
+export interface OrderListResponse {
+  data: Order[];
+  total: number;
+  page: number;
+  limit: number;
 }

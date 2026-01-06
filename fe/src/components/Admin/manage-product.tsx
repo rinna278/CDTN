@@ -1,57 +1,31 @@
 import "./manage-product.css";
 import { getAllProduct, deleteProduct } from "../../services/apiService";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import ModalCreateProduct from "./modal-create-product";
 import ModalEditProduct from "./modal-edit-product";
 import ModalConfirmDelete from "./modal-confirm-delete";
 import CategoryManager from "./manage-categories";
 import { toast } from "react-toastify";
-
-interface IProductVariant {
-  color: string;
-  image: {
-    url: string;
-    publicId: string;
-  };
-  stock: number;
-}
-
-interface IProduct {
-  id: string;
-  name: string;
-  price: string | number;
-  totalStock: number; // ✅ Sử dụng totalStock thay vì stock
-  category: string;
-  description?: string;
-  discount?: number;
-  images?: string[];
-  occasions?: string[];
-  status?: number;
-  soldCount?: number;
-  variants: IProductVariant[]; // ✅ Thêm variants
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { Product } from "../../types/type";
 
 const ManageProduct = () => {
-  const [products, setProducts] = useState<IProduct[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [totalProducts, setTotalProducts] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<IProduct | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // ✅ State cho phân trang và tìm kiếm
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [totalPages, setTotalPages] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       setIsLoading(true);
       const res = await getAllProduct({
@@ -74,11 +48,11 @@ const ManageProduct = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentPage, searchTerm]);
 
   useEffect(() => {
     fetchProducts();
-  }, [currentPage, searchTerm]);
+  }, [fetchProducts]);
 
   console.log("Danh sách sản phẩm: ", products);
 
@@ -97,7 +71,7 @@ const ManageProduct = () => {
     setIsModalOpen(false);
   };
 
-  const handleOpenEditModal = (product: IProduct) => {
+  const handleOpenEditModal = (product: Product) => {
     setSelectedProduct(product);
     setIsEditModalOpen(true);
   };
@@ -111,7 +85,7 @@ const ManageProduct = () => {
     fetchProducts();
   };
 
-  const handleOpenDeleteModal = (product: IProduct) => {
+  const handleOpenDeleteModal = (product: Product) => {
     setProductToDelete(product);
     setIsDeleteModalOpen(true);
   };
@@ -156,13 +130,11 @@ const ManageProduct = () => {
     }
   };
 
-  // ✅ Xử lý tìm kiếm
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset về trang 1 khi search
+    setCurrentPage(1);
   };
 
-  // ✅ Xử lý phân trang
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -170,8 +142,7 @@ const ManageProduct = () => {
     }
   };
 
-  // ✅ Tính tổng màu có sẵn
-  const getAvailableColorsCount = (product: IProduct): number => {
+  const getAvailableColorsCount = (product: Product): number => {
     if (!product.variants || product.variants.length === 0) return 0;
     return product.variants.filter((v) => v.stock > 0).length;
   };
@@ -347,7 +318,6 @@ const ManageProduct = () => {
           </table>
         </div>
 
-        {/* ✅ Phân trang */}
         {!isLoading && totalPages > 1 && (
           <div className="pagination">
             <button
@@ -360,7 +330,6 @@ const ManageProduct = () => {
 
             {[...Array(totalPages)].map((_, index) => {
               const page = index + 1;
-              // Chỉ hiển thị 5 trang xung quanh trang hiện tại
               if (
                 page === 1 ||
                 page === totalPages ||

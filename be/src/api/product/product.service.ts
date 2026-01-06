@@ -94,19 +94,21 @@ export class ProductService extends BaseService<ProductEntity> {
       );
     }
 
+    // Sửa đoạn này trong product.service.ts
     if (occasions && occasions.length > 0) {
       const occasionConditions = occasions
-        .map(
-          (_, index) => `JSON_CONTAINS(product.occasions, :occasion${index})`,
-        )
+        .map((_, index) => `product.occasions LIKE :occasion${index}`)
         .join(' OR ');
+
       const params = occasions.reduce(
         (acc, occasion, index) => {
-          acc[`occasion${index}`] = JSON.stringify(occasion);
+          // Tìm kiếm chuỗi "birthday" nằm trong dấu nháy kép để chính xác
+          acc[`occasion${index}`] = `%"${occasion}"%`;
           return acc;
         },
         {} as Record<string, string>,
       );
+
       queryBuilder.andWhere(`(${occasionConditions})`, params);
     }
 

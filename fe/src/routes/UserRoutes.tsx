@@ -13,6 +13,8 @@ import Profile from "../components/User/profile";
 import Cart from "../components/Cart/cart";
 import ForgotPassword from "../components/User/forgot-password";
 import DetailProduct from "../components/Flower/detail-product";
+import Orders from "../components/Order/orders";
+import CheckoutModal from "../components/Checkout/checkout-modal";
 interface UserRoutesProps {
   selected: string;
   setSelected: Dispatch<SetStateAction<string>>;
@@ -34,7 +36,9 @@ const UserRoutes = ({ selected, setSelected }: UserRoutesProps) => {
         <Route path="/cart" element={<Cart selected={selected} setSelected={setSelected} />}/>
         <Route path="/forgot-password" element={<ForgotPassword selected={selected} setSelected={setSelected}/>} />
         <Route path="/detail-product/:productID" element={<DetailProduct selected={selected} setSelected={setSelected}/>}/>
+        <Route path="/my-orders" element={<Orders selected={selected} setSelected={setSelected} />}/>
     </Routes>
+
   );
 };
 

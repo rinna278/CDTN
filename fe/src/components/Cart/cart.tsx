@@ -7,9 +7,20 @@ import React, {
   useCallback,
 } from "react";
 import "./cart.css";
-import { deleteItemInCart, getAllItemInCart, updateCart } from "../../services/apiService";
-import { Cart as CartType, CartItem } from "../../types/type";
+import {
+  deleteItemInCart,
+  getAllItemInCart,
+  updateCart,
+} from "../../services/apiService";
+import {
+  Cart as CartType,
+  CartItem,
+  CreateOrderPayload,
+} from "../../types/type";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+import { postCreateOrder } from "../../services/apiService";
+import CheckoutModal from "../Checkout/checkout-modal";
 
 interface HeaderProps {
   selected: string;
@@ -26,6 +37,39 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
   const updateTimers = useRef<{ [key: string]: NodeJS.Timeout }>({});
   // ✅ Lưu pending quantity cho mỗi item
   const pendingQuantities = useRef<{ [key: string]: number }>({});
+
+  const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Thay thế hàm cũ bằng phiên bản này
+  const handleConfirmOrder = async (orderData: CreateOrderPayload) => {
+    if (isSubmitting) return;
+
+    try {
+      setIsSubmitting(true);
+
+      // TypeScript bây giờ sẽ hiểu orderData khớp 100% với postCreateOrder
+      const res = await postCreateOrder(orderData);
+
+      // Đóng modal
+      setIsModalOpen(false);
+
+      // Kiểm tra phương thức thanh toán để điều hướng
+      // Lưu ý: So sánh trực tiếp với chuỗi vì CreateOrderPayload dùng union string
+      if (orderData.paymentMethod === "vnpay" && res.paymentUrl) {
+        window.location.href = res.paymentUrl;
+      } else {
+        toast.success("Đặt hàng thành công! Cảm ơn bạn.");
+        navigate("/my-orders");
+      }
+    } catch (error: any) {
+      console.error("Lỗi đặt hàng:", error);
+      toast.error(error.response?.data?.message || "Không thể tạo đơn hàng");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -459,14 +503,24 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
             <h3>{formatPrice(calculateSelectedTotal())}</h3>
           </div>
           <div className="payment">
-            <button disabled={selectedItems.size === 0}>
-              Thanh toán ({selectedItems.size})
+            <button
+              disabled={selectedItems.size === 0}
+              onClick={() => setIsModalOpen(true)}
+            >
+              Đặt hàng ({selectedItems.size} mặt hàng)
             </button>
             {selectedItems.size === 0 && (
               <p>Vui lòng chọn ít nhất một sản phẩm</p>
             )}
           </div>
         </div>
+        <CheckoutModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onConfirm={handleConfirmOrder}
+          totalAmount={calculateSelectedTotal()}
+          selectedItemIds={Array.from(selectedItems)}
+        />
       </div>
     </div>
   );

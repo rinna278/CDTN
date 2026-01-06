@@ -561,10 +561,10 @@ button svg {
 }
 
 .btn-add-product .button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
   color: white;
   padding: 12px 24px;
-  border-radius: 8px;
+  /* border-radius: 8px; */
   cursor: pointer;
   font-weight: 600;
   font-size: 14px;

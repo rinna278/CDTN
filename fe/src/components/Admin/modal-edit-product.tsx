@@ -5,37 +5,24 @@ import { updateProduct, uploadImage } from "../../services/apiService";
 import { toast } from "react-toastify";
 import ImageCropModal from "./image-crop-modal";
 import { useCategories } from "./useCategories";
+// 1. Import Global Type
+import { Product } from "../../types/type";
 
-interface IImage {
-  url: string;
-  publicId: string;
-}
-
-interface IVariant {
+// 2. Định nghĩa alias khớp với cấu trúc trong services/apiService.ts và types/type.ts
+// Để dùng cho State quản lý form
+type ProductImage = { url: string; publicId: string };
+type ProductVariant = {
   color: string;
-  image: IImage;
+  image: ProductImage | null;
   stock: number;
-}
-
-interface IProduct {
-  id: string;
-  name: string;
-  price: string | number;
-  category: string;
-  description?: string;
-  discount?: number;
-  images?: (string | IImage)[];
-  occasions?: string[];
-  status?: number;
-  variants: IVariant[];
-  totalStock: number;
-}
+};
 
 interface ModalEditProductProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  product: IProduct | null;
+  // 3. Sử dụng Product từ Global Type
+  product: Product | null;
 }
 
 const ModalEditProduct: React.FC<ModalEditProductProps> = ({
@@ -57,13 +44,13 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
 
   const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
 
-  // Ảnh chung
-  const [imageObjects, setImageObjects] = useState<IImage[]>([]);
+  // Ảnh chung (Sử dụng Type ProductImage)
+  const [imageObjects, setImageObjects] = useState<ProductImage[]>([]);
   const [imagePreview, setImagePreview] = useState<string[]>([]);
-  const [existingImages, setExistingImages] = useState<IImage[]>([]);
+  const [existingImages, setExistingImages] = useState<ProductImage[]>([]);
 
-  // ✅ Variants
-  const [variants, setVariants] = useState<IVariant[]>([]);
+  // ✅ Variants (Sử dụng Type ProductVariant)
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -92,7 +79,7 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
       setFormData({
         name: product.name || "",
         price: product.price.toString() || "",
-        category: product.category || "",
+        category: product.category || "", // Giờ đây category là string (từ Global Type)
         description: product.description || "",
         discount: product.discount?.toString() || "",
         status: product.status?.toString() || "1",
@@ -101,18 +88,25 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
       setSelectedOccasions(product.occasions || []);
 
       // Normalize ảnh chung
-      const validImages: IImage[] = Array.isArray(product.images)
-        ? product.images.map((img) => {
-            if (typeof img === "string") {
-              return { url: img, publicId: "" };
-            }
-            return img;
-          })
-        : [];
+      const rawImages = (product.images || []) as any[];
+
+      const validImages: ProductImage[] = rawImages.map((img) => {
+        if (typeof img === "string") {
+          return { url: img, publicId: "" };
+        }
+        return img; // Giả định img đã đúng cấu trúc {url, publicId}
+      });
+
       setExistingImages(validImages);
 
-      // ✅ Set variants từ product
-      setVariants(product.variants || []);
+      const validVariants: ProductVariant[] = (product.variants || []).map(
+        (v) => ({
+          color: v.color || "",
+          image: v.image && v.image.url ? v.image : null, // ✅ Null thay vì empty object
+          stock: v.stock || 0,
+        })
+      );
+      setVariants(validVariants);
 
       setImagePreview([]);
       setImageObjects([]);
@@ -267,10 +261,7 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
   };
 
   const addVariant = () => {
-    setVariants((prev) => [
-      ...prev,
-      { color: "", image: { url: "", publicId: "" }, stock: 0 },
-    ]);
+    setVariants((prev) => [...prev, { color: "", image: null, stock: 0 }]);
   };
 
   const removeVariant = (index: number) => {
@@ -286,7 +277,7 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
       const updated = [...prev];
       updated[index] = {
         ...updated[index],
-        image: { url: "", publicId: "" },
+        image: null,
       };
       return updated;
     });
@@ -302,7 +293,7 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
 
     // Validate variants
     const validVariants = variants.filter(
-      (v) => v.color.trim() && v.image.url && v.stock >= 0
+      (v) => v.color.trim() && v.image !== null && v.stock >= 0
     );
     if (validVariants.length === 0) {
       newErrors.variants = "Phải có ít nhất 1 variant hợp lệ";
@@ -330,8 +321,13 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
     onClose();
   };
 
+  // ✅ THAY THẾ HÀM handleSubmit TRONG modal-edit-product.tsx
+
   const handleSubmit = async () => {
-    if (!validateForm() || !product) return;
+    if (!validateForm() || !product) {
+      toast.error("Vui lòng kiểm tra lại thông tin sản phẩm");
+      return;
+    }
 
     setIsSubmitting(true);
     setErrors({});
@@ -339,27 +335,35 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
     try {
       const allImages = [...existingImages, ...imageObjects];
 
-      // Lọc variants hợp lệ
-      const validVariants = variants.filter(
-        (v) => v.color.trim() && v.image.url && v.stock >= 0
-      );
+      // ✅ Lọc và format variants - CHỈ MỘT LẦN
+      const validVariants = variants
+        .filter((v) => v.color.trim() && v.image !== null && v.stock >= 0)
+        .map((v) => ({
+          color: v.color.trim(),
+          image: {
+            url: v.image!.url, // ✅ ! để assert non-null sau khi filter
+            publicId: v.image!.publicId,
+          },
+          stock: Number(v.stock),
+        }));
 
-      // ✅ Tính tổng stock từ tất cả variants
-      const totalStock = validVariants.reduce((sum, v) => sum + v.stock, 0);
+      console.log("📦 Valid variants:", validVariants);
 
-      await updateProduct(
-        product.id,
-        formData.name,
-        Number(formData.price),
-        totalStock, // ✅ Thêm tham số stock (tổng từ variants)
-        formData.description,
-        formData.discount ? Number(formData.discount) : 0,
-        formData.category,
-        allImages,
-        selectedOccasions,
-        validVariants, // ✅ Gửi variants
-        Number(formData.status)
-      );
+      const payload = {
+        name: formData.name.trim(),
+        price: Number(formData.price),
+        description: formData.description?.trim() || undefined,
+        discount: formData.discount ? Number(formData.discount) : undefined,
+        category: formData.category,
+        images: allImages,
+        occasions: selectedOccasions.length > 0 ? selectedOccasions : undefined,
+        variants: validVariants, // ✅ Dùng trực tiếp, không map lại
+        status: Number(formData.status),
+      };
+
+      console.log("📦 Update payload:", JSON.stringify(payload, null, 2));
+
+      await updateProduct(product.id, payload);
 
       toast.success("Cập nhật sản phẩm thành công!", {
         position: "top-right",
@@ -372,22 +376,28 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
       }, 1500);
     } catch (error: any) {
       console.error("Lỗi:", error);
+      console.error("Error response: ", error.response);
       const statusCode = error.response?.status;
-      const message = error.response?.data?.message;
+      const serverMessage = error.response?.data?.message;
 
-      if (statusCode === 400) {
-        toast.error(
-          Array.isArray(message)
-            ? message.join(", ")
-            : message || "Dữ liệu không hợp lệ"
-        );
-      } else {
-        toast.error(message || "Có lỗi xảy ra, vui lòng thử lại");
+      let displayError = "Có lỗi xảy ra, vui lòng thử lại";
+
+      if (serverMessage) {
+        if (Array.isArray(serverMessage)) {
+          displayError = serverMessage.join(", ");
+        } else {
+          displayError = serverMessage;
+        }
       }
 
-      setErrors({
-        submit: message || "Có lỗi xảy ra, vui lòng thử lại.",
-      });
+      // ✅ Log status code để debug
+      if (statusCode) {
+        console.error(`❌ Status: ${statusCode}`);
+        displayError = `[${statusCode}] ${displayError}`;
+      }
+
+      setErrors({ submit: displayError });
+      toast.error(displayError);
     } finally {
       setIsSubmitting(false);
     }
@@ -702,7 +712,7 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
                           hidden
                           disabled={isUploading}
                         />
-                        {variant.image && variant.image.url ? (
+                        {variant.image !== null && variant.image.url ? (
                           <div className="variant-image-preview">
                             <img src={variant.image.url} alt={variant.color} />
                             <button

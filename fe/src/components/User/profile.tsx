@@ -15,6 +15,7 @@ import {
 import "./profile.css";
 import { toast } from "react-toastify";
 import { AddressData } from "../../types/type";
+import Orders from "../Order/orders";
 
 interface HeaderProps {
   selected: string;
@@ -638,10 +639,7 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
       )}
 
       {selectedMenu === "orders" && (
-        <div className="my-orders">
-          <h2>Đơn hàng của tôi</h2>
-          <p>Nội dung đơn hàng sẽ hiển thị ở đây...</p>
-        </div>
+        <Orders selected={selected} setSelected={setSelected}/>
       )}
 
       {/* MODAL ĐỔI MẬT KHẨU */}

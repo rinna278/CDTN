@@ -1,14 +1,24 @@
 import axios from "axios";
 import instance from "../utils/axiosCustomize";
-import { AllUserResponse, Product } from "../types/type";
+import {
+  AllUserResponse,
+  CreateProductPayload,
+  UpdateProductPayload,
+  Product,
+  GetMyOrdersParams,
+  OrderListResponse,
+  CancelOrderPayload,
+  GetAllOrdersParams,
+  UpdateOrderStatusPayload,
+  UpdateShippingPayload,
+  CreateOrderPayload,
+} from "../types/type";
 import { Province } from "../types/type";
 import { District } from "../types/type";
 import { Ward } from "../types/type";
 import { AddressData } from "../types/type";
 import { GetProductsParams } from "../types/type";
 const PROVINCE_API_BASE = "https://provinces.open-api.vn/api";
-
-
 
 interface AddressResponse extends AddressData {
   id: string;
@@ -17,9 +27,8 @@ interface AddressResponse extends AddressData {
   updatedAt: string;
 }
 
-
 export interface ProductResponse {
-  data: Product[]; 
+  data: Product[];
   total: number;
   page: number;
   limit: number;
@@ -27,7 +36,7 @@ export interface ProductResponse {
 }
 
 export interface SingleProductResponse {
-  data: Product; 
+  data: Product;
   success?: boolean;
   message?: string;
 }
@@ -91,7 +100,7 @@ const getAllUser = async () => {
 const PatchUpdateUser = (id: string, name: string, phone: string) => {
   return instance.patch(`api/v1/users/${id}`, {
     name: name,
-    phone: phone
+    phone: phone,
   });
 };
 
@@ -171,7 +180,6 @@ const setAsDefaultAddress = async (id: string) => {
   return response.data as AddressResponse;
 };
 
-
 //Product
 
 const getAllProduct = async (params: GetProductsParams) => {
@@ -181,47 +189,22 @@ const getAllProduct = async (params: GetProductsParams) => {
   return response.data as ProductResponse;
 };
 
-const getProductByID = async (productID : string) => {
-  const  response = await instance.get(`api/v1/products/${productID}`);
+const getProductByID = async (productID: string) => {
+  const response = await instance.get(`api/v1/products/${productID}`);
   return response.data as SingleProductResponse;
-}
+};
 
-const postCreateProduct = async (payload: any) => {
-  const response = await instance.post(`api/v1/products`, {
-    ...payload
-  });
+const postCreateProduct = async (payload: CreateProductPayload) => {
+  const response = await instance.post(`api/v1/products`, payload);
   return response.data;
 };
 
-const updateProduct = async (
-  id: string,
-  name: string,
-  price: number,
-  stock: number,
-  description?: string,
-  discount?: number,
-  category?: string,
-  images?: Array<{url: string, publicId: string}>,
-  occasions?: string[],
-  variants?: Array<{color: string, image: {url: string; publicId: string}; stock: number}>,
-  status?: number
-) => {
-  const response = await instance.patch(`api/v1/products/${id}`, {
-    name,
-    price,
-    stock,
-    description,
-    discount,
-    category,
-    images,
-    occasions,
-    variants,
-    status,
-  });
+const updateProduct = async (id: string, payload: UpdateProductPayload) => {
+  const response = await instance.patch(`api/v1/products/${id}`, payload);
   return response.data;
 };
 
-// ✅ Thêm hàm update stock cho variant cụ thể
+// ✅ Update stock cho variant cụ thể
 const updateVariantStock = async (
   productId: string,
   color: string,
@@ -234,16 +217,18 @@ const updateVariantStock = async (
   return response.data;
 };
 
-
-// ✅ Thêm hàm lấy available colors
+// ✅ Lấy available colors
 const getAvailableColors = async (productId: string) => {
-  const response = await instance.get(`api/v1/products/${productId}/available-colors`);
+  const response = await instance.get(
+    `api/v1/products/${productId}/available-colors`
+  );
   return response.data as string[];
 };
-
-// ✅ Thêm hàm lấy variant theo màu
+// ✅ Lấy variant theo màu
 const getVariantByColor = async (productId: string, color: string) => {
-  const response = await instance.get(`api/v1/products/${productId}/variant/${color}`);
+  const response = await instance.get(
+    `api/v1/products/${productId}/variant/${color}`
+  );
   return response.data;
 };
 
@@ -253,66 +238,68 @@ const deleteProduct = async (id: string) => {
 };
 
 //Upload 1 ảnh
-const uploadImage = async(file: File) => {
+const uploadImage = async (file: File) => {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append("file", file);
 
   const response = await instance.post(`api/v1/upload/image`, formData, {
-    headers:{
-      'Contend-Type': 'multipart/form-data',
+    headers: {
+      "Content-Type": "multipart/form-data",
     },
   });
   return response.data;
-}
+};
 
 //Upload nhiều ảnh
-const uploadImages = async(files: File[]) => {
-  if (files.length > 6){
-    throw new Error('Maximum 5 files allowed per request');
+const uploadImages = async (files: File[]) => {
+  if (files.length > 6) {
+    throw new Error("Maximum 5 files allowed per request");
   }
   const formData = new FormData();
   files.forEach((file) => {
-    formData.append('files', file);
+    formData.append("files", file);
   });
   const response = await instance.post(`api/v1/upload/images`, formData, {
     headers: {
-      'Content-Type': 'multipart/form-data',
+      "Content-Type": "multipart/form-data",
     },
   });
   return response.data;
-}
+};
 
 //Xóa ảnh theo publicId (một ảnh)
-const deleteImage = async(publicId : string) => {
+const deleteImage = async (publicId: string) => {
   const response = await instance.delete(`api/v1/upload/image/${publicId}`, {
     data: {
       publicId: publicId,
     },
   });
   return response.data;
-}
-
+};
 
 //Xóa ảnh theo publicIds (nhiều ảnh)
-const deleteImages = async(publicIds: string[]) => {
+const deleteImages = async (publicIds: string[]) => {
   const response = await instance.delete(`api/v1/upload/images`, {
     data: {
       publicIds: publicIds,
     },
   });
   return response.data;
-}
+};
 
 // Lấy signed parameters để upload trực tiếp từ client
 const getSignedUploadParams = async () => {
-  const response = await instance.get('api/v1/upload/sign');
+  const response = await instance.get("api/v1/upload/sign");
   return response.data;
 };
 
-
 // ✅ Cập nhật postAddToCart để hỗ trợ color
-const postAddToCart = async (productID: string, quantity: number, color: string) => {
-  const response = await instance.post('api/v1/cart/items', {
+const postAddToCart = async (
+  productID: string,
+  quantity: number,
+  color: string
+) => {
+  const response = await instance.post("api/v1/cart/items", {
     productId: productID,
     quantity: quantity,
     color: color, // ✅ Thêm màu
@@ -321,26 +308,94 @@ const postAddToCart = async (productID: string, quantity: number, color: string)
 };
 
 //Lấy tất cả item trong giỏ
-const getAllItemInCart = async() => {
-  const response = await instance.get('api/v1/cart');
+const getAllItemInCart = async () => {
+  const response = await instance.get("api/v1/cart");
   return response.data;
-}
+};
 
 const updateCart = async (itemId: string, quantity: number) => {
-  const response = await instance.patch(`api/v1/cart/items/${itemId}`,{
-    quantity: quantity
-  })
+  const response = await instance.patch(`api/v1/cart/items/${itemId}`, {
+    quantity: quantity,
+  });
   return response.data;
-}
-
+};
 
 const deleteItemInCart = async (itemId: string) => {
-  const response = await instance.delete(`api/v1/cart/items/${itemId}`)
+  const response = await instance.delete(`api/v1/cart/items/${itemId}`);
   return response.data;
-}
+};
 
 
+// Hàm gọi API tạo đơn hàng
+const postCreateOrder = async (payload: CreateOrderPayload) => {
+  const response = await instance.post(`api/v1/orders`, payload);
+  return response.data; 
+  // Lưu ý: Nếu là COD, trả về thông tin đơn hàng. 
+  // Nếu là VNPay, trả về { paymentUrl: string, orderId: string }
+};
 
+//Lấy danh sách đơn hàng của người dùng
+const getMyOrders = async (params: GetMyOrdersParams) => {
+  const response = await instance.get(`api/v1/orders/my-orders`, { params });
+  return response.data as OrderListResponse;
+};
+
+//Lấy chi tiết đơn hàng
+const getOrderById = async (orderId: string) => {
+  const response = await instance.get(`api/v1/orders/${orderId}`);
+  return response.data;
+};
+
+//Hủy một đơn hàng
+const cancelOrder = async (orderId: string, payload: CancelOrderPayload) => {
+  const response = await instance.patch(
+    `api/v1/orders/${orderId}/cancel`,
+    payload
+  );
+  return response.data;
+};
+
+//VN Pay payment
+const handleVNPayCallback = async (queryParams: any) => {
+  const response = await instance.get(`api/v1/orders/payment/vnpay-callback`, {
+    params: queryParams,
+  });
+  return response.data;
+};
+
+//admin: lấy tất cả đơn
+const getAllOrders = async (params: GetAllOrdersParams) => {
+  const response = await instance.get(`api/v1/orders/admin/all`, { params });
+  return response.data as OrderListResponse;
+};
+
+//Láy chi tiết đơn (admin)
+const getOrderByIdAdmin = async (orderId: string) => {
+  const response = await instance.get(`api/v1/orders/admin/${orderId}`);
+  return response.data;
+};
+
+const updateOrderStatus = async (
+  orderId: string,
+  payload: UpdateOrderStatusPayload
+) => {
+  const response = await instance.patch(
+    `api/v1/orders/admin/${orderId}/status`,
+    payload
+  );
+  return response.data;
+};
+
+const updateShipping = async (
+  orderId: string,
+  payload: UpdateShippingPayload
+) => {
+  const response = await instance.patch(
+    `api/v1/orders/admin/${orderId}/shipping`,
+    payload
+  );
+  return response.data;
+};
 
 export {
   postLogin,
@@ -361,11 +416,11 @@ export {
   uploadImages,
   deleteImage,
   deleteImages,
-  getSignedUploadParams, 
+  getSignedUploadParams,
   getAllProvinces,
   getDistrictsByProvinceCode,
   getWardsByDistrictCode,
-  getAddressById, 
+  getAddressById,
   getAllAddresses,
   getDefaultAddress,
   createAddress,
@@ -378,5 +433,14 @@ export {
   deleteItemInCart,
   getAvailableColors,
   getVariantByColor,
-  updateVariantStock
+  updateVariantStock,
+  postCreateOrder,
+  getMyOrders,
+  getOrderById,
+  cancelOrder,
+  handleVNPayCallback,
+  getAllOrders,
+  getOrderByIdAdmin,
+  updateOrderStatus,
+  updateShipping
 };

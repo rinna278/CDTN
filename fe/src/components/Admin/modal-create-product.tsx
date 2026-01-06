@@ -20,6 +20,7 @@ interface ModalCreateProductProps {
 }
 
 interface ProductVariant {
+  id: string; // ✅ Thêm ID để quản lý list variant ổn định hơn
   color: string;
   image: { url: string; publicId: string } | null;
   stock: number;
@@ -49,9 +50,9 @@ const ModalCreateProduct = ({
   >([]);
   const [imagePreview, setImagePreview] = useState<string[]>([]);
 
-  // ✅ Quản lý variants
+  // ✅ Quản lý variants (Có thêm ID)
   const [variants, setVariants] = useState<ProductVariant[]>([
-    { color: "", image: null, stock: 0 },
+    { id: crypto.randomUUID(), color: "", image: null, stock: 0 },
   ]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -178,7 +179,6 @@ const ModalCreateProduct = ({
       const result = await uploadImage(croppedFile);
 
       if (cropTarget.type === "general") {
-        // Upload ảnh chung
         setImageObjects((prev) => [
           ...prev,
           { url: result.secureUrl, publicId: result.publicId },
@@ -193,7 +193,6 @@ const ModalCreateProduct = ({
         cropTarget.type === "variant" &&
         cropTarget.variantIndex !== undefined
       ) {
-        // Upload ảnh cho variant
         setVariants((prev) => {
           const updated = [...prev];
           updated[cropTarget.variantIndex!] = {
@@ -234,7 +233,10 @@ const ModalCreateProduct = ({
   };
 
   const addVariant = () => {
-    setVariants((prev) => [...prev, { color: "", image: null, stock: 0 }]);
+    setVariants((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), color: "", image: null, stock: 0 },
+    ]);
   };
 
   const removeVariant = (index: number) => {
@@ -263,16 +265,24 @@ const ModalCreateProduct = ({
     if (
       formData.discount &&
       (Number(formData.discount) < 0 || Number(formData.discount) > 100)
-    )
+    ) {
       newErrors.discount = "Tỉ lệ khuyến mãi không hợp lệ";
+    }
+
+    // Kiểm tra ảnh chung (Nếu backend yêu cầu)
+    if (imageObjects.length === 0) {
+      // Bạn có thể bỏ comment dòng dưới nếu bắt buộc phải có ảnh chung
+      // newErrors.images = "Vui lòng thêm ít nhất 1 ảnh chung";
+    }
 
     // Validate variants
     const validVariants = variants.filter(
       (v) => v.color.trim() && v.image && v.stock >= 0
     );
+
     if (validVariants.length === 0) {
       newErrors.variants =
-        "Phải có ít nhất 1 variant hợp lệ (có màu, ảnh, stock >= 0)";
+        "Phải có ít nhất 1 variant hợp lệ (có màu, ảnh, tồn kho >= 0)";
     }
 
     setErrors(newErrors);
@@ -291,40 +301,59 @@ const ModalCreateProduct = ({
     setSelectedOccasions([]);
     setImageObjects([]);
     setImagePreview([]);
-    setVariants([{ color: "", image: null, stock: 0 }]);
+    // Reset variants về trạng thái mặc định
+    setVariants([
+      { id: crypto.randomUUID(), color: "", image: null, stock: 0 },
+    ]);
     setErrors({});
     onClose();
   };
 
+  // ✅ HÀM SUBMIT ĐÃ SỬA
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      toast.error("Vui lòng kiểm tra lại thông tin sản phẩm");
+      return;
+    }
 
     setIsSubmitting(true);
     setErrors({});
 
     try {
-      // Lọc variants hợp lệ
-      const validVariants = variants.filter(
-        (v) => v.color.trim() && v.image && v.stock >= 0
-      );
+      // ✅ Lọc và format variants - CHỈ MAP MỘT LẦN
+      const validVariants = variants
+        .filter((v) => v.color.trim() && v.image && v.image.url)
+        .map((v) => ({
+          color: v.color.trim(), // ✅ Trim ngay ở đây
+          image: {
+            url: v.image!.url,
+            publicId: v.image!.publicId,
+          },
+          stock: Number(v.stock),
+        }));
+
+      // ✅ Kiểm tra variants trước khi submit
+      if (validVariants.length === 0) {
+        toast.error("Phải có ít nhất 1 variant hợp lệ");
+        return;
+      }
 
       const payload = {
-        name: formData.name,
+        name: formData.name.trim(),
         price: Number(formData.price),
-        description: formData.description,
-        discount: formData.discount ? Number(formData.discount) : 0,
+        description: formData.description?.trim() || undefined,
+        discount: formData.discount ? Number(formData.discount) : undefined,
         category: formData.category,
         images: imageObjects,
-        occasions: selectedOccasions,
-        variants: validVariants,
+        occasions: selectedOccasions.length > 0 ? selectedOccasions : undefined,
+        variants: validVariants, // ✅ Sử dụng trực tiếp, không map lại
         status: Number(formData.status),
       };
 
-      const response = await postCreateProduct(payload);
+      console.log("📦 Payload sending:", JSON.stringify(payload, null, 2));
 
-      if (response && response.status === 400) {
-        throw new Error(response.error);
-      }
+      const response = await postCreateProduct(payload);
+      console.log("✅ Response:", response);
 
       toast.success("Thêm sản phẩm thành công");
       setSuccessMessage("Thêm sản phẩm thành công!");
@@ -334,11 +363,33 @@ const ModalCreateProduct = ({
         handleClose();
       }, 1500);
     } catch (error: any) {
-      console.error("Lỗi:", error);
-      setErrors({
-        submit: error.message || "Có lỗi xảy ra, vui lòng thử lại.",
-      });
-      toast.error("Thêm sản phẩm thất bại, vui lòng kiểm tra thông tin");
+      console.error("❌ Error Creating Product:", error);
+      console.error("❌ Error Response:", error.response?.data);
+
+      // ✅ Xử lý lỗi chi tiết
+      const serverMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message;
+
+      let displayError = "Có lỗi xảy ra, vui lòng thử lại";
+
+      if (serverMessage) {
+        if (Array.isArray(serverMessage)) {
+          displayError = serverMessage.join(", ");
+        } else {
+          displayError = serverMessage;
+        }
+      }
+
+      // ✅ Hiển thị status code để debug
+      if (error.response?.status) {
+        console.error(`❌ Status Code: ${error.response.status}`);
+        displayError = `[${error.response.status}] ${displayError}`;
+      }
+
+      setErrors({ submit: displayError });
+      toast.error("Lỗi: " + displayError);
     } finally {
       setIsSubmitting(false);
     }
@@ -417,7 +468,7 @@ const ModalCreateProduct = ({
                   name="discount"
                   value={formData.discount}
                   onChange={handleChange}
-                  placeholder="Nhập % giảm giá"
+                  placeholder="%"
                   min="0"
                   max="100"
                 />
@@ -440,7 +491,7 @@ const ModalCreateProduct = ({
                     <option value="" disabled>
                       -- Chọn danh mục --
                     </option>
-                    {categories.map((cat) => (
+                    {categories.map((cat: any) => (
                       <option key={cat} value={cat}>
                         {cat}
                       </option>
@@ -525,6 +576,15 @@ const ModalCreateProduct = ({
                   </label>
                 </div>
 
+                {errors.images && (
+                  <span
+                    className="err-text"
+                    style={{ display: "block", marginTop: "5px" }}
+                  >
+                    {errors.images}
+                  </span>
+                )}
+
                 {imagePreview.length > 0 && (
                   <div className="preview-grid">
                     {imagePreview.map((src, idx) => (
@@ -570,7 +630,7 @@ const ModalCreateProduct = ({
 
                 <div className="variants-container">
                   {variants.map((variant, index) => (
-                    <div key={index} className="variant-item">
+                    <div key={variant.id} className="variant-item">
                       <div className="variant-header">
                         <span>Màu {index + 1}</span>
                         {variants.length > 1 && (

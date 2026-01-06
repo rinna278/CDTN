@@ -5,8 +5,6 @@ import "./birthday-flower.css";
 import { useNavigate } from "react-router-dom";
 import { Product } from "../../types/type";
 
-
-
 interface ApiResponse {
   data: Product[];
   total: number;
@@ -15,34 +13,41 @@ interface ApiResponse {
   totalPages: number;
 }
 
+type ProductImage = {
+  url: string;
+  publicId?: string;
+};
 
 const formatPrice = (price: number): string => {
   return new Intl.NumberFormat("vi-VN").format(price) + " VND";
 };
-
 
 const calculateDiscountedPrice = (price: number, discount?: number): number => {
   if (!discount || discount === 0) return price;
   return price * (1 - discount / 100);
 };
 
-// Helper function để lấy URL ảnh - xử lý mọi trường hợp
-const getImageUrl = (images?: any[]): string => {
+const getImageUrl = (product: Product): string => {
   const defaultImage =
     "https://flowercorner.b-cdn.net/image/cache/catalog/products/B%C3%B3%20Hoa/bo-hoa-hong-mat-nau.jpg.webp";
 
-  if (!images || images.length === 0) return defaultImage;
-
-  const firstImage = images[0];
-
-  // Trường hợp 1: Object {url, publicId} (backend mới)
-  if (firstImage && typeof firstImage === "object" && firstImage.url) {
-    return firstImage.url;
+  // ✅ Ưu tiên ảnh từ variant đầu tiên (nếu có)
+  if (product.variants && product.variants.length > 0) {
+    const firstVariant = product.variants[0];
+    if (firstVariant.image && firstVariant.image.url) {
+      return firstVariant.image.url;
+    }
   }
 
-  // Trường hợp 2: String URL trực tiếp (backend cũ hoặc đã convert)
-  if (typeof firstImage === "string") {
-    return firstImage;
+  // ✅ Fallback sang images array
+  if (product.images && product.images.length > 0) {
+    const firstImage = product.images[0];
+    if (typeof firstImage === "string") {
+      return firstImage;
+    }
+    if (firstImage && typeof firstImage === "object" && "url" in firstImage) {
+      return firstImage.url;
+    }
   }
 
   return defaultImage;
@@ -53,13 +58,17 @@ const FlowerCard = ({ flower }: { flower: Product }) => {
     flower.price,
     flower.discount
   );
-  const imageUrl = getImageUrl(flower.images);
+  const imageUrl = getImageUrl(flower);
   const navigate = useNavigate();
-  
+
   const handleDetailProduct = () => {
     navigate(`/detail-product/${flower.id}`, {
-      state: {product: flower}
-    })
+      state: { product: flower },
+    });
+  };
+
+  const handleBuyProduct = () => {
+    navigate('/my-orders');
   }
 
   return (
@@ -87,7 +96,7 @@ const FlowerCard = ({ flower }: { flower: Product }) => {
 
           <div className="btn">
             <button onClick={handleDetailProduct}>Xem chi tiết</button>
-            <button>Mua hàng</button>
+            <button onClick={handleBuyProduct}>Mua hàng</button>
           </div>
         </div>
       </div>
@@ -106,8 +115,8 @@ const BirthdayFlower = () => {
 
   const scrollRef = useRef<HTMLHeadingElement>(null);
   const isFirstRender = useRef(true);
+  const navigate  = useNavigate();
 
-  // ✅ Mapping label cho sorting
   const sortLabels: Record<string, string> = {
     all: "Mới nhất",
     "a-z": "Từ A -> Z",
@@ -135,8 +144,12 @@ const BirthdayFlower = () => {
     const fetchBirthdayFlowers = async () => {
       try {
         setLoading(true);
+        setError(null);
+
         const sortParams = getSortParams(sortOption);
-        const response: ApiResponse = await getAllProduct({
+
+        // ✅ Log để debug
+        console.log("🔍 Fetching with params:", {
           page: currentPage,
           limit: itemsPerPage,
           occasions: ["birthday"],
@@ -144,8 +157,55 @@ const BirthdayFlower = () => {
           ...sortParams,
         });
 
-        setFlowers(response.data);
-        setTotalPages(response.totalPages);
+        const response: ApiResponse = await getAllProduct({
+          page: currentPage,
+          limit: itemsPerPage,
+          occasions: ["birthday"], // ✅ Truyền array
+          status: 1,
+          ...sortParams,
+        });
+
+        console.log("📦 API Response:", response);
+        console.log("📊 Total products:", response.total);
+        console.log("🌸 Products data:", response.data);
+
+        // ✅ Kiểm tra xem có sản phẩm nào không
+        if (response.data && response.data.length > 0) {
+          setFlowers(response.data);
+          setTotalPages(response.totalPages);
+        } else {
+          // ✅ Nếu không có sản phẩm birthday, thử lấy tất cả để test
+          console.warn(
+            "⚠️ No birthday products found, checking all products..."
+          );
+          const allResponse: ApiResponse = await getAllProduct({
+            page: 1,
+            limit: 100,
+            status: 1,
+          });
+
+          console.log("📊 All products:", allResponse.data);
+
+          // ✅ Filter manually ở frontend (fallback)
+          const birthdayProducts = allResponse.data.filter(
+            (product) =>
+              product.occasions && product.occasions.includes("birthday")
+          );
+
+          console.log("🎂 Filtered birthday products:", birthdayProducts);
+
+          if (birthdayProducts.length > 0) {
+            setFlowers(birthdayProducts);
+            setTotalPages(Math.ceil(birthdayProducts.length / itemsPerPage));
+            setError(
+              "Backend filter không hoạt động, đã dùng client-side filter"
+            );
+          } else {
+            setFlowers([]);
+            setTotalPages(0);
+            setError("Không tìm thấy sản phẩm hoa sinh nhật nào");
+          }
+        }
 
         if (!isFirstRender.current) {
           scrollRef.current?.scrollIntoView({
@@ -156,7 +216,9 @@ const BirthdayFlower = () => {
           isFirstRender.current = false;
         }
       } catch (err: any) {
-        setError("Không thể tải dữ liệu sản phẩm.");
+        console.error("❌ Error fetching products:", err);
+        console.error("❌ Error response:", err.response?.data);
+        setError(`Không thể tải dữ liệu sản phẩm: ${err.message}`);
       } finally {
         setLoading(false);
       }
@@ -183,7 +245,6 @@ const BirthdayFlower = () => {
       <div className="arrangement">
         <button disabled>Sắp xếp</button>
         <div className="select">
-          {/* ✅ SỬA Ở ĐÂY: Hiển thị text trực tiếp từ state thay vì dùng CSS attr() */}
           <div className="selected">
             <span>{sortLabels[sortOption] || "Mới nhất"}</span>
             <svg
@@ -279,16 +340,27 @@ const BirthdayFlower = () => {
         )}
 
         {error ? (
-          <div className="error-box">{error}</div>
+          <div className="error-box">
+            {error}
+            <br />
+            <small>Kiểm tra console để xem chi tiết</small>
+          </div>
         ) : (
           <div
             className={`cart-product-container ${
               loading ? "content-loading" : ""
             }`}
           >
-            {flowers.map((flower) => (
-              <FlowerCard key={flower.id} flower={flower} />
-            ))}
+            {flowers.length === 0 && !loading ? (
+              <div className="no-products">
+                <p>Không tìm thấy sản phẩm hoa sinh nhật nào</p>
+                <small>Vui lòng kiểm tra lại dữ liệu hoặc thử lại sau</small>
+              </div>
+            ) : (
+              flowers.map((flower) => (
+                <FlowerCard key={flower.id} flower={flower} />
+              ))
+            )}
           </div>
         )}
       </div>
