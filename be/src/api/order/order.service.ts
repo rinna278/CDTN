@@ -165,12 +165,19 @@ export class OrderService {
     // 1. Lấy cart
     const cart = await this.cartService.getCart(userId);
 
-    const checkedItems = cart.items?.filter((item) => item.isChecked) || [];
+    // const checkedItems = cart.items?.filter((item) => item.isChecked) || [];
+    const selectedItems = cart.items.filter((item) =>
+      createDto.cartItemIds.includes(item.id),
+    );
 
-    if (checkedItems.length === 0) {
+    if (selectedItems.length === 0) {
       throw new BadRequestException(
         'Vui lòng chọn ít nhất 1 sản phẩm để đặt hàng',
       );
+    }
+
+    if (selectedItems.length !== createDto.cartItemIds.length) {
+      throw new BadRequestException('Có sản phẩm không hợp lệ trong giỏ hàng');
     }
 
     if (!cart.items || cart.items.length === 0) {
@@ -198,11 +205,11 @@ export class OrderService {
     }
 
     // 4. Tính toán
-    const subtotal = checkedItems.reduce(
+    const subtotal = selectedItems.reduce(
       (sum, item) => sum + Number(item.subtotal),
       0,
     );
-    const totalItems = checkedItems.reduce(
+    const totalItems = selectedItems.reduce(
       (sum, item) => sum + item.quantity,
       0,
     );
@@ -239,7 +246,7 @@ export class OrderService {
     const savedOrder = await this.orderRepository.save(order);
 
     // 8. Tạo order details với orderId
-    const orderDetails = checkedItems.map((item) =>
+    const orderDetails = selectedItems.map((item) =>
       this.orderDetailRepository.create({
         orderId: savedOrder.id,
         productId: item.productId,
@@ -264,7 +271,7 @@ export class OrderService {
 
     // 11. Xử lý theo payment method
     if (createDto.paymentMethod === PaymentMethod.COD) {
-      for (const item of checkedItems) {
+      for (const item of selectedItems) {
         await this.productService.incrementSoldCount(
           item.productId,
           item.color,

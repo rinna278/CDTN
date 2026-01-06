@@ -16,10 +16,9 @@ import { GetUser } from '../../share/decorator/get-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { CartService } from './cart.service';
 import { AddToCartDto } from './dto/add-to-cart.dto';
-import { CartItemResponseDto, CartResponseDto } from './dto/cart-response.dto';
+import { CartResponseDto } from './dto/cart-response.dto';
 import { ParamIdBaseDto } from '../../share/common/dto/query-param.dto';
 import { UpdateCartItemDto } from './dto/update-cart-item.dto';
-import { ToggleCheckItemDto } from './dto/toggle-check-item.dto';
 
 @Controller({
   version: [API_CONFIG.VERSION_V1],
@@ -76,37 +75,37 @@ export class CartController {
     return this.cartService.clearCart(userId);
   }
 
-  @Patch('items/:id/toggle-check')
-  @HttpCode(HttpStatus.OK)
-  // @ApiOperation({ summary: 'Check/Uncheck một item trong giỏ hàng' })
-  async toggleCheckItem(
-    @GetUser('id') userId: string,
-    @Param() param: ParamIdBaseDto,
-    @Body() toggleDto: ToggleCheckItemDto,
-  ): Promise<CartResponseDto> {
-    return this.cartService.toggleCheckItem(
-      userId,
-      param.id,
-      toggleDto.isChecked,
-    );
-  }
+  // @Patch('items/:id/toggle-check')
+  // @HttpCode(HttpStatus.OK)
+  // // @ApiOperation({ summary: 'Check/Uncheck một item trong giỏ hàng' })
+  // async toggleCheckItem(
+  //   @GetUser('id') userId: string,
+  //   @Param() param: ParamIdBaseDto,
+  //   @Body() toggleDto: ToggleCheckItemDto,
+  // ): Promise<CartResponseDto> {
+  //   return this.cartService.toggleCheckItem(
+  //     userId,
+  //     param.id,
+  //     toggleDto.isChecked,
+  //   );
+  // }
 
-  @Patch('toggle-check-all')
-  @HttpCode(HttpStatus.OK)
-  // @ApiOperation({ summary: 'Check/Uncheck tất cả items trong giỏ hàng' })
-  async toggleCheckAllItems(
-    @GetUser('id') userId: string,
-    @Body() toggleDto: ToggleCheckItemDto,
-  ): Promise<CartResponseDto> {
-    return this.cartService.toggleCheckAllItems(userId, toggleDto.isChecked);
-  }
+  // @Patch('toggle-check-all')
+  // @HttpCode(HttpStatus.OK)
+  // // @ApiOperation({ summary: 'Check/Uncheck tất cả items trong giỏ hàng' })
+  // async toggleCheckAllItems(
+  //   @GetUser('id') userId: string,
+  //   @Body() toggleDto: ToggleCheckItemDto,
+  // ): Promise<CartResponseDto> {
+  //   return this.cartService.toggleCheckAllItems(userId, toggleDto.isChecked);
+  // }
 
-  @Get('checked-items')
-  @HttpCode(HttpStatus.OK)
-  // @ApiOperation({ summary: 'Lấy danh sách items đã check để checkout' })
-  async getCheckedItems(
-    @GetUser('id') userId: string,
-  ): Promise<CartItemResponseDto[]> {
-    return this.cartService.getCheckedItems(userId);
-  }
+  // @Get('checked-items')
+  // @HttpCode(HttpStatus.OK)
+  // // @ApiOperation({ summary: 'Lấy danh sách items đã check để checkout' })
+  // async getCheckedItems(
+  //   @GetUser('id') userId: string,
+  // ): Promise<CartItemResponseDto[]> {
+  //   return this.cartService.getCheckedItems(userId);
+  // }
 }

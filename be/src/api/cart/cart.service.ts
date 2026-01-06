@@ -285,7 +285,6 @@ export class CartService {
           discount: item.discount,
           subtotal: Number(item.subtotal),
           stock: variant?.stock || 0, // Stock theo màu
-          isChecked: item.isChecked,
         });
         return itemResponse;
       }) || [];
@@ -299,79 +298,6 @@ export class CartService {
       items,
       createdAt: cart.createdAt,
       updatedAt: cart.updatedAt,
-    });
-  }
-
-  // THÊM MỚI: Toggle check item
-  async toggleCheckItem(
-    userId: string,
-    cartDetailId: string,
-    isChecked: boolean,
-  ): Promise<CartResponseDto> {
-    const cart = await this.getOrCreateCart(userId);
-
-    const cartDetail = await this.cartDetailRepository.findOne({
-      where: { id: cartDetailId, cartId: cart.id },
-    });
-
-    if (!cartDetail) {
-      throw new NotFoundException('Cart item not found');
-    }
-
-    cartDetail.isChecked = isChecked;
-    await this.cartDetailRepository.save(cartDetail);
-
-    // Fetch updated cart
-    const updatedCart = await this.cartRepository.findOne({
-      where: { id: cart.id },
-      relations: ['items', 'items.product'],
-    });
-
-    return this.transformCartToResponse(updatedCart);
-  }
-
-  // THÊM MỚI: Toggle check tất cả items
-  async toggleCheckAllItems(
-    userId: string,
-    isChecked: boolean,
-  ): Promise<CartResponseDto> {
-    const cart = await this.getOrCreateCart(userId);
-
-    await this.cartDetailRepository.update({ cartId: cart.id }, { isChecked });
-
-    // Fetch updated cart
-    const updatedCart = await this.cartRepository.findOne({
-      where: { id: cart.id },
-      relations: ['items', 'items.product'],
-    });
-
-    return this.transformCartToResponse(updatedCart);
-  }
-
-  // THÊM MỚI: Lấy danh sách items đã check
-  async getCheckedItems(userId: string): Promise<CartItemResponseDto[]> {
-    const cart = await this.getOrCreateCart(userId);
-
-    const checkedItems = cart.items?.filter((item) => item.isChecked) || [];
-
-    return checkedItems.map((item) => {
-      const variant = item.product?.variants?.find(
-        (v) => v.color === item.color,
-      );
-
-      return plainToInstance(CartItemResponseDto, {
-        id: item.id,
-        productId: item.productId,
-        productName: item.product?.name || '',
-        color: item.color,
-        productImage: variant?.image?.url || '',
-        quantity: item.quantity,
-        price: Number(item.price),
-        discount: item.discount,
-        subtotal: Number(item.subtotal),
-        stock: variant?.stock || 0,
-        isChecked: item.isChecked,
-      });
     });
   }
 }
