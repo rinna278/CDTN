@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsArray, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 import { PaymentMethod } from '../order.constant';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -9,6 +9,14 @@ export class CreateOrderDto {
   })
   @IsUUID()
   addressId: string;
+
+  @ApiProperty({
+    description: 'Mảng các ID của cart item',
+    example: 'cartitemID1, cartitemID2',
+  })
+  @IsArray()
+  @IsUUID('4', { each: true })
+  cartItemIds: string[];
 
   @ApiProperty({
     enum: PaymentMethod,

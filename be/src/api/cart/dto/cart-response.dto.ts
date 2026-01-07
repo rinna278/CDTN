@@ -41,10 +41,6 @@ export class CartItemResponseDto {
   @ApiProperty()
   @Expose()
   stock: number;
-
-  @ApiProperty()
-  @Expose()
-  isChecked: boolean;
 }
 
 export class CartResponseDto {
