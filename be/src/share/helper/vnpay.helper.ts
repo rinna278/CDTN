@@ -90,7 +90,7 @@ export class VNPayHelper {
     // Tạo secure hash
     const signData = qs.stringify(vnpParams, { encode: false });
     const secureHash = this.createSecureHash(signData);
-
+    vnpParams.vnp_SecureHashType = 'SHA512';
     vnpParams.vnp_SecureHash = secureHash;
 
     // Tạo URL
@@ -196,7 +196,7 @@ export class VNPayHelper {
     const keys = Object.keys(obj).sort();
 
     keys.forEach((key) => {
-      sorted[key] = obj[key];
+      sorted[key] = encodeURIComponent(obj[key]).replace(/%20/g, '+');
     });
 
     return sorted;
