@@ -2,6 +2,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmailSendType } from 'src/share/common/app.interface';
+import { OrderCancellationEmailData } from '../queue/email-queue.service';
 
 export interface OrderEmailData {
   email: string;
@@ -44,11 +45,27 @@ export class EmailService {
   ) {}
 
   /**
+   * Format currency helper
+   */
+  private formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(amount);
+  }
+
+  /**
+   * Format date helper
+   */
+  private formatDate(date: Date): string {
+    return new Intl.DateTimeFormat('vi-VN', {
+      dateStyle: 'full',
+      timeStyle: 'short',
+    }).format(date);
+  }
+
+  /**
    * Send OTP email to user
-   * @param email - User email
-   * @param otp - One-time password
-   * @param type - Type of OTP: 'register' or 'forgot-password'
-   * @returns Promise with send status
    */
   async sendOtpEmail(
     email: string,
@@ -57,9 +74,8 @@ export class EmailService {
   ): Promise<boolean> {
     try {
       const appName = this.configService.get('APP_NAME', 'My Application');
-      const otpExpiration = this.configService.get('OTP_EXPIRATION', 300) / 60; // Convert to minutes
+      const otpExpiration = this.configService.get('OTP_EXPIRATION', 300) / 60;
 
-      // Select template based on type
       let template = './otp-register';
       let subject = `${appName} - Verify Your Email`;
 
@@ -97,26 +113,17 @@ export class EmailService {
     try {
       const appName = this.configService.get('APP_NAME', 'AVICI');
 
-      // Helper để format currency
-      const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('vi-VN', {
-          style: 'currency',
-          currency: 'VND',
-        }).format(amount);
-      };
-
-      // Format dữ liệu trước khi gửi template
       const formattedData = {
         ...data,
-        subtotal: formatCurrency(data.subtotal),
-        discountAmount: formatCurrency(data.discountAmount),
-        shippingFee: formatCurrency(data.shippingFee),
-        totalAmount: formatCurrency(data.totalAmount),
+        subtotal: this.formatCurrency(data.subtotal),
+        discountAmount: this.formatCurrency(data.discountAmount),
+        shippingFee: this.formatCurrency(data.shippingFee),
+        totalAmount: this.formatCurrency(data.totalAmount),
         items: data.items.map((item) => ({
           ...item,
-          price: formatCurrency(item.price),
-          subtotal: formatCurrency(item.subtotal),
-          discount: formatCurrency(item.discount),
+          price: this.formatCurrency(item.price),
+          subtotal: this.formatCurrency(item.subtotal),
+          discount: this.formatCurrency(item.discount),
         })),
       };
 
@@ -137,6 +144,89 @@ export class EmailService {
     } catch (error) {
       this.logger.error(
         `Failed to send order confirmation email to ${data.email}:`,
+        error,
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Send order cancellation email
+   */
+  async sendOrderCancellationEmail(
+    data: OrderCancellationEmailData,
+  ): Promise<boolean> {
+    try {
+      const appName = this.configService.get('APP_NAME', 'AVICI');
+      const frontendUrl = this.configService.get(
+        'FRONTEND_URL',
+        'http://localhost:3000',
+      );
+
+      await this.mailerService.sendMail({
+        to: data.email,
+        subject: `${appName} - Đơn Hàng #${data.orderCode} Đã Bị Hủy`,
+        template: './order-cancellation',
+        context: {
+          orderCode: data.orderCode,
+          cancelReason: data.cancelReason,
+          totalAmount: data.totalAmount,
+          cancelledAt: data.cancelledAt,
+          isPaid: data.isPaid || false,
+          isAutoCancel: data.isAutoCancel || false,
+          shopUrl: frontendUrl,
+          appName,
+          formatCurrency: this.formatCurrency.bind(this),
+          formatDate: this.formatDate.bind(this),
+        },
+      });
+
+      this.logger.log(
+        `Order cancellation email sent to ${data.email} for order ${data.orderCode}`,
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send order cancellation email to ${data.email}:`,
+        error,
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Send payment reminder email (1 hour before auto-cancel)
+   */
+  async sendPaymentReminderEmail(data: {
+    email: string;
+    orderCode: string;
+    totalAmount: number;
+    paymentUrl: string;
+    hoursRemaining: number;
+  }): Promise<boolean> {
+    try {
+      const appName = this.configService.get('APP_NAME', 'AVICI');
+
+      await this.mailerService.sendMail({
+        to: data.email,
+        subject: `${appName} - Nhắc Nhở Thanh Toán Đơn #${data.orderCode}`,
+        template: './payment-reminder',
+        context: {
+          orderCode: data.orderCode,
+          totalAmount: this.formatCurrency(data.totalAmount),
+          paymentUrl: data.paymentUrl,
+          hoursRemaining: data.hoursRemaining,
+          appName,
+        },
+      });
+
+      this.logger.log(
+        `Payment reminder email sent to ${data.email} for order ${data.orderCode}`,
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send payment reminder email to ${data.email}:`,
         error,
       );
       return false;

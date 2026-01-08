@@ -24,12 +24,40 @@ export class VNPayHelper {
 
   constructor(config: VNPayConfig) {
     this.config = config;
+    this.validateConfig();
+  }
+
+  /**
+   * Validate VNPay config
+   */
+  private validateConfig(): void {
+    if (!this.config.vnp_TmnCode) {
+      throw new Error('VNPay TMN Code is required');
+    }
+    if (!this.config.vnp_HashSecret) {
+      throw new Error('VNPay Hash Secret is required');
+    }
+    if (!this.config.vnp_Url) {
+      throw new Error('VNPay URL is required');
+    }
+    if (!this.config.vnp_ReturnUrl) {
+      throw new Error('VNPay Return URL is required');
+    }
   }
 
   /**
    * Tạo URL thanh toán VNPay
    */
   createPaymentUrl(params: VNPayPaymentParams): string {
+    // Validate params
+    if (!params.orderId || !params.amount || !params.orderInfo) {
+      throw new Error('Missing required payment parameters');
+    }
+
+    if (params.amount <= 0) {
+      throw new Error('Amount must be greater than 0');
+    }
+
     const date = new Date();
     const createDate = this.formatDate(date);
     const expireDate = this.formatDate(
@@ -45,7 +73,7 @@ export class VNPayHelper {
       vnp_TxnRef: params.orderId,
       vnp_OrderInfo: params.orderInfo,
       vnp_OrderType: params.orderType,
-      vnp_Amount: params.amount * 100, // VNPay yêu cầu nhân 100
+      vnp_Amount: Math.round(params.amount * 100), // VNPay yêu cầu nhân 100 và làm tròn
       vnp_ReturnUrl: this.config.vnp_ReturnUrl,
       vnp_IpAddr: params.ipAddr,
       vnp_CreateDate: createDate,
@@ -68,6 +96,13 @@ export class VNPayHelper {
     // Tạo URL
     const paymentUrl = `${this.config.vnp_Url}?${qs.stringify(vnpParams, { encode: false })}`;
 
+    // Debug log (xóa trong production)
+    console.log('🔐 VNPay Payment URL Created:');
+    console.log('  Order ID:', params.orderId);
+    console.log('  Amount:', params.amount);
+    console.log('  Sign Data:', signData.substring(0, 100) + '...');
+    console.log('  Secure Hash:', secureHash.substring(0, 20) + '...');
+
     return paymentUrl;
   }
 
@@ -79,18 +114,39 @@ export class VNPayHelper {
     message: string;
     data?: any;
   } {
-    const secureHash = query.vnp_SecureHash;
-    delete query.vnp_SecureHash;
-    delete query.vnp_SecureHashType;
+    console.log('🔍 VNPay Callback Received:', JSON.stringify(query, null, 2));
 
-    const sortedQuery = this.sortObject(query);
+    const secureHash = query.vnp_SecureHash;
+
+    if (!secureHash) {
+      console.error('❌ Missing vnp_SecureHash in callback');
+      return {
+        isValid: false,
+        message: 'Missing secure hash',
+      };
+    }
+
+    // Clone query to avoid modifying original
+    const verifyQuery = { ...query };
+    delete verifyQuery.vnp_SecureHash;
+    delete verifyQuery.vnp_SecureHashType;
+
+    const sortedQuery = this.sortObject(verifyQuery);
     const signData = qs.stringify(sortedQuery, { encode: false });
     const checkSum = this.createSecureHash(signData);
+
+    // Debug log
+    console.log('🔐 VNPay Signature Verification:');
+    console.log('  Sign Data:', signData.substring(0, 100) + '...');
+    console.log('  Expected Hash:', secureHash.substring(0, 20) + '...');
+    console.log('  Calculated Hash:', checkSum.substring(0, 20) + '...');
+    console.log('  Match:', secureHash === checkSum);
 
     if (secureHash === checkSum) {
       const responseCode = query.vnp_ResponseCode;
 
       if (responseCode === '00') {
+        console.log('✅ Payment successful');
         return {
           isValid: true,
           message: 'Payment successful',
@@ -100,11 +156,13 @@ export class VNPayHelper {
             transactionNo: query.vnp_TransactionNo,
             bankCode: query.vnp_BankCode,
             payDate: query.vnp_PayDate,
+            responseCode: responseCode,
           },
         };
       } else {
+        console.warn('⚠️ Payment failed with code:', responseCode);
         return {
-          isValid: true,
+          isValid: true, // Signature is valid, but payment failed
           message: this.getResponseMessage(responseCode),
           data: {
             orderId: query.vnp_TxnRef,
@@ -113,6 +171,7 @@ export class VNPayHelper {
         };
       }
     } else {
+      console.error('❌ Invalid signature');
       return {
         isValid: false,
         message: 'Invalid signature',
@@ -124,10 +183,9 @@ export class VNPayHelper {
    * Tạo secure hash
    */
   private createSecureHash(data: string): string {
-    return crypto
-      .createHmac('sha512', this.config.vnp_HashSecret)
-      .update(data, 'utf-8')
-      .digest('hex');
+    const hmac = crypto.createHmac('sha512', this.config.vnp_HashSecret);
+    hmac.update(data, 'utf8');
+    return hmac.digest('hex');
   }
 
   /**
@@ -179,5 +237,19 @@ export class VNPayHelper {
     };
 
     return messages[code] || 'Lỗi không xác định';
+  }
+
+  /**
+   * Test helper - Generate test payment URL
+   */
+  generateTestPaymentUrl(orderId: string, amount: number): string {
+    return this.createPaymentUrl({
+      orderId,
+      amount,
+      orderInfo: `Test payment for order ${orderId}`,
+      orderType: 'billpayment',
+      ipAddr: '127.0.0.1',
+      locale: 'vn',
+    });
   }
 }
