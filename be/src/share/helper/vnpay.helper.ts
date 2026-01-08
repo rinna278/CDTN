@@ -135,13 +135,6 @@ export class VNPayHelper {
     const signData = qs.stringify(sortedQuery, { encode: false });
     const checkSum = this.createSecureHash(signData);
 
-    // Debug log
-    console.log('🔐 VNPay Signature Verification:');
-    console.log('  Sign Data:', signData.substring(0, 100) + '...');
-    console.log('  Expected Hash:', secureHash.substring(0, 20) + '...');
-    console.log('  Calculated Hash:', checkSum.substring(0, 20) + '...');
-    console.log('  Match:', secureHash === checkSum);
-
     if (secureHash === checkSum) {
       const responseCode = query.vnp_ResponseCode;
 

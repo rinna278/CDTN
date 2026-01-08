@@ -173,7 +173,7 @@ export class AuthService {
     uModel.password = passwordHash;
     uModel.name = data.name;
     uModel.role = role;
-    uModel.createdBy = user?.sub;
+    uModel.createdBy = user?.id;
     if (data.phone) {
       uModel.phone = data.phone;
     }
