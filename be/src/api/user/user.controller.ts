@@ -53,8 +53,11 @@ export class UserController {
     @GetUser() user: IAdminPayload,
     @Body() body: ChangeUserPasswordDto,
   ) {
-    console.log('user.sub', user.sub);
-    return this.userService.changePassword(user.sub, body);
+    console.log('user.id', user.id);
+    console.log('user.email', user.email);
+    console.log('user.name', user.name);
+    console.log('user', user);
+    return this.userService.changePassword(user.id, body);
   }
 
   @ApiOkResponse(USER_SWAGGER_RESPONSE.UPDATE_SUCCESS)
