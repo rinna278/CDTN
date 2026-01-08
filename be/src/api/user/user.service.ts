@@ -94,6 +94,9 @@ export class UserService extends BaseService<UserEntity> {
     const isRightPassword = bcrypt.compareSync(oldPassword, userFound.password);
     console.log('Compare result:', isRightPassword);
     if (!isRightPassword) {
+      console.log("mật khẩu cũ", oldPassword);
+      console.log("Mật khẩu tìm thấy", userFound.password);
+      console.log("tên", userFound.name);
       throw new BadRequestException({
         message: ERROR_USER.USER_WRONG_OLD_PASSWORD.MESSAGE,
         code: ERROR_USER.USER_WRONG_OLD_PASSWORD.code,

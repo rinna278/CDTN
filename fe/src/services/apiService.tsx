@@ -355,13 +355,7 @@ const cancelOrder = async (orderId: string, payload: CancelOrderPayload) => {
   return response.data;
 };
 
-//VN Pay payment
-const handleVNPayCallback = async (queryParams: any) => {
-  const response = await instance.get(`api/v1/orders/payment/vnpay-callback`, {
-    params: queryParams,
-  });
-  return response.data;
-};
+
 
 //admin: lấy tất cả đơn
 const getAllOrders = async (params: GetAllOrdersParams) => {
@@ -438,7 +432,6 @@ export {
   getMyOrders,
   getOrderById,
   cancelOrder,
-  handleVNPayCallback,
   getAllOrders,
   getOrderByIdAdmin,
   updateOrderStatus,
