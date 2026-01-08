@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose, Type } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
 
 export class CartItemResponseDto {
   @ApiProperty()
@@ -71,9 +71,11 @@ export class CartResponseDto {
 
   @ApiProperty()
   @Expose()
+  @Transform(({ value }) => value && new Date(value).toISOString())
   createdAt: Date;
 
   @ApiProperty()
   @Expose()
+  @Transform(({ value }) => value && new Date(value).toISOString())
   updatedAt: Date;
 }

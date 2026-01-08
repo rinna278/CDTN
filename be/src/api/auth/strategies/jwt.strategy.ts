@@ -20,7 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<any> {
-    const userId = payload.sub as string;
+    const userId = payload.id as string;
     const roleId = payload.roleId as string;
     const isSuperAdmin = payload.isSuperAdmin ?? false;
 

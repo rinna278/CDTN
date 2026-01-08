@@ -1,4 +1,4 @@
-import { Expose, Type } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
 import { OrderStatus, PaymentMethod, PaymentStatus } from '../order.constant';
 
 export class OrderItemResponseDto {
@@ -95,6 +95,7 @@ export class OrderResponseDto {
   paymentTransactionId: string;
 
   @Expose()
+  // @Transform(({ value }) => value && new Date(value).toISOString())
   paidAt: Date;
 
   @Expose()
@@ -104,15 +105,18 @@ export class OrderResponseDto {
   trackingNumber: string;
 
   @Expose()
+  // @Transform(({ value }) => value && new Date(value).toISOString())
   shippedAt: Date;
 
   @Expose()
+  // @Transform(({ value }) => value && new Date(value).toISOString())
   deliveredAt: Date;
 
   @Expose()
   cancelReason: string;
 
   @Expose()
+  // @Transform(({ value }) => value && new Date(value).toISOString())
   cancelledAt: Date;
 
   @Expose()
@@ -120,9 +124,11 @@ export class OrderResponseDto {
   items: OrderItemResponseDto[];
 
   @Expose()
+  // @Transform(({ value }) => value && new Date(value).toISOString())
   createdAt: Date;
 
   @Expose()
+  // @Transform(({ value }) => value && new Date(value).toISOString())
   updatedAt: Date;
 
   @Expose()
