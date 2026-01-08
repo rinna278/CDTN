@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { CartDetailEntity } from '../cart-detail/cart-detail.entity';
 import { UserEntity } from '../user/user.entity';
-
+import { Transform } from 'class-transformer';
 @Entity('carts')
 export class CartEntity {
   // ID duy nhất của giỏ hàng
@@ -34,10 +34,12 @@ export class CartEntity {
 
   // Ngày tạo
   @CreateDateColumn()
+  @Transform(({ value }) => value && new Date(value).toISOString())
   createdAt: Date;
 
   // Ngày cập nhật
   @UpdateDateColumn()
+  @Transform(({ value }) => value && new Date(value).toISOString())
   updatedAt: Date;
 
   // Mối quan hệ với User - một Cart thuộc một User
