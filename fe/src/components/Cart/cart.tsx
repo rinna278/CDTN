@@ -61,7 +61,7 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
         window.location.href = res.paymentUrl;
       } else {
         toast.success("Đặt hàng thành công! Cảm ơn bạn.");
-        navigate("/my-orders");
+        navigate("/profile?tab=orders");
       }
     } catch (error: any) {
       console.error("Lỗi đặt hàng:", error);

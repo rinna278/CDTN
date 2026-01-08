@@ -51,6 +51,7 @@ const Orders: React.FC<OrdersProps> = ({ selected, setSelected }) => {
           orderStatus: activeTab, // Truyền status từ tab hiện tại
         });
 
+        console.log(response);
         // Cập nhật danh sách đơn hàng
         setOrders(response.data || []);
 
@@ -77,23 +78,72 @@ const Orders: React.FC<OrdersProps> = ({ selected, setSelected }) => {
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
-  // Chuyển hướng đến trang chi tiết đơn hàng
   const handleViewDetail = (orderId: string) => {
-    // Giả sử đường dẫn là /account/orders/:id
     navigate(`/account/orders/${orderId}`);
   };
 
-  // Helper formats
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+  const parseBackendDate = (value: any): Date | null => {
+    if (!value) return null;
+
+    try {
+      // Date object
+      if (value instanceof Date) {
+        return isNaN(value.getTime()) ? null : value;
+      }
+
+      // Timestamp
+      if (typeof value === "number") {
+        return new Date(value < 1e12 ? value * 1000 : value);
+      }
+
+      // String
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+
+        // Format: "2026-01-06 15:49:29.660"
+        if (trimmed.includes(" ") && !trimmed.includes("T")) {
+          // ⚠️ FIX TIMEZONE
+          const utcString = trimmed.replace(" ", "T") + "Z";
+          const date = new Date(utcString);
+          return isNaN(date.getTime()) ? null : date;
+        }
+
+        const date = new Date(trimmed);
+        return isNaN(date.getTime()) ? null : date;
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
   };
+
+
+  const formatDateVN = (value: any) => {
+    const date = parseBackendDate(value);
+
+    if (!date) {
+      console.warn("Cannot parse date:", value);
+      return "--";
+    }
+
+    try {
+      return date.toLocaleString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "--";
+    }
+  };
+
+
+
 
   const formatPaymentMethod = (method: string) => {
     const methodMap: { [key: string]: string } = {
@@ -106,6 +156,12 @@ const Orders: React.FC<OrdersProps> = ({ selected, setSelected }) => {
     return methodMap[method] || method.toUpperCase();
   };
 
+  const formatCurrency = (amount: number) => {
+    return Number(amount).toLocaleString("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    });
+  };
   return (
     <div className="orders-container">
       {/* --- RENDER TABS --- */}
@@ -136,7 +192,7 @@ const Orders: React.FC<OrdersProps> = ({ selected, setSelected }) => {
                   <div>
                     <h3>Order #{order.orderCode}</h3>
                     <div className="order-meta">
-                      <p>Date: {formatDate(order.orderDate)}</p>
+                      <p>Date: {formatDateVN(order.createdAt)}</p>
                     </div>
                   </div>
                   <div
@@ -152,14 +208,16 @@ const Orders: React.FC<OrdersProps> = ({ selected, setSelected }) => {
                   <div key={item.id} className="order-product">
                     <div className="product-left">
                       <img src={item.productImage} alt={item.productName} />
-                      <div className="product-info">
-                        <h4>{item.productName}</h4>
+                      <h4>{item.productName}</h4>
+                    </div>
+                    <div className="product-info">
+                      <div className="product-price">
+                        {formatCurrency(item.subtotal)}
+                      </div>
+                      <div>
                         <p className="variant-text">
                           Color: {item.color} | Qty: {item.quantity}
                         </p>
-                        <div className="product-price">
-                          ${item.subtotal.toLocaleString()}
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -170,7 +228,7 @@ const Orders: React.FC<OrdersProps> = ({ selected, setSelected }) => {
                   <div className="total-section">
                     <span>Total Amount:</span>
                     <span className="total-price">
-                      ${order.totalAmount.toLocaleString()}
+                      {formatCurrency(order.totalAmount)}
                     </span>
                     <span className="payment-method">
                       ({formatPaymentMethod(order.paymentMethod)})

@@ -138,7 +138,7 @@
 }
 
 /* Product Info */
-.product-info {
+.product-info-detail {
   display: flex;
   flex-direction: column;
   gap: 25px;
@@ -601,7 +601,7 @@
   transform: scale(1.1);
 }
 
-.similar-product-info h3 {
+.similar-product-info-detail h3 {
   font-size: 16px;
   font-weight: 600;
   margin: 0 0 10px 0;
