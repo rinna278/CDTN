@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Query,
+  Redirect,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -40,6 +41,39 @@ import { UpdateShippingDto } from './dto/update-shipping.dto';
 @ApiTags('Orders')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
+
+  /**
+   * VNPay callback endpoint - GET method
+   * VNPay sẽ redirect user về URL này sau khi thanh toán
+   */
+  @Get('vnpay-callback')
+  @Redirect()
+  async handleVNPayCallbackGet(@Query() query: any) {
+    console.log('📞 VNPay callback received (GET)');
+    console.debug('Query params:', JSON.stringify(query, null, 2));
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+    try {
+      const result = await this.orderService.handleVNPayCallback(query);
+
+      console.log(`✅ Payment successful for order ${result.orderCode}`);
+
+      // Redirect về frontend với order ID và status success
+      return {
+        url: `${frontendUrl}/orders/${result.id}?status=success&paymentStatus=paid`,
+        statusCode: 302,
+      };
+    } catch (error) {
+      console.error('❌ Payment callback error:', error.message);
+
+      // Redirect về frontend với error
+      return {
+        url: `${frontendUrl}/orders?status=failed&error=${encodeURIComponent(error.message)}`,
+        statusCode: 302,
+      };
+    }
+  }
 
   // ========== USER ENDPOINTS ==========
 
@@ -103,15 +137,38 @@ export class OrderController {
     return this.orderService.cancelOrder(param.id, user.id, cancelDto);
   }
 
-  @ApiOperation({
-    summary: 'VNPay payment callback',
-    description: 'Endpoint để VNPay callback sau khi thanh toán',
-  })
-  @Get('payment/vnpay-callback')
-  @HttpCode(HttpStatus.OK)
-  async vnpayCallback(@Query() query: any) {
-    return this.orderService.handleVNPayCallback(query);
-  }
+  /**
+   * VNPay callback endpoint - GET method
+  //  * VNPay sẽ redirect user về URL này sau khi thanh toán
+  //  */
+  // @Get('vnpay-callback')
+  // @Redirect()
+  // async handleVNPayCallbackGet(@Query() query: any) {
+  //   console.log('📞 VNPay callback received (GET)');
+  //   console.debug('Query params:', JSON.stringify(query, null, 2));
+
+  //   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+  //   try {
+  //     const result = await this.orderService.handleVNPayCallback(query);
+
+  //     console.log(`✅ Payment successful for order ${result.orderCode}`);
+
+  //     // Redirect về frontend với order ID và status success
+  //     return {
+  //       url: `${frontendUrl}/orders/${result.id}?status=success&paymentStatus=paid`,
+  //       statusCode: 302,
+  //     };
+  //   } catch (error) {
+  //     console.error('❌ Payment callback error:', error.message);
+
+  //     // Redirect về frontend với error
+  //     return {
+  //       url: `${frontendUrl}/orders?status=failed&error=${encodeURIComponent(error.message)}`,
+  //       statusCode: 302,
+  //     };
+  //   }
+  // }
 
   // ========== ADMIN ENDPOINTS ==========
 

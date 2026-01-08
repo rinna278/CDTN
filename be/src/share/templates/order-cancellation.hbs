@@ -1,0 +1,221 @@
+<html lang='vi'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Đơn Hàng Đã Bị Hủy</title>
+  </head>
+  <body
+    style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif; background-color: #f7fafc;"
+  >
+    <table
+      width='100%'
+      border='0'
+      cellspacing='0'
+      cellpadding='0'
+      style='background-color: #f7fafc; padding: 40px 20px;'
+    >
+      <tr>
+        <td align='center'>
+          <table
+            width='600'
+            border='0'
+            cellspacing='0'
+            cellpadding='0'
+            style='background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1); max-width: 600px;'
+          >
+
+            <!-- HEADER -->
+            <tr>
+              <td
+                style='background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 50px 40px; text-align: center;'
+              >
+                <div style='font-size: 48px; margin-bottom: 16px;'>❌</div>
+                <h1
+                  style='color: white; font-size: 28px; font-weight: 700; margin: 0;'
+                >Đơn Hàng Đã Bị Hủy</h1>
+                <p
+                  style='color: rgba(255,255,255,0.9); font-size: 16px; margin-top: 8px;'
+                >Thông báo hủy đơn hàng</p>
+              </td>
+            </tr>
+
+            <!-- CONTENT -->
+            <tr>
+              <td style='padding: 40px;'>
+
+                <!-- Order Code -->
+                <table
+                  width='100%'
+                  border='0'
+                  cellspacing='0'
+                  cellpadding='0'
+                  style='margin-bottom: 30px;'
+                >
+                  <tr>
+                    <td
+                      style='background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border-radius: 12px; padding: 20px; text-align: center; border: 2px solid #ef4444;'
+                    >
+                      <div
+                        style='color: #7f1d1d; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;'
+                      >
+                        Mã Đơn Hàng
+                      </div>
+                      <div
+                        style="color: #ef4444; font-size: 24px; font-weight: 800; font-family: 'Courier New', monospace; letter-spacing: 2px;"
+                      >
+                        {{orderCode}}
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Cancellation Info -->
+                <div style='margin-bottom: 30px;'>
+                  <h3
+                    style='color: #1f2937; font-size: 16px; font-weight: 600; margin: 0 0 15px 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;'
+                  >
+                    ℹ️ Thông Tin Hủy Đơn
+                  </h3>
+                  <div
+                    style='background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 15px; margin-bottom: 15px;'
+                  >
+                    <table
+                      width='100%'
+                      border='0'
+                      cellspacing='0'
+                      cellpadding='0'
+                    >
+                      <tr>
+                        <td
+                          width='40'
+                          valign='top'
+                          style='font-size: 24px; padding-right: 10px;'
+                        >⚠️</td>
+                        <td
+                          style='color: #92400e; font-size: 14px; line-height: 1.6;'
+                        >
+                          <strong>Lý do hủy:</strong><br />
+                          {{cancelReason}}
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div
+                    style='color: #6b7280; font-size: 14px; line-height: 1.8;'
+                  >
+                    <strong>Thời gian hủy:</strong>
+                    {{formatDate cancelledAt}}<br />
+                    <strong>Tổng giá trị đơn:</strong>
+                    <span
+                      style='color: #ef4444; font-weight: 600;'
+                    >{{formatCurrency totalAmount}}</span>
+                  </div>
+                </div>
+
+                <!-- What Happens Next -->
+                <div
+                  style='background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; padding: 20px; margin-bottom: 30px;'
+                >
+                  <h3
+                    style='color: #1e40af; font-size: 16px; font-weight: 600; margin: 0 0 15px 0;'
+                  >
+                    🔄 Điều Gì Sẽ Xảy Ra Tiếp Theo?
+                  </h3>
+                  <ul
+                    style='color: #1e3a8a; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;'
+                  >
+                    {{#if isPaid}}
+                      <li>Số tiền
+                        <strong>{{formatCurrency totalAmount}}</strong>
+                        sẽ được hoàn lại trong vòng
+                        <strong>3-7 ngày làm việc</strong></li>
+                      <li>Bạn sẽ nhận được email xác nhận khi hoàn tiền thành
+                        công</li>
+                    {{else}}
+                      <li>Đơn hàng đã được hủy hoàn toàn</li>
+                      <li>Không có giao dịch thanh toán nào được thực hiện</li>
+                    {{/if}}
+                    <li>Sản phẩm đã được trả lại kho</li>
+                    <li>Bạn có thể đặt hàng mới bất cứ lúc nào</li>
+                  </ul>
+                </div>
+
+                <!-- Auto Cancel Notice (if applicable) -->
+                {{#if isAutoCancel}}
+                  <div
+                    style='background: #fef3c7; border-radius: 8px; padding: 15px; margin-bottom: 20px; border-left: 4px solid #f59e0b;'
+                  >
+                    <div
+                      style='color: #92400e; font-size: 14px; line-height: 1.6;'
+                    >
+                      <strong>⏰ Lưu ý:</strong>
+                      Đơn hàng này đã bị hủy tự động do không được thanh toán
+                      trong vòng 24 giờ. Để tránh tình trạng này, vui lòng thanh
+                      toán ngay sau khi đặt hàng.
+                    </div>
+                  </div>
+                {{/if}}
+
+                <!-- Contact Support -->
+                <div
+                  style='background: #f9fafb; border-radius: 12px; padding: 20px; text-align: center;'
+                >
+                  <div
+                    style='color: #4b5563; font-size: 14px; margin-bottom: 15px;'
+                  >
+                    Có thắc mắc về đơn hàng này?
+                  </div>
+                  <a
+                    href='mailto:support@avici.com'
+                    style='display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);'
+                  >
+                    Liên Hệ Hỗ Trợ
+                  </a>
+                </div>
+
+                <!-- Continue Shopping -->
+                <div style='text-align: center; margin-top: 30px;'>
+                  <a
+                    href='{{shopUrl}}'
+                    style='display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);'
+                  >
+                    Tiếp Tục Mua Sắm
+                  </a>
+                </div>
+
+              </td>
+            </tr>
+
+            <!-- FOOTER -->
+            <tr>
+              <td
+                style='background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 30px 40px; text-align: center; border-top: 1px solid rgba(226, 232, 240, 0.5);'
+              >
+                <div
+                  style='color: #2d3748; font-size: 15px; font-weight: 600; margin-bottom: 8px;'
+                >
+                  Rất tiếc về sự bất tiện này
+                </div>
+                <div
+                  style='color: #10b981; font-size: 14px; font-weight: 500; margin-bottom: 15px;'
+                >
+                  Đội Ngũ
+                  {{appName}}
+                </div>
+                <div style='color: #a0aec0; font-size: 12px; line-height: 1.6;'>
+                  Cần hỗ trợ?
+                  <a
+                    href='mailto:support@avici.com'
+                    style='color: #10b981; text-decoration: none; font-weight: 500;'
+                  >Liên hệ chúng tôi</a><br />
+                  Hotline: 1900-xxxx | Email: support@avici.com
+                </div>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

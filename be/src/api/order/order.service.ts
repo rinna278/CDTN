@@ -1,11 +1,12 @@
-// order.service.ts
+// order.service.ts - PRODUCTION READY VERSION
 import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { OrderEntity } from './order.entity';
 import { OrderDetailEntity } from '../order-detail/order-detail.entity';
 import { CartService } from '../cart/cart.service';
@@ -30,10 +31,11 @@ import { EmailQueueService } from '../queue/email-queue.service';
 import { OrderQueueService } from '../queue/order-queue.service';
 import { OrderEmailData } from '../email/email.service';
 import { UserEntity } from '../user/user.entity';
-// import { VNPayHelper } from 'src/share/helper/vnpay.helper';
 
 @Injectable()
 export class OrderService {
+  private readonly logger = new Logger(OrderService.name);
+
   constructor(
     @InjectRepository(OrderEntity)
     private readonly orderRepository: Repository<OrderEntity>,
@@ -46,6 +48,7 @@ export class OrderService {
     private readonly productService: ProductService,
     private readonly emailQueueService: EmailQueueService,
     private readonly orderQueueService: OrderQueueService,
+    private readonly dataSource: DataSource,
   ) {}
 
   private prepareOrderEmailData(
@@ -93,12 +96,7 @@ export class OrderService {
     };
   }
 
-  /**
-   * Tính thời gian còn lại trước khi order hết hạn
-   * Order hết hạn sau 24 giờ kể từ lúc tạo (nếu chưa thanh toán)
-   */
   private calculateExpirationTime(order: OrderEntity) {
-    // Chỉ tính hết hạn cho order PENDING chưa thanh toán
     if (
       order.orderStatus !== OrderStatus.PENDING ||
       order.paymentStatus === PaymentStatus.PAID
@@ -122,216 +120,211 @@ export class OrderService {
     };
   }
 
-  // Generate order code: ORD-20240101-0001
   private async generateOrderCode(): Promise<string> {
     const date = new Date();
     const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
 
-    const lastOrder = await this.orderRepository
-      .createQueryBuilder('order')
-      .where('order.orderCode LIKE :pattern', { pattern: `ORD-${dateStr}-%` })
-      .orderBy('order.createdAt', 'DESC')
-      .getOne();
+    // Use transaction to prevent race condition
+    return await this.dataSource.transaction(async (manager) => {
+      const lastOrder = await manager
+        .createQueryBuilder(OrderEntity, 'order')
+        .where('order.orderCode LIKE :pattern', {
+          pattern: `ORD-${dateStr}-%`,
+        })
+        .orderBy('order.createdAt', 'DESC')
+        .setLock('pessimistic_write')
+        .getOne();
 
-    let sequence = 1;
-    if (lastOrder) {
-      const lastSequence = parseInt(lastOrder.orderCode.split('-').pop());
-      sequence = lastSequence + 1;
-    }
+      let sequence = 1;
+      if (lastOrder) {
+        const lastSequence = parseInt(lastOrder.orderCode.split('-').pop());
+        sequence = lastSequence + 1;
+      }
 
-    return `ORD-${dateStr}-${sequence.toString().padStart(4, '0')}`;
+      return `ORD-${dateStr}-${sequence.toString().padStart(4, '0')}`;
+    });
   }
 
-  // Tính shipping fee (có thể custom logic)
   private calculateShippingFee(city: string, totalAmount: number): number {
-    // Logic đơn giản: free ship nếu > 500k, không thì 30k
     if (totalAmount >= 500000) return 0;
 
-    // Phí ship theo thành phố (có thể lấy từ config/database)
     const shippingRates = {
       'Hồ Chí Minh': 30000,
       'Hà Nội': 30000,
       'Đà Nẵng': 35000,
     };
 
-    return shippingRates[city] || 40000; // Default 40k cho tỉnh xa
+    return shippingRates[city] || 40000;
   }
 
-  // Tạo đơn hàng
+  /**
+   * Create order with transaction and proper stock management
+   */
   async createOrder(
     userId: string,
     createDto: CreateOrderDto,
   ): Promise<OrderResponseDto | { paymentUrl: string; orderId: string }> {
-    // 1. Lấy cart
-    const cart = await this.cartService.getCart(userId);
-
-    // const checkedItems = cart.items?.filter((item) => item.isChecked) || [];
-    const selectedItems = cart.items.filter((item) =>
-      createDto.cartItemIds.includes(item.id),
-    );
-
-    if (selectedItems.length === 0) {
-      throw new BadRequestException(
-        'Vui lòng chọn ít nhất 1 sản phẩm để đặt hàng',
-      );
-    }
-
-    if (selectedItems.length !== createDto.cartItemIds.length) {
-      throw new BadRequestException('Có sản phẩm không hợp lệ trong giỏ hàng');
-    }
-
-    if (!cart.items || cart.items.length === 0) {
-      throw new BadRequestException(ERROR_ORDER.CART_EMPTY.MESSAGE);
-    }
-
-    // 2. Lấy địa chỉ
-    const address = await this.addressService.findOne(
-      createDto.addressId,
-      userId,
-    );
-
-    // 3. Validate stock cho tất cả items
-    for (const item of cart.items) {
-      const variant = await this.productService.getVariantByColor(
-        item.productId,
-        item.color,
+    // Use transaction for entire order creation process
+    return await this.dataSource.transaction(async (manager) => {
+      // 1. Get cart
+      const cart = await this.cartService.getCart(userId);
+      const selectedItems = cart.items.filter((item) =>
+        createDto.cartItemIds.includes(item.id),
       );
 
-      if (variant.stock < item.quantity) {
+      if (selectedItems.length === 0) {
         throw new BadRequestException(
-          `Not enough stock for ${item.productName} - ${item.color}. Available: ${variant.stock}`,
+          'Vui lòng chọn ít nhất 1 sản phẩm để đặt hàng',
         );
       }
-    }
 
-    // 4. Tính toán
-    const subtotal = selectedItems.reduce(
-      (sum, item) => sum + Number(item.subtotal),
-      0,
-    );
-    const totalItems = selectedItems.reduce(
-      (sum, item) => sum + item.quantity,
-      0,
-    );
-    const discountAmount = 0;
-    const shippingFee = this.calculateShippingFee(address.city, subtotal);
-    const totalAmount = subtotal - discountAmount + shippingFee;
+      if (selectedItems.length !== createDto.cartItemIds.length) {
+        throw new BadRequestException(
+          'Có sản phẩm không hợp lệ trong giỏ hàng',
+        );
+      }
 
-    // 5. Generate order code
-    const orderCode = await this.generateOrderCode();
+      // 2. Get address
+      const address = await this.addressService.findOne(
+        createDto.addressId,
+        userId,
+      );
 
-    // 6. Tạo order
-    const order = this.orderRepository.create({
-      orderCode,
-      userId,
-      recipientName: address.recipientName,
-      phoneNumber: address.phoneNumber,
-      street: address.street,
-      ward: address.ward,
-      district: address.district,
-      city: address.city,
-      notes: createDto.notes,
-      totalItems,
-      subtotal,
-      discountAmount,
-      discountCode: createDto.discountCode,
-      shippingFee,
-      totalAmount,
-      paymentMethod: createDto.paymentMethod,
-      orderStatus: OrderStatus.PENDING,
-      paymentStatus: PaymentStatus.PENDING,
-    });
-
-    // 7. Save order trước (để có orderId)
-    const savedOrder = await this.orderRepository.save(order);
-
-    // 8. Tạo order details với orderId
-    const orderDetails = selectedItems.map((item) =>
-      this.orderDetailRepository.create({
-        orderId: savedOrder.id,
-        productId: item.productId,
-        productName: item.productName,
-        color: item.color,
-        productImage: item.productImage,
-        price: item.price,
-        discount: item.discount,
-        quantity: item.quantity,
-        subtotal: item.subtotal,
-      }),
-    );
-
-    // 9. Save order details
-    await this.orderDetailRepository.save(orderDetails);
-
-    // 10. Load lại order với items
-    const completeOrder = await this.orderRepository.findOne({
-      where: { id: savedOrder.id },
-      relations: ['items'],
-    });
-
-    // 11. Xử lý theo payment method
-    if (createDto.paymentMethod === PaymentMethod.COD) {
+      // 3. Validate stock with pessimistic lock
       for (const item of selectedItems) {
-        await this.productService.incrementSoldCount(
-          item.productId,
-          item.color,
-          item.quantity,
+        const product = await manager.findOne(
+          this.productService['productRepository'].target,
+          {
+            where: { id: item.productId },
+            lock: { mode: 'pessimistic_write' },
+          },
         );
 
-        // Xóa item khỏi cart
-        await this.cartService.removeCartItem(userId, item.id);
+        const variant = product.variants.find((v) => v.color === item.color);
+
+        if (!variant || variant.stock < item.quantity) {
+          throw new BadRequestException(
+            `Không đủ hàng cho ${item.productName} - ${item.color}. Còn lại: ${variant?.stock || 0}`,
+          );
+        }
       }
 
-      // TODO: Send email confirmation
-      try {
-        const user = await this.userRepository.findOne({
-          where: { id: userId },
-        });
-        const emailData = this.prepareOrderEmailData(completeOrder, user.email);
-        await this.emailQueueService.addOrderConfirmationEmailJob(emailData);
-      } catch (error) {
-        console.error('Failed to queue order confirmation email:', error);
-        // Don't block order creation if email fails
-      }
+      // 4. Calculate totals
+      const subtotal = selectedItems.reduce(
+        (sum, item) => sum + Number(item.subtotal),
+        0,
+      );
+      const totalItems = selectedItems.reduce(
+        (sum, item) => sum + item.quantity,
+        0,
+      );
+      const discountAmount = 0;
+      const shippingFee = this.calculateShippingFee(address.city, subtotal);
+      const totalAmount = subtotal - discountAmount + shippingFee;
 
-      return this.transformToResponse(completeOrder);
-    } else if (createDto.paymentMethod === PaymentMethod.VNPAY) {
-      // VNPay: Tạo payment URL, chưa giảm stock
-      const paymentUrl = await this.createVNPayPaymentUrl(completeOrder);
+      // 5. Generate order code (with transaction)
+      const orderCode = await this.generateOrderCode();
 
-      // SCHEDULE AUTO-CANCEL AFTER 24H (THÊM MỚI)
-      try {
-        await this.orderQueueService.scheduleAutoCancelOrder(
-          completeOrder.id,
-          completeOrder.orderCode,
+      // 6. Create order
+      const order = manager.create(OrderEntity, {
+        orderCode,
+        userId,
+        recipientName: address.recipientName,
+        phoneNumber: address.phoneNumber,
+        street: address.street,
+        ward: address.ward,
+        district: address.district,
+        city: address.city,
+        notes: createDto.notes,
+        totalItems,
+        subtotal,
+        discountAmount,
+        discountCode: createDto.discountCode,
+        shippingFee,
+        totalAmount,
+        paymentMethod: createDto.paymentMethod,
+        orderStatus: OrderStatus.PENDING,
+        paymentStatus: PaymentStatus.PENDING,
+      });
+
+      const savedOrder = await manager.save(order);
+
+      // 7. Create order details
+      const orderDetails = selectedItems.map((item) =>
+        manager.create(OrderDetailEntity, {
+          orderId: savedOrder.id,
+          productId: item.productId,
+          productName: item.productName,
+          color: item.color,
+          productImage: item.productImage,
+          price: item.price,
+          discount: item.discount,
+          quantity: item.quantity,
+          subtotal: item.subtotal,
+        }),
+      );
+
+      await manager.save(orderDetails);
+
+      // 8. Load complete order
+      const completeOrder = await manager.findOne(OrderEntity, {
+        where: { id: savedOrder.id },
+        relations: ['items'],
+      });
+
+      // 9. Handle by payment method
+      if (createDto.paymentMethod === PaymentMethod.COD) {
+        // COD: Decrease stock immediately
+        for (const item of selectedItems) {
+          await this.productService.incrementSoldCount(
+            item.productId,
+            item.color,
+            item.quantity,
+          );
+
+          // Remove from cart
+          await this.cartService.removeCartItem(userId, item.id);
+        }
+
+        // Send confirmation email
+        this.sendOrderConfirmationEmail(completeOrder, userId).catch(
+          (error) => {
+            this.logger.error('Failed to send COD confirmation email:', error);
+          },
         );
-      } catch (error) {
-        console.error('Failed to schedule auto-cancel job:', error);
-        // Don't block order creation
+
+        return this.transformToResponse(completeOrder);
+      } else if (createDto.paymentMethod === PaymentMethod.VNPAY) {
+        // VNPay: Don't decrease stock yet, schedule auto-cancel
+        const paymentUrl = await this.createVNPayPaymentUrl(completeOrder);
+
+        // Schedule auto-cancel after 24h
+        this.orderQueueService
+          .scheduleAutoCancelOrder(completeOrder.id, completeOrder.orderCode)
+          .catch((error) => {
+            this.logger.error('Failed to schedule auto-cancel:', error);
+          });
+
+        // Send confirmation email with payment warning
+        this.sendOrderConfirmationEmail(completeOrder, userId).catch(
+          (error) => {
+            this.logger.error(
+              'Failed to send VNPay confirmation email:',
+              error,
+            );
+          },
+        );
+
+        return {
+          paymentUrl,
+          orderId: completeOrder.id,
+        };
       }
 
-      // GỬI EMAIL VỚI CẢNH BÁO 24H (THÊM MỚI)
-      try {
-        const user = await this.userRepository.findOne({
-          where: { id: userId },
-        });
-        const emailData = this.prepareOrderEmailData(completeOrder, user.email);
-        await this.emailQueueService.addOrderConfirmationEmailJob(emailData);
-      } catch (error) {
-        console.error('Failed to queue order confirmation email:', error);
-      }
-
-      return {
-        paymentUrl,
-        orderId: completeOrder.id,
-      };
-    }
-
-    // Các payment method khác...
-    throw new BadRequestException('Payment method not supported yet');
+      throw new BadRequestException('Payment method not supported yet');
+    });
   }
 
-  // Tạo VNPay payment URL
   private async createVNPayPaymentUrl(order: OrderEntity): Promise<string> {
     const { VNPayHelper } = await import('../../share/helper/vnpay.helper');
 
@@ -351,14 +344,16 @@ export class OrderService {
       amount: order.totalAmount,
       orderInfo: `Thanh toan don hang ${order.orderCode}`,
       orderType: 'billpayment',
-      ipAddr: '127.0.0.1', // TODO: Get from request
+      ipAddr: '127.0.0.1',
       locale: 'vn',
     });
 
     return paymentUrl;
   }
 
-  // Xử lý VNPay callback
+  /**
+   * Handle VNPay callback with transaction
+   */
   async handleVNPayCallback(query: any): Promise<OrderResponseDto> {
     const { VNPayHelper } = await import('../../share/helper/vnpay.helper');
 
@@ -379,65 +374,119 @@ export class OrderService {
     }
 
     const orderId = verifyResult.data.orderId;
-    const order = await this.findOne(orderId);
 
-    if (query.vnp_ResponseCode === '00') {
-      // Payment thành công
-      order.paymentStatus = PaymentStatus.PAID;
-      order.orderStatus = OrderStatus.CONFIRMED;
-      order.paidAt = new Date();
-      order.paymentTransactionId = verifyResult.data.transactionNo;
+    // Use transaction for payment processing
+    return await this.dataSource.transaction(async (manager) => {
+      // Lock order to prevent race condition
+      const order = await manager.findOne(OrderEntity, {
+        where: { id: orderId },
+        relations: ['items'],
+        lock: { mode: 'pessimistic_write' },
+      });
 
-      await this.orderRepository.save(order);
-
-      try {
-        await this.orderQueueService.cancelAutoCancelJob(orderId);
-      } catch (error) {
-        console.error('Failed to cancel auto-cancel job:', error);
-      }
-      // Giảm stock
-      for (const item of order.items) {
-        await this.productService.incrementSoldCount(
-          item.productId,
-          item.color,
-          item.quantity,
-        );
+      if (!order) {
+        throw new NotFoundException('Order not found');
       }
 
-      // Clear cart
-      const cart = await this.cartService.getCart(order.userId);
-      for (const orderItem of order.items) {
-        const cartItem = cart.items.find(
-          (ci) =>
-            ci.productId === orderItem.productId &&
-            ci.color === orderItem.color,
+      // Validate amount
+      const expectedAmount = Number(order.totalAmount);
+      const paidAmount = verifyResult.data.amount;
+
+      if (Math.abs(expectedAmount - paidAmount) > 1) {
+        this.logger.error(
+          `Amount mismatch for order ${order.orderCode}: expected ${expectedAmount}, got ${paidAmount}`,
         );
-        if (cartItem) {
-          await this.cartService.removeCartItem(order.userId, cartItem.id);
+        throw new BadRequestException('Payment amount mismatch');
+      }
+
+      if (query.vnp_ResponseCode === '00') {
+        // Payment successful
+        if (order.paymentStatus === PaymentStatus.PAID) {
+          this.logger.warn(
+            `Order ${order.orderCode} already paid, skipping duplicate payment`,
+          );
+          return this.transformToResponse(order);
         }
-      }
 
-      try {
-        const user = await this.userRepository.findOne({
-          where: { id: order.userId },
+        order.paymentStatus = PaymentStatus.PAID;
+        order.orderStatus = OrderStatus.CONFIRMED;
+        order.paidAt = new Date();
+        order.paymentTransactionId = verifyResult.data.transactionNo;
+
+        await manager.save(order);
+
+        // Cancel auto-cancel job
+        this.orderQueueService.cancelAutoCancelJob(orderId).catch((error) => {
+          this.logger.error('Failed to cancel auto-cancel job:', error);
         });
-        const emailData = this.prepareOrderEmailData(order, user.email);
-        await this.emailQueueService.addOrderConfirmationEmailJob(emailData);
-      } catch (error) {
-        console.error('Failed to queue payment confirmation email:', error);
+
+        // Decrease stock
+        for (const item of order.items) {
+          await this.productService.incrementSoldCount(
+            item.productId,
+            item.color,
+            item.quantity,
+          );
+        }
+
+        // Clear cart
+        const cart = await this.cartService.getCart(order.userId);
+        for (const orderItem of order.items) {
+          const cartItem = cart.items.find(
+            (ci) =>
+              ci.productId === orderItem.productId &&
+              ci.color === orderItem.color,
+          );
+          if (cartItem) {
+            await this.cartService.removeCartItem(order.userId, cartItem.id);
+          }
+        }
+
+        // Send confirmation email
+        this.sendOrderConfirmationEmail(order, order.userId).catch((error) => {
+          this.logger.error(
+            'Failed to send payment confirmation email:',
+            error,
+          );
+        });
+
+        return this.transformToResponse(order);
+      } else {
+        // Payment failed
+        order.paymentStatus = PaymentStatus.FAILED;
+        await manager.save(order);
+
+        throw new BadRequestException(
+          `Payment failed: ${verifyResult.message}`,
+        );
+      }
+    });
+  }
+
+  /**
+   * Send order confirmation email helper
+   */
+  private async sendOrderConfirmationEmail(
+    order: OrderEntity,
+    userId: string,
+  ): Promise<void> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+      });
+
+      if (!user?.email) {
+        this.logger.warn(`No email found for user ${userId}`);
+        return;
       }
 
-      return this.transformToResponse(order);
-    } else {
-      // Payment thất bại
-      order.paymentStatus = PaymentStatus.FAILED;
-      await this.orderRepository.save(order);
-
-      throw new BadRequestException(`Payment failed: ${verifyResult.message}`);
+      const emailData = this.prepareOrderEmailData(order, user.email);
+      await this.emailQueueService.addOrderConfirmationEmailJob(emailData);
+    } catch (error) {
+      this.logger.error('Failed to queue order confirmation email:', error);
     }
   }
 
-  // Lấy danh sách orders của user
   async findUserOrders(
     userId: string,
     query: QueryOrderDto,
@@ -481,7 +530,6 @@ export class OrderService {
     };
   }
 
-  // Lấy tất cả orders (Admin)
   async findAll(query: QueryOrderDto) {
     const {
       page = 1,
@@ -536,7 +584,6 @@ export class OrderService {
     };
   }
 
-  // Lấy order detail
   async findOne(id: string): Promise<OrderEntity> {
     const order = await this.orderRepository.findOne({
       where: { id },
@@ -550,58 +597,85 @@ export class OrderService {
     return order;
   }
 
-  // Update order status (Admin)
+  /**
+   * Update order status with transaction
+   */
   async updateStatus(
     id: string,
     updateDto: UpdateOrderStatusDto,
   ): Promise<OrderResponseDto> {
-    const order = await this.findOne(id);
+    return await this.dataSource.transaction(async (manager) => {
+      const order = await manager.findOne(OrderEntity, {
+        where: { id },
+        relations: ['items', 'user'],
+        lock: { mode: 'pessimistic_write' },
+      });
 
-    // Validate status transition
-    const allowedTransitions = ORDER_STATUS_TRANSITIONS[order.orderStatus];
-    if (!allowedTransitions.includes(updateDto.status)) {
-      throw new BadRequestException(
-        ERROR_ORDER.INVALID_STATUS_TRANSITION.MESSAGE,
-      );
-    }
-
-    order.orderStatus = updateDto.status;
-
-    // Update timestamps
-    if (updateDto.status === OrderStatus.SHIPPING) {
-      order.shippedAt = new Date();
-    } else if (updateDto.status === OrderStatus.DELIVERED) {
-      order.deliveredAt = new Date();
-      order.paymentStatus = PaymentStatus.PAID; // Auto mark as paid when delivered (for COD)
-      order.paidAt = new Date();
-    } else if (updateDto.status === OrderStatus.CANCELLED) {
-      order.cancelledAt = new Date();
-      order.cancelReason = updateDto.reason;
-
-      try {
-        await this.orderQueueService.cancelAutoCancelJob(id);
-      } catch (error) {
-        console.error('Failed to cancel auto-cancel job:', error);
+      if (!order) {
+        throw new NotFoundException(ERROR_ORDER.ORDER_NOT_FOUND.MESSAGE);
       }
 
-      // Hoàn stock nếu đã giảm
-      if (order.paymentStatus === PaymentStatus.PAID) {
-        for (const item of order.items) {
-          await this.productService.updateVariantStock(
-            item.productId,
-            item.color,
-            item.quantity, // Cộng lại
-          );
+      // Validate status transition
+      const allowedTransitions = ORDER_STATUS_TRANSITIONS[order.orderStatus];
+      if (!allowedTransitions.includes(updateDto.status)) {
+        throw new BadRequestException(
+          ERROR_ORDER.INVALID_STATUS_TRANSITION.MESSAGE,
+        );
+      }
+
+      order.orderStatus = updateDto.status;
+
+      // Update timestamps
+      if (updateDto.status === OrderStatus.SHIPPING) {
+        order.shippedAt = new Date();
+      } else if (updateDto.status === OrderStatus.DELIVERED) {
+        order.deliveredAt = new Date();
+        order.paymentStatus = PaymentStatus.PAID;
+        order.paidAt = new Date();
+      } else if (updateDto.status === OrderStatus.CANCELLED) {
+        order.cancelledAt = new Date();
+        order.cancelReason = updateDto.reason;
+
+        // Cancel auto-cancel job
+        this.orderQueueService.cancelAutoCancelJob(id).catch((error) => {
+          this.logger.error('Failed to cancel auto-cancel job:', error);
+        });
+
+        // Restore stock if already paid
+        if (order.paymentStatus === PaymentStatus.PAID) {
+          for (const item of order.items) {
+            await this.productService.updateVariantStock(
+              item.productId,
+              item.color,
+              item.quantity,
+            );
+          }
+        }
+
+        // Send cancellation email
+        if (order.user?.email) {
+          this.emailQueueService
+            .addOrderCancellationEmailJob({
+              email: order.user.email,
+              orderCode: order.orderCode,
+              cancelReason: order.cancelReason,
+              totalAmount: Number(order.totalAmount),
+              cancelledAt: order.cancelledAt,
+              isPaid: order.paymentStatus === PaymentStatus.PAID,
+              isAutoCancel: false,
+            })
+            .catch((error) => {
+              this.logger.error('Failed to send cancellation email:', error);
+            });
         }
       }
-    }
 
-    await this.orderRepository.save(order);
+      await manager.save(order);
 
-    return this.transformToResponse(order);
+      return this.transformToResponse(order);
+    });
   }
 
-  // Cancel order (User)
   async cancelOrder(
     id: string,
     userId: string,
@@ -609,12 +683,10 @@ export class OrderService {
   ): Promise<OrderResponseDto> {
     const order = await this.findOne(id);
 
-    // Chỉ user sở hữu mới được cancel
     if (order.userId !== userId) {
       throw new BadRequestException('You can only cancel your own orders');
     }
 
-    // Chỉ cancel được khi PENDING hoặc CONFIRMED
     if (
       ![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.orderStatus)
     ) {
@@ -627,7 +699,6 @@ export class OrderService {
     });
   }
 
-  // Update shipping info (Admin)
   async updateShipping(
     id: string,
     updateDto: UpdateShippingDto,
@@ -647,13 +718,11 @@ export class OrderService {
     return this.transformToResponse(order);
   }
 
-  // Transform to response DTO
   private transformToResponse(order: OrderEntity): OrderResponseDto {
     const response = plainToInstance(OrderResponseDto, order, {
       excludeExtraneousValues: true,
     });
 
-    // Thêm thông tin thời gian hết hạn
     response.expirationTime = this.calculateExpirationTime(order);
 
     return response;

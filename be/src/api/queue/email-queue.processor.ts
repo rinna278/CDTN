@@ -1,9 +1,12 @@
-// api/queue/email-queue.processor.ts
+// queue/email-queue.processor.ts
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { EmailService, OrderEmailData } from 'src/api/email/email.service';
-import { OtpEmailJobData } from './email-queue.service';
+import { EmailService, OrderEmailData } from '../email/email.service';
+import {
+  OtpEmailJobData,
+  OrderCancellationEmailData,
+} from './email-queue.service';
 
 @Processor('otp-email-queue')
 export class EmailQueueProcessor extends WorkerHost {
@@ -13,65 +16,104 @@ export class EmailQueueProcessor extends WorkerHost {
     super();
   }
 
-  async process(
-    job: Job<OtpEmailJobData | OrderEmailData, any, string>,
-  ): Promise<any> {
-    switch (job.name) {
-      case 'send-otp-email':
-        return this.handleOtpEmail(job as Job<OtpEmailJobData>);
-      case 'send-order-confirmation':
-        return this.handleOrderConfirmationEmail(job as Job<OrderEmailData>);
-      default:
-        throw new Error(`Unknown job name: ${job.name}`);
-    }
-  }
-
-  async handleOtpEmail(job: Job<OtpEmailJobData>) {
-    const { email, otp, type } = job.data;
-
-    this.logger.log(`Processing OTP email job for ${email}, type: ${type}`);
+  async process(job: Job): Promise<void> {
+    this.logger.log(`📧 Processing email job: ${job.name} (ID: ${job.id})`);
 
     try {
-      const success = await this.emailService.sendOtpEmail(email, otp, type);
+      switch (job.name) {
+        case 'send-otp-email':
+          await this.handleOtpEmail(job.data as OtpEmailJobData);
+          break;
 
-      if (!success) {
-        throw new Error('Failed to send OTP email');
+        case 'send-order-confirmation':
+          await this.handleOrderConfirmation(job.data as OrderEmailData);
+          break;
+
+        case 'send-order-cancellation':
+          await this.handleOrderCancellation(
+            job.data as OrderCancellationEmailData,
+          );
+          break;
+
+        case 'send-payment-reminder':
+          await this.handlePaymentReminder(job.data);
+          break;
+
+        default:
+          this.logger.warn(`⚠️  Unknown job type: ${job.name}`);
       }
 
-      this.logger.log(`OTP email sent successfully to ${email}`);
-      return { success: true, email, type };
-    } catch (error) {
-      this.logger.error(`Failed to send OTP email to ${email}:`, error);
-      throw error; // This will mark the job as failed and trigger retry
-    }
-  }
-
-  async handleOrderConfirmationEmail(job: Job<OrderEmailData>) {
-    const { email, orderCode } = job.data;
-
-    this.logger.log(
-      `Processing order confirmation email for order ${orderCode} to ${email}`,
-    );
-
-    try {
-      const success = await this.emailService.sendOrderConfirmationEmail(
-        job.data,
-      );
-
-      if (!success) {
-        throw new Error('Failed to send order confirmation email');
-      }
-
-      this.logger.log(
-        `Order confirmation email sent successfully for order ${orderCode}`,
-      );
-      return { success: true, email, orderCode };
+      this.logger.log(`✅ Email job ${job.name} completed successfully`);
     } catch (error) {
       this.logger.error(
-        `Failed to send order confirmation email for order ${orderCode}:`,
-        error,
+        `❌ Failed to process email job ${job.name}:`,
+        error.stack || error,
       );
-      throw error;
+      throw error; // Re-throw to trigger retry
     }
+  }
+
+  /**
+   * Handle OTP email
+   */
+  private async handleOtpEmail(data: OtpEmailJobData): Promise<void> {
+    const success = await this.emailService.sendOtpEmail(
+      data.email,
+      data.otp,
+      data.type,
+    );
+
+    if (!success) {
+      throw new Error(`Failed to send OTP email to ${data.email}`);
+    }
+  }
+
+  /**
+   * Handle order confirmation email
+   */
+  private async handleOrderConfirmation(data: OrderEmailData): Promise<void> {
+    const success = await this.emailService.sendOrderConfirmationEmail(data);
+
+    if (!success) {
+      throw new Error(
+        `Failed to send order confirmation email for ${data.orderCode}`,
+      );
+    }
+  }
+
+  /**
+   * Handle order cancellation email (NEW)
+   */
+  private async handleOrderCancellation(
+    data: OrderCancellationEmailData,
+  ): Promise<void> {
+    const success = await this.emailService.sendOrderCancellationEmail(data);
+
+    if (!success) {
+      throw new Error(
+        `Failed to send order cancellation email for ${data.orderCode}`,
+      );
+    }
+
+    this.logger.log(
+      `📧 Order cancellation email sent for order ${data.orderCode}`,
+    );
+  }
+
+  /**
+   * Handle payment reminder email (OPTIONAL - for future use)
+   */
+  private async handlePaymentReminder(data: any): Promise<void> {
+    const success = await this.emailService.sendPaymentReminderEmail(data);
+
+    if (!success) {
+      throw new Error(
+        `Failed to send payment reminder email for ${data.orderCode}`,
+      );
+    }
+
+    this.logger.log(
+      `📧 Payment reminder email sent for order ${data.orderCode}`,
+    );
   }
 }

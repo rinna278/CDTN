@@ -8,11 +8,11 @@ export const ORDER_CONST = {
 
 export enum OrderStatus {
   PENDING = 'pending', // Chờ xác nhận
-  CONFIRMED = 'confirmed', // Đã xác nhận 
+  CONFIRMED = 'confirmed', // Đã xác nhận
   PROCESSING = 'processing', // Đang xử lý
   SHIPPING = 'shipping', // Đang giao
-  DELIVERED = 'delivered', // Đã giao 
-  CANCELLED = 'cancelled', // Đã hủy 
+  DELIVERED = 'delivered', // Đã giao
+  CANCELLED = 'cancelled', // Đã hủy
   REFUNDED = 'refunded', // Đã hoàn tiền
 }
 
