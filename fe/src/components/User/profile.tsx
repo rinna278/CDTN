@@ -16,6 +16,8 @@ import "./profile.css";
 import { toast } from "react-toastify";
 import { AddressData } from "../../types/type";
 import Orders from "../Order/orders";
+import { useLocation } from "react-router-dom";
+
 
 interface HeaderProps {
   selected: string;
@@ -57,6 +59,9 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
   const [selectedMenu, setSelectedMenu] = useState("profile");
+  const location = useLocation();
+
+
 
   // State quản lý hiển thị Modal đổi mật khẩu
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -74,6 +79,7 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
+
 
   // State form địa chỉ
   const [addressForm, setAddressForm] = useState({
@@ -94,6 +100,17 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   const [selectedDistrictCode, setSelectedDistrictCode] = useState<
     number | null
   >(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get("tab");
+
+    if (tab && ["profile", "addresses", "orders"].includes(tab)) {
+      setSelectedMenu(tab);
+    }
+  }, [location.search]);
+
+
 
   useEffect(() => {
     const fetchUserInfo = async () => {

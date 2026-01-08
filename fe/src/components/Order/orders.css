@@ -125,6 +125,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-bottom: 40px;
 }
 
 .product-left {
@@ -142,7 +143,7 @@
 .product-info h4 {
   font-size: 15px;
   font-weight: 500;
-  margin-bottom: 4px;
+  margin-bottom: 10px;
 }
 
 .product-info p {
@@ -318,6 +319,11 @@
 }
 
 /* Tinh chỉnh nhỏ cho product row để đẹp hơn với badge */
+.product-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
 .product-info .variant-text {
   font-size: 13px;
   color: #9ca3af;

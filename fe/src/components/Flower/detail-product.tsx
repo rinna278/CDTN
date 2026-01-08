@@ -278,7 +278,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
           </div>
         </div>
 
-        <div className="product-info">
+        <div className="product-info-detail">
           <h1 className="product-title">{product.name}</h1>
 
           <div className="product-rating">
@@ -521,7 +521,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
                     </div>
                   )}
                 </div>
-                <div className="similar-product-info">
+                <div className="similar-product-info-detail">
                   <h3>{item.name}</h3>
                   <div className="similar-product-price">
                     {item.discount && item.discount > 0 && (
