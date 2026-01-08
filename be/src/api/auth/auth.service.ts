@@ -81,7 +81,7 @@ export class AuthService {
 
     // Embed roleId & isSuperAdmin in JWT to avoid DB query on every request
     const payload: JwtPayload = {
-      sub: user.id,
+      id: user.id,
       email: user.email,
       fullName: user.name,
       roleId: user.role?.id,
