@@ -164,6 +164,7 @@ export class OrderService {
     userId: string,
     createDto: CreateOrderDto,
   ): Promise<OrderResponseDto | { paymentUrl: string; orderId: string }> {
+    console.log('id userId', userId);
     // Use transaction for entire order creation process
     return await this.dataSource.transaction(async (manager) => {
       // 1. Get cart
