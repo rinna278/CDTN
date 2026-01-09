@@ -18,12 +18,6 @@
 npm install
 ```
 
-## Setup develop environment and start app
-
-```bash
-docker compose -f docker-compose-dev.yml up --build
-```
-
 ## Setup only database then start in the local
 
 ```bash
@@ -35,17 +29,11 @@ docker compose -f docker-compose-db.yml up --build
 ```bash
 cp .env.example .env
 
-# Run migration database
-npm run typeorm:run-migrations
-
 # development
 npm run start
 
 # watch mode
 npm run start:dev
-
-# production mode
-npm run start:prod
 ```
 
 ## API documentation
@@ -73,6 +61,16 @@ Config [Unit Test Report](https://stackoverflow.com/questions/24825860/how-to-ge
     "coverageReporters": ["json", "html"],
 }
 ```
+
+
+## Data test VNPay:
+Ngân hàng: NCB
+Số thẻ: 9704198526191432198
+Tên chủ thẻ:NGUYEN VAN A
+Ngày phát hành:07/15
+Mật khẩu OTP:123456
+-> Thành công
+
 
 ## License
 

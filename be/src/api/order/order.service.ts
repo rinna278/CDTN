@@ -357,16 +357,13 @@ export class OrderService {
   async handleVNPayCallback(query: any): Promise<OrderResponseDto> {
     const { VNPayHelper } = await import('../../share/helper/vnpay.helper');
 
-    const vnpayConfig = {
+    const vnpay = new VNPayHelper({
       vnp_TmnCode: process.env.VNPAY_TMN_CODE,
       vnp_HashSecret: process.env.VNPAY_HASH_SECRET,
-      vnp_Url:
-        process.env.VNPAY_URL ||
-        'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
+      vnp_Url: process.env.VNPAY_URL!,
       vnp_ReturnUrl: `${process.env.FRONTEND_URL}/order/payment-callback`,
-    };
+    });
 
-    const vnpay = new VNPayHelper(vnpayConfig);
     const verifyResult = vnpay.verifyReturnUrl(query);
 
     if (!verifyResult.isValid) {
@@ -375,92 +372,72 @@ export class OrderService {
 
     const orderId = verifyResult.data.orderId;
 
-    // Use transaction for payment processing
-    return await this.dataSource.transaction(async (manager) => {
-      // Lock order to prevent race condition
+    const order = await this.dataSource.transaction(async (manager) => {
       const order = await manager.findOne(OrderEntity, {
         where: { id: orderId },
-        relations: ['items'],
         lock: { mode: 'pessimistic_write' },
       });
 
-      if (!order) {
-        throw new NotFoundException('Order not found');
-      }
+      if (!order) throw new NotFoundException('Order not found');
 
-      // Validate amount
       const expectedAmount = Number(order.totalAmount);
       const paidAmount = verifyResult.data.amount;
 
       if (Math.abs(expectedAmount - paidAmount) > 1) {
-        this.logger.error(
-          `Amount mismatch for order ${order.orderCode}: expected ${expectedAmount}, got ${paidAmount}`,
-        );
         throw new BadRequestException('Payment amount mismatch');
       }
 
-      if (query.vnp_ResponseCode === '00') {
-        // Payment successful
-        if (order.paymentStatus === PaymentStatus.PAID) {
-          this.logger.warn(
-            `Order ${order.orderCode} already paid, skipping duplicate payment`,
-          );
-          return this.transformToResponse(order);
-        }
-
-        order.paymentStatus = PaymentStatus.PAID;
-        order.orderStatus = OrderStatus.CONFIRMED;
-        order.paidAt = new Date();
-        order.paymentTransactionId = verifyResult.data.transactionNo;
-
-        await manager.save(order);
-
-        // Cancel auto-cancel job
-        this.orderQueueService.cancelAutoCancelJob(orderId).catch((error) => {
-          this.logger.error('Failed to cancel auto-cancel job:', error);
-        });
-
-        // Decrease stock
-        for (const item of order.items) {
-          await this.productService.incrementSoldCount(
-            item.productId,
-            item.color,
-            item.quantity,
-          );
-        }
-
-        // Clear cart
-        const cart = await this.cartService.getCart(order.userId);
-        for (const orderItem of order.items) {
-          const cartItem = cart.items.find(
-            (ci) =>
-              ci.productId === orderItem.productId &&
-              ci.color === orderItem.color,
-          );
-          if (cartItem) {
-            await this.cartService.removeCartItem(order.userId, cartItem.id);
-          }
-        }
-
-        // Send confirmation email
-        this.sendOrderConfirmationEmail(order, order.userId).catch((error) => {
-          this.logger.error(
-            'Failed to send payment confirmation email:',
-            error,
-          );
-        });
-
-        return this.transformToResponse(order);
-      } else {
-        // Payment failed
+      if (query.vnp_ResponseCode !== '00') {
         order.paymentStatus = PaymentStatus.FAILED;
         await manager.save(order);
-
-        throw new BadRequestException(
-          `Payment failed: ${verifyResult.message}`,
-        );
+        throw new BadRequestException('Payment failed');
       }
+
+      if (order.paymentStatus === PaymentStatus.PAID) {
+        return order;
+      }
+
+      order.paymentStatus = PaymentStatus.PAID;
+      order.orderStatus = OrderStatus.CONFIRMED;
+      order.paidAt = new Date();
+      order.paymentTransactionId = verifyResult.data.transactionNo;
+
+      await manager.save(order);
+      return order;
     });
+
+    // LOAD RELATIONS SAU TRANSACTION
+    const fullOrder = await this.orderRepository.findOne({
+      where: { id: order.id },
+      relations: ['items', 'user'],
+    });
+
+    // NON-CRITICAL SIDE EFFECTS (OUTSIDE TRANSACTION)
+    this.orderQueueService.cancelAutoCancelJob(orderId).catch(() => {});
+
+    for (const item of fullOrder.items) {
+      await this.productService.incrementSoldCount(
+        item.productId,
+        item.color,
+        item.quantity,
+      );
+    }
+
+    const cart = await this.cartService.getCart(fullOrder.userId);
+    for (const item of fullOrder.items) {
+      const cartItem = cart.items.find(
+        (ci) => ci.productId === item.productId && ci.color === item.color,
+      );
+      if (cartItem) {
+        await this.cartService.removeCartItem(fullOrder.userId, cartItem.id);
+      }
+    }
+
+    this.sendOrderConfirmationEmail(fullOrder, fullOrder.userId).catch(
+      () => {},
+    );
+
+    return this.transformToResponse(fullOrder);
   }
 
   /**
