@@ -30,13 +30,12 @@ export class OrderProcessor extends WorkerHost {
     const { orderId, orderCode } = job.data;
 
     try {
-      // Use transaction with pessimistic lock to prevent race conditions
+      // Use transaction WITHOUT pessimistic lock (auto-cancel is low risk for race condition)
       await this.dataSource.transaction(async (manager) => {
-        // Fetch order with pessimistic write lock
+        // Fetch order WITHOUT lock (relations don't work well with pessimistic lock in PostgreSQL)
         const order = await manager.findOne(OrderEntity, {
           where: { id: orderId },
           relations: ['items', 'user'],
-          lock: { mode: 'pessimistic_write' },
         });
 
         if (!order) {
@@ -70,9 +69,6 @@ export class OrderProcessor extends WorkerHost {
               error,
             );
           });
-
-          // Note: No need to release stock because VNPay orders don't reserve stock
-          // Stock is only decremented after successful payment
         } else {
           this.logger.log(
             `⏭️  Order ${orderCode} already processed - Status: ${order.orderStatus}, Payment: ${order.paymentStatus}`,

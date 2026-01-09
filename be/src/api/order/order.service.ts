@@ -164,165 +164,165 @@ export class OrderService {
     userId: string,
     createDto: CreateOrderDto,
   ): Promise<OrderResponseDto | { paymentUrl: string; orderId: string }> {
-    // Use transaction for entire order creation process
-    return await this.dataSource.transaction(async (manager) => {
-      // 1. Get cart
-      const cart = await this.cartService.getCart(userId);
-      const selectedItems = cart.items.filter((item) =>
-        createDto.cartItemIds.includes(item.id),
+    // 1. Get cart OUTSIDE transaction
+    const cart = await this.cartService.getCart(userId);
+    const selectedItems = cart.items.filter((item) =>
+      createDto.cartItemIds.includes(item.id),
+    );
+
+    if (selectedItems.length === 0) {
+      throw new BadRequestException(
+        'Vui lòng chọn ít nhất 1 sản phẩm để đặt hàng',
       );
+    }
 
-      if (selectedItems.length === 0) {
-        throw new BadRequestException(
-          'Vui lòng chọn ít nhất 1 sản phẩm để đặt hàng',
-        );
-      }
+    if (selectedItems.length !== createDto.cartItemIds.length) {
+      throw new BadRequestException('Có sản phẩm không hợp lệ trong giỏ hàng');
+    }
 
-      if (selectedItems.length !== createDto.cartItemIds.length) {
-        throw new BadRequestException(
-          'Có sản phẩm không hợp lệ trong giỏ hàng',
-        );
-      }
+    // 2. Get address OUTSIDE transaction
+    const address = await this.addressService.findOne(
+      createDto.addressId,
+      userId,
+    );
 
-      // 2. Get address
-      const address = await this.addressService.findOne(
-        createDto.addressId,
-        userId,
-      );
+    // 3. Calculate totals OUTSIDE transaction
+    const subtotal = selectedItems.reduce(
+      (sum, item) => sum + Number(item.subtotal),
+      0,
+    );
+    const totalItems = selectedItems.reduce(
+      (sum, item) => sum + item.quantity,
+      0,
+    );
+    const discountAmount = 0;
+    const shippingFee = this.calculateShippingFee(address.city, subtotal);
+    const totalAmount = subtotal - discountAmount + shippingFee;
 
-      // 3. Validate stock with pessimistic lock
-      for (const item of selectedItems) {
-        const product = await manager.findOne(
-          this.productService['productRepository'].target,
-          {
-            where: { id: item.productId },
-            lock: { mode: 'pessimistic_write' },
-          },
-        );
-
-        const variant = product.variants.find((v) => v.color === item.color);
-
-        if (!variant || variant.stock < item.quantity) {
-          throw new BadRequestException(
-            `Không đủ hàng cho ${item.productName} - ${item.color}. Còn lại: ${variant?.stock || 0}`,
-          );
-        }
-      }
-
-      // 4. Calculate totals
-      const subtotal = selectedItems.reduce(
-        (sum, item) => sum + Number(item.subtotal),
-        0,
-      );
-      const totalItems = selectedItems.reduce(
-        (sum, item) => sum + item.quantity,
-        0,
-      );
-      const discountAmount = 0;
-      const shippingFee = this.calculateShippingFee(address.city, subtotal);
-      const totalAmount = subtotal - discountAmount + shippingFee;
-
-      // 5. Generate order code (with transaction)
-      const orderCode = await this.generateOrderCode();
-
-      // 6. Create order
-      const order = manager.create(OrderEntity, {
-        orderCode,
-        userId,
-        recipientName: address.recipientName,
-        phoneNumber: address.phoneNumber,
-        street: address.street,
-        ward: address.ward,
-        district: address.district,
-        city: address.city,
-        notes: createDto.notes,
-        totalItems,
-        subtotal,
-        discountAmount,
-        discountCode: createDto.discountCode,
-        shippingFee,
-        totalAmount,
-        paymentMethod: createDto.paymentMethod,
-        orderStatus: OrderStatus.PENDING,
-        paymentStatus: PaymentStatus.PENDING,
-      });
-
-      const savedOrder = await manager.save(order);
-
-      // 7. Create order details
-      const orderDetails = selectedItems.map((item) =>
-        manager.create(OrderDetailEntity, {
-          orderId: savedOrder.id,
-          productId: item.productId,
-          productName: item.productName,
-          color: item.color,
-          productImage: item.productImage,
-          price: item.price,
-          discount: item.discount,
-          quantity: item.quantity,
-          subtotal: item.subtotal,
-        }),
-      );
-
-      await manager.save(orderDetails);
-
-      // 8. Load complete order
-      const completeOrder = await manager.findOne(OrderEntity, {
-        where: { id: savedOrder.id },
-        relations: ['items'],
-      });
-
-      // 9. Handle by payment method
-      if (createDto.paymentMethod === PaymentMethod.COD) {
-        // COD: Decrease stock immediately
+    // 4. Start transaction ONLY for critical operations
+    const { completeOrder } = await this.dataSource.transaction(
+      async (manager) => {
+        // Validate stock with pessimistic lock
         for (const item of selectedItems) {
-          await this.productService.incrementSoldCount(
-            item.productId,
-            item.color,
-            item.quantity,
+          const product = await manager.findOne(
+            this.productService['productRepository'].target,
+            {
+              where: { id: item.productId },
+              lock: { mode: 'pessimistic_write' },
+            },
           );
 
-          // Remove from cart
-          await this.cartService.removeCartItem(userId, item.id);
+          const variant = product.variants.find((v) => v.color === item.color);
+
+          if (!variant || variant.stock < item.quantity) {
+            throw new BadRequestException(
+              `Không đủ hàng cho ${item.productName} - ${item.color}. Còn lại: ${variant?.stock || 0}`,
+            );
+          }
         }
 
-        // Send confirmation email
-        this.sendOrderConfirmationEmail(completeOrder, userId).catch(
-          (error) => {
-            this.logger.error('Failed to send COD confirmation email:', error);
-          },
+        // Generate order code
+        const orderCode = await this.generateOrderCode();
+
+        // Create order
+        const order = manager.create(OrderEntity, {
+          orderCode,
+          userId,
+          recipientName: address.recipientName,
+          phoneNumber: address.phoneNumber,
+          street: address.street,
+          ward: address.ward,
+          district: address.district,
+          city: address.city,
+          notes: createDto.notes,
+          totalItems,
+          subtotal,
+          discountAmount,
+          discountCode: createDto.discountCode,
+          shippingFee,
+          totalAmount,
+          paymentMethod: createDto.paymentMethod,
+          orderStatus: OrderStatus.PENDING,
+          paymentStatus: PaymentStatus.PENDING,
+        });
+
+        const savedOrder = await manager.save(order);
+
+        // Create order details
+        const orderDetails = selectedItems.map((item) =>
+          manager.create(OrderDetailEntity, {
+            orderId: savedOrder.id,
+            productId: item.productId,
+            productName: item.productName,
+            color: item.color,
+            productImage: item.productImage,
+            price: item.price,
+            discount: item.discount,
+            quantity: item.quantity,
+            subtotal: item.subtotal,
+          }),
         );
 
-        return this.transformToResponse(completeOrder);
-      } else if (createDto.paymentMethod === PaymentMethod.VNPAY) {
-        // VNPay: Don't decrease stock yet, schedule auto-cancel
-        const paymentUrl = await this.createVNPayPaymentUrl(completeOrder);
+        await manager.save(orderDetails);
 
-        // Schedule auto-cancel after 24h
-        this.orderQueueService
-          .scheduleAutoCancelOrder(completeOrder.id, completeOrder.orderCode)
-          .catch((error) => {
-            this.logger.error('Failed to schedule auto-cancel:', error);
-          });
+        // Load complete order
+        const completeOrder = await manager.findOne(OrderEntity, {
+          where: { id: savedOrder.id },
+          relations: ['items'],
+        });
 
-        // Send confirmation email with payment warning
-        this.sendOrderConfirmationEmail(completeOrder, userId).catch(
-          (error) => {
-            this.logger.error(
-              'Failed to send VNPay confirmation email:',
-              error,
-            );
-          },
+        return { completeOrder };
+      },
+    );
+
+    // 5. Post-transaction operations (OUTSIDE transaction)
+    if (createDto.paymentMethod === PaymentMethod.COD) {
+      // COD: Decrease stock immediately
+      for (const item of selectedItems) {
+        await this.productService.incrementSoldCount(
+          item.productId,
+          item.color,
+          item.quantity,
         );
 
-        return {
-          paymentUrl,
-          orderId: completeOrder.id,
-        };
+        // Remove from cart
+        await this.cartService.removeCartItem(userId, item.id);
       }
 
-      throw new BadRequestException('Payment method not supported yet');
-    });
+      // Send confirmation email (async, don't block)
+      this.sendOrderConfirmationEmail(completeOrder, userId).catch((error) => {
+        this.logger.error('Failed to send COD confirmation email:', error);
+      });
+
+      return this.transformToResponse(completeOrder);
+    } else if (createDto.paymentMethod === PaymentMethod.VNPAY) {
+      // VNPay: Remove cart items but don't decrease stock yet
+      for (const item of selectedItems) {
+        await this.cartService.removeCartItem(userId, item.id);
+      }
+
+      // Create payment URL
+      const paymentUrl = await this.createVNPayPaymentUrl(completeOrder);
+
+      // Schedule auto-cancel after 24h (async, don't block)
+      this.orderQueueService
+        .scheduleAutoCancelOrder(completeOrder.id, completeOrder.orderCode)
+        .catch((error) => {
+          this.logger.error('Failed to schedule auto-cancel:', error);
+        });
+
+      // Send confirmation email (async, don't block)
+      this.sendOrderConfirmationEmail(completeOrder, userId).catch((error) => {
+        this.logger.error('Failed to send VNPay confirmation email:', error);
+      });
+
+      return {
+        paymentUrl,
+        orderId: completeOrder.id,
+      };
+    }
+
+    throw new BadRequestException('Payment method not supported yet');
   }
 
   private async createVNPayPaymentUrl(order: OrderEntity): Promise<string> {
