@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhắc Nhở Thanh Toán</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif; background-color: #f7fafc;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f7fafc; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" border="0" cellspacing="0" cellpadding="0" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1); max-width: 600px;">
+                    
+                    <!-- HEADER -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 50px 40px; text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">⏰</div>
+                            <h1 style="color: white; font-size: 28px; font-weight: 700; margin: 0;">Nhắc Nhở Thanh Toán</h1>
+                            <p style="color: rgba(255,255,255,0.9); font-size: 16px; margin-top: 8px;">Đơn hàng của bạn sắp hết hạn</p>
+                        </td>
+                    </tr>
+
+                    <!-- CONTENT -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            
+                            <!-- Urgent Notice -->
+                            <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 20px; margin-bottom: 30px; border: 2px solid #f59e0b; text-align: center;">
+                                <div style="font-size: 32px; margin-bottom: 10px;">⚠️</div>
+                                <div style="color: #78350f; font-size: 16px; font-weight: 600; margin-bottom: 8px;">
+                                    Đơn hàng sẽ tự động hủy sau {{hoursRemaining}} giờ!
+                                </div>
+                                <div style="color: #92400e; font-size: 14px;">
+                                    Vui lòng hoàn tất thanh toán để giữ đơn hàng
+                                </div>
+                            </div>
+
+                            <!-- Order Code -->
+                            <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 30px;">
+                                <tr>
+                                    <td style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 20px; text-align: center; border: 2px solid #f59e0b;">
+                                        <div style="color: #78350f; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+                                            Mã Đơn Hàng
+                                        </div>
+                                        <div style="color: #f59e0b; font-size: 24px; font-weight: 800; font-family: 'Courier New', monospace; letter-spacing: 2px;">
+                                            {{orderCode}}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Order Summary -->
+                            <div style="margin-bottom: 30px;">
+                                <h3 style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0 0 15px 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                                    📋 Thông Tin Đơn Hàng
+                                </h3>
+                                <div style="background: #f9fafb; border-radius: 8px; padding: 15px;">
+                                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; padding: 8px 0;">Mã đơn hàng:</td>
+                                            <td align="right" style="color: #1f2937; font-size: 14px; font-weight: 600; font-family: 'Courier New', monospace;">{{orderCode}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; padding: 8px 0;">Tổng thanh toán:</td>
+                                            <td align="right" style="color: #f59e0b; font-size: 18px; font-weight: 800;">{{totalAmount}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; padding: 8px 0;">Thời gian còn lại:</td>
+                                            <td align="right" style="color: #ef4444; font-size: 16px; font-weight: 700;">~{{hoursRemaining}} giờ</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Why Payment Needed -->
+                            <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; padding: 20px; margin-bottom: 30px;">
+                                <h3 style="color: #1e40af; font-size: 16px; font-weight: 600; margin: 0 0 15px 0;">
+                                    📌 Tại Sao Cần Thanh Toán Ngay?
+                                </h3>
+                                <ul style="color: #1e3a8a; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                                    <li>Giữ chắc chắn sản phẩm yêu thích của bạn</li>
+                                    <li>Tránh bị hủy đơn tự động sau 24 giờ</li>
+                                    <li>Đảm bảo giao hàng đúng hẹn</li>
+                                    <li>Không phải đặt lại từ đầu</li>
+                                </ul>
+                            </div>
+
+                            <!-- Timeline -->
+                            <div style="background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 15px; margin-bottom: 30px;">
+                                <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                    <tr>
+                                        <td width="40" valign="top" style="font-size: 24px; padding-right: 10px;">⏳</td>
+                                        <td style="color: #92400e; font-size: 14px; line-height: 1.6;">
+                                            <strong>Lưu ý quan trọng:</strong><br>
+                                            Nếu không thanh toán trong <strong>{{hoursRemaining}} giờ nữa</strong>, đơn hàng sẽ bị <strong>tự động hủy</strong> để giải phóng sản phẩm cho khách hàng khác.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Payment Button (Large & Prominent) -->
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="{{paymentUrl}}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-decoration: none; padding: 18px 50px; border-radius: 12px; font-weight: 700; font-size: 18px; box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5); text-transform: uppercase; letter-spacing: 1px;">
+                                    💳 Thanh Toán Ngay
+                                </a>
+                                <div style="color: #6b7280; font-size: 13px; margin-top: 12px;">
+                                    Bấm để thanh toán an toàn qua VNPay
+                                </div>
+                            </div>
+
+                            <!-- Alternative Payment -->
+                            <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 30px; text-align: center;">
+                                <div style="color: #4b5563; font-size: 14px; margin-bottom: 15px;">
+                                    Bạn có thể thanh toán bằng cách:
+                                </div>
+                                <div style="color: #6b7280; font-size: 13px; line-height: 1.8;">
+                                    • Quét mã QR VNPay<br>
+                                    • Thẻ ATM nội địa<br>
+                                    • Thẻ Visa/Mastercard<br>
+                                    • Ví điện tử đã liên kết
+                                </div>
+                            </div>
+
+                            <!-- What if I Don't Pay -->
+                            <div style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border-radius: 12px; padding: 20px; margin-bottom: 30px; border-left: 4px solid #ef4444;">
+                                <h3 style="color: #7f1d1d; font-size: 16px; font-weight: 600; margin: 0 0 15px 0;">
+                                    ❌ Nếu Không Thanh Toán?
+                                </h3>
+                                <ul style="color: #991b1b; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                                    <li>Đơn hàng sẽ bị hủy tự động</li>
+                                    <li>Sản phẩm có thể hết hàng khi bạn đặt lại</li>
+                                    <li>Giá có thể thay đổi</li>
+                                    <li>Bạn phải đặt hàng lại từ đầu</li>
+                                </ul>
+                            </div>
+
+                            <!-- Support -->
+                            <div style="background: #f9fafb; border-radius: 12px; padding: 20px; text-align: center;">
+                                <div style="color: #4b5563; font-size: 14px; margin-bottom: 15px;">
+                                    Gặp vấn đề khi thanh toán?
+                                </div>
+                                <a href="mailto:support@avici.com" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);">
+                                    Liên Hệ Hỗ Trợ Ngay
+                                </a>
+                            </div>
+
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 30px 40px; text-align: center; border-top: 1px solid rgba(226, 232, 240, 0.5);">
+                            <div style="color: #2d3748; font-size: 15px; font-weight: 600; margin-bottom: 8px;">
+                                Cảm ơn bạn đã chọn {{appName}}
+                            </div>
+                            <div style="color: #f59e0b; font-size: 14px; font-weight: 500; margin-bottom: 15px;">
+                                Đội Ngũ {{appName}}
+                            </div>
+                            <div style="color: #a0aec0; font-size: 12px; line-height: 1.6;">
+                                Cần hỗ trợ? <a href="mailto:support@avici.com" style="color: #10b981; text-decoration: none; font-weight: 500;">Liên hệ chúng tôi</a><br>
+                                Hotline: 1900-xxxx | Email: support@avici.com
+                            </div>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

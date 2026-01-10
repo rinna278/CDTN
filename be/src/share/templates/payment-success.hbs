@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh Toán Thành Công</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif; background-color: #f7fafc;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f7fafc; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" border="0" cellspacing="0" cellpadding="0" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1); max-width: 600px;">
+                    
+                    <!-- HEADER -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 50px 40px; text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
+                            <h1 style="color: white; font-size: 28px; font-weight: 700; margin: 0;">Thanh Toán Thành Công!</h1>
+                            <p style="color: rgba(255,255,255,0.9); font-size: 16px; margin-top: 8px;">Đơn hàng của bạn đã được xác nhận</p>
+                        </td>
+                    </tr>
+
+                    <!-- CONTENT -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            
+                            <!-- Success Message -->
+                            <div style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-radius: 12px; padding: 20px; margin-bottom: 30px; border: 2px solid #10b981; text-align: center;">
+                                <div style="font-size: 32px; margin-bottom: 10px;">✅</div>
+                                <div style="color: #065f46; font-size: 16px; font-weight: 600; margin-bottom: 8px;">
+                                    Thanh toán đã được xử lý thành công!
+                                </div>
+                                <div style="color: #059669; font-size: 14px;">
+                                    Chúng tôi đã nhận được thanh toán của bạn
+                                </div>
+                            </div>
+
+                            <!-- Order Code -->
+                            <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 30px;">
+                                <tr>
+                                    <td style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 12px; padding: 20px; text-align: center; border: 2px solid #10b981;">
+                                        <div style="color: #065f46; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+                                            Mã Đơn Hàng
+                                        </div>
+                                        <div style="color: #10b981; font-size: 24px; font-weight: 800; font-family: 'Courier New', monospace; letter-spacing: 2px;">
+                                            {{orderCode}}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Payment Details -->
+                            <div style="margin-bottom: 30px;">
+                                <h3 style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0 0 15px 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                                    💳 Thông Tin Thanh Toán
+                                </h3>
+                                <div style="background: #f9fafb; border-radius: 8px; padding: 15px;">
+                                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; padding: 8px 0;">Phương thức:</td>
+                                            <td align="right" style="color: #1f2937; font-size: 14px; font-weight: 600;">{{paymentMethodText}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; padding: 8px 0;">Mã giao dịch:</td>
+                                            <td align="right" style="color: #1f2937; font-size: 14px; font-weight: 600; font-family: 'Courier New', monospace;">{{transactionId}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; padding: 8px 0;">Thời gian:</td>
+                                            <td align="right" style="color: #1f2937; font-size: 14px; font-weight: 600;">{{formatDate paidAt}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2" style="padding: 12px 0;">
+                                                <div style="height: 1px; background: #e5e7eb;"></div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #1f2937; font-size: 16px; font-weight: 700; padding: 8px 0;">Tổng thanh toán:</td>
+                                            <td align="right" style="color: #10b981; font-size: 20px; font-weight: 800;">{{formatCurrency totalAmount}}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Delivery Address -->
+                            <div style="margin-bottom: 30px;">
+                                <h3 style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0 0 15px 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                                    📍 Địa Chỉ Giao Hàng
+                                </h3>
+                                <div style="color: #4b5563; font-size: 14px; line-height: 1.8;">
+                                    <strong>{{recipientName}}</strong><br>
+                                    {{phoneNumber}}<br>
+                                    {{street}}, {{ward}}<br>
+                                    {{district}}, {{city}}
+                                </div>
+                            </div>
+
+                            <!-- Order Items Summary -->
+                            <div style="margin-bottom: 30px;">
+                                <h3 style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0 0 15px 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                                    🛍️ Sản Phẩm Đã Đặt
+                                </h3>
+                                
+                                {{#each items}}
+                                <div style="margin-bottom: 12px; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                        <tr>
+                                            <td width="50" style="padding-right: 12px;">
+                                                <img src="{{this.productImage}}" alt="{{this.productName}}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb;">
+                                            </td>
+                                            <td>
+                                                <div style="color: #1f2937; font-weight: 600; font-size: 14px;">{{this.productName}}</div>
+                                                <div style="color: #6b7280; font-size: 13px;">Màu: {{this.color}} | SL: {{this.quantity}}</div>
+                                            </td>
+                                            <td align="right" style="white-space: nowrap;">
+                                                <div style="color: #10b981; font-weight: 700; font-size: 14px;">{{this.subtotal}}</div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                {{/each}}
+                            </div>
+
+                            <!-- What's Next -->
+                            <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; padding: 20px; margin-bottom: 30px;">
+                                <h3 style="color: #1e40af; font-size: 16px; font-weight: 600; margin: 0 0 15px 0;">
+                                    📦 Tiếp Theo Sẽ Diễn Ra Gì?
+                                </h3>
+                                <ul style="color: #1e3a8a; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                                    <li>Đơn hàng sẽ được <strong>đóng gói và chuẩn bị giao</strong> trong vòng 1-2 ngày làm việc</li>
+                                    <li>Bạn sẽ nhận được email <strong>thông báo giao hàng</strong> khi đơn được vận chuyển</li>
+                                    <li>Thời gian giao hàng dự kiến: <strong>3-5 ngày làm việc</strong></li>
+                                    <li>Bạn có thể <strong>theo dõi đơn hàng</strong> qua đường link bên dưới</li>
+                                </ul>
+                            </div>
+
+                            <!-- Track Order Button -->
+                            <div style="text-align: center; margin-bottom: 20px;">
+                                <a href="{{trackingUrl}}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+                                    Theo Dõi Đơn Hàng
+                                </a>
+                            </div>
+
+                            <!-- Support -->
+                            <div style="background: #f9fafb; border-radius: 12px; padding: 20px; text-align: center;">
+                                <div style="color: #4b5563; font-size: 14px; margin-bottom: 15px;">
+                                    Có thắc mắc về đơn hàng?
+                                </div>
+                                <a href="mailto:support@avici.com" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);">
+                                    Liên Hệ Hỗ Trợ
+                                </a>
+                            </div>
+
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 30px 40px; text-align: center; border-top: 1px solid rgba(226, 232, 240, 0.5);">
+                            <div style="color: #2d3748; font-size: 15px; font-weight: 600; margin-bottom: 8px;">
+                                Cảm ơn bạn đã tin tưởng!
+                            </div>
+                            <div style="color: #10b981; font-size: 14px; font-weight: 500; margin-bottom: 15px;">
+                                Đội Ngũ {{appName}}
+                            </div>
+                            <div style="color: #a0aec0; font-size: 12px; line-height: 1.6;">
+                                Cần hỗ trợ? <a href="mailto:support@avici.com" style="color: #10b981; text-decoration: none; font-weight: 500;">Liên hệ chúng tôi</a><br>
+                                Hotline: 1900-xxxx | Email: support@avici.com
+                            </div>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
