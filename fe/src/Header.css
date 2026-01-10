@@ -343,7 +343,7 @@
   border-radius: 50%;
 }
 .search-and-cart button:hover {
-  background-color: rgb(171, 10, 171);
+  opacity: 0.7;
 }
 .search-and-cart button svg {
   color: white;
@@ -355,6 +355,15 @@
   margin: 24px 0;
   display: flex;
   justify-content: center;
+  cursor: pointer;
+}
+.badge{
+  color: black;
+  font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+  padding: 2px 5px;
+  border-radius: 50%;
+  background-color: white;
+  cursor: pointer;
 }
 
 /* Profile + Logout */
@@ -650,6 +659,20 @@
 
 .search-bar-wrapper {
   animation: slideIn 0.3s ease;
+  position: relative;
+}
+.btn-close-search{
+  position: absolute;
+  left: 93%;
+  background-color: white;
+  border: none;
+}
+.btn-close-search svg{
+  width: 25px;
+  height: 25px;
+}
+.btn-close-search:hover svg{
+  opacity: 0.5;
 }
 
 @keyframes slideIn {

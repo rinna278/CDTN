@@ -14,6 +14,13 @@ async function bootstrap() {
   appConfig(app);
 
   await app.listen(configService.get<number>('PORT') || 3000);
+  process.on('unhandledRejection', (reason) => {
+    console.error('UNHANDLED REJECTION 💥', reason);
+  });
+
+  process.on('uncaughtException', (err) => {
+    console.error('UNCAUGHT EXCEPTION 💥', err);
+  });
 }
 
 bootstrap();

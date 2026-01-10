@@ -275,3 +275,10 @@ export interface OrderListResponse {
   page: number;
   limit: number;
 }
+
+//search context
+export interface SearchContextType {
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  clearSearch: () => void;
+}

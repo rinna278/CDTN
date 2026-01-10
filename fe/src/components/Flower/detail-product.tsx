@@ -8,6 +8,8 @@ import {
 import "./detail-product.css";
 import { toast } from "react-toastify";
 import { Product } from "../../types/type";
+import { fetchCartFromServer } from "../../redux/reducer+action/cartSlice"; // Điều chỉnh đường dẫn cho đúng
+import { useDispatch } from "react-redux";
 
 interface ProductVariant {
   color: string;
@@ -47,6 +49,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
   selected,
   setSelected,
 }) => {
+  const dispatch = useDispatch();
   const { productID } = useParams<{ productID: string }>();
   const location = useLocation();
   const navigate = useNavigate();
@@ -224,6 +227,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
 
     try {
       await postAddToCart(product.id, quantity, selectedColor);
+      dispatch(fetchCartFromServer() as any);
       toast.success(
         `Đã thêm ${quantity} sản phẩm màu ${selectedColor} vào giỏ hàng`
       );

@@ -1,22 +1,19 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import ReactPaginate from "react-paginate";
-import { getAllProduct } from "../../services/apiService";
 import "./birthday-flower.css";
 import { useNavigate } from "react-router-dom";
 import { Product } from "../../types/type";
+import { useSearch } from "../context/SearchContext";
+import { useFlowerSearch } from "../../hooks/useFlowerSearch";
 
-interface ApiResponse {
-  data: Product[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+// interface ApiResponse {
+//   data: Product[];
+//   total: number;
+//   page: number;
+//   limit: number;
+//   totalPages: number;
+// }
 
-type ProductImage = {
-  url: string;
-  publicId?: string;
-};
 
 const formatPrice = (price: number): string => {
   return new Intl.NumberFormat("vi-VN").format(price) + " VND";
@@ -31,7 +28,7 @@ const getImageUrl = (product: Product): string => {
   const defaultImage =
     "https://flowercorner.b-cdn.net/image/cache/catalog/products/B%C3%B3%20Hoa/bo-hoa-hong-mat-nau.jpg.webp";
 
-  // ✅ Ưu tiên ảnh từ variant đầu tiên (nếu có)
+  //Ưu tiên ảnh từ variant đầu tiên (nếu có)
   if (product.variants && product.variants.length > 0) {
     const firstVariant = product.variants[0];
     if (firstVariant.image && firstVariant.image.url) {
@@ -39,7 +36,7 @@ const getImageUrl = (product: Product): string => {
     }
   }
 
-  // ✅ Fallback sang images array
+  // Fallback sang images array
   if (product.images && product.images.length > 0) {
     const firstImage = product.images[0];
     if (typeof firstImage === "string") {
@@ -105,17 +102,23 @@ const FlowerCard = ({ flower }: { flower: Product }) => {
 };
 
 const BirthdayFlower = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortOption, setSortOption] = useState("all");
-  const [flowers, setFlowers] = useState<Product[]>([]);
-  const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const itemsPerPage = 10;
+  const {
+    flowers,
+    totalPages,
+    loading,
+    error,
+    currentPage,
+    setCurrentPage,
+    sortOption,
+    setSortOption,
+  } = useFlowerSearch({ occasion: "birthday" });
+  //query cho page birthday flower
+  const {searchQuery} = useSearch();
+
+  // const itemsPerPage = 10;
 
   const scrollRef = useRef<HTMLHeadingElement>(null);
-  const isFirstRender = useRef(true);
-  const navigate  = useNavigate();
+  // const isFirstRender = useRef(true);
 
   const sortLabels: Record<string, string> = {
     all: "Mới nhất",
@@ -125,107 +128,7 @@ const BirthdayFlower = () => {
     "cheaper-expensive": "Giá thấp -> cao",
   };
 
-  const getSortParams = (option: string) => {
-    switch (option) {
-      case "a-z":
-        return { sortBy: "name", sortOrder: "ASC" as const };
-      case "z-a":
-        return { sortBy: "name", sortOrder: "DESC" as const };
-      case "expensive-cheaper":
-        return { sortBy: "price", sortOrder: "DESC" as const };
-      case "cheaper-expensive":
-        return { sortBy: "price", sortOrder: "ASC" as const };
-      default:
-        return { sortBy: "createdAt", sortOrder: "DESC" as const };
-    }
-  };
 
-  useEffect(() => {
-    const fetchBirthdayFlowers = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const sortParams = getSortParams(sortOption);
-
-        // ✅ Log để debug
-        console.log("🔍 Fetching with params:", {
-          page: currentPage,
-          limit: itemsPerPage,
-          occasions: ["birthday"],
-          status: 1,
-          ...sortParams,
-        });
-
-        const response: ApiResponse = await getAllProduct({
-          page: currentPage,
-          limit: itemsPerPage,
-          occasions: ["birthday"], // ✅ Truyền array
-          status: 1,
-          ...sortParams,
-        });
-
-        console.log("📦 API Response:", response);
-        console.log("📊 Total products:", response.total);
-        console.log("🌸 Products data:", response.data);
-
-        // ✅ Kiểm tra xem có sản phẩm nào không
-        if (response.data && response.data.length > 0) {
-          setFlowers(response.data);
-          setTotalPages(response.totalPages);
-        } else {
-          // ✅ Nếu không có sản phẩm birthday, thử lấy tất cả để test
-          console.warn(
-            "⚠️ No birthday products found, checking all products..."
-          );
-          const allResponse: ApiResponse = await getAllProduct({
-            page: 1,
-            limit: 100,
-            status: 1,
-          });
-
-          console.log("📊 All products:", allResponse.data);
-
-          // ✅ Filter manually ở frontend (fallback)
-          const birthdayProducts = allResponse.data.filter(
-            (product) =>
-              product.occasions && product.occasions.includes("birthday")
-          );
-
-          console.log("🎂 Filtered birthday products:", birthdayProducts);
-
-          if (birthdayProducts.length > 0) {
-            setFlowers(birthdayProducts);
-            setTotalPages(Math.ceil(birthdayProducts.length / itemsPerPage));
-            setError(
-              "Backend filter không hoạt động, đã dùng client-side filter"
-            );
-          } else {
-            setFlowers([]);
-            setTotalPages(0);
-            setError("Không tìm thấy sản phẩm hoa sinh nhật nào");
-          }
-        }
-
-        if (!isFirstRender.current) {
-          scrollRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        } else {
-          isFirstRender.current = false;
-        }
-      } catch (err: any) {
-        console.error("❌ Error fetching products:", err);
-        console.error("❌ Error response:", err.response?.data);
-        setError(`Không thể tải dữ liệu sản phẩm: ${err.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBirthdayFlowers();
-  }, [currentPage, sortOption]);
 
   const handleSortChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSortOption(event.target.id);
@@ -235,6 +138,13 @@ const BirthdayFlower = () => {
   const handlePageClick = (event: { selected: number }) => {
     setCurrentPage(event.selected + 1);
   };
+
+  // //reset page khi search xong
+  // useEffect(() => {
+  //   if (searchQuery) {
+  //     setCurrentPage(1);
+  //   }
+  // }, [searchQuery]);
 
   return (
     <div className="birthday-flower-container">

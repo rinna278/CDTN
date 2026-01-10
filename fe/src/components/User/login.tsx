@@ -12,6 +12,7 @@ import {
   postSendOTPChangePassword,
 } from "../../services/apiService";
 import { toast } from "react-toastify";
+import { fetchCartFromServer } from "../../redux/reducer+action/cartSlice";
 
 interface HeaderProps {
   selected: string;
@@ -81,6 +82,7 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
           isFirstTimeLogin: response.data.isFirstTimeLogin,
         })
       );
+      dispatch(fetchCartFromServer() as any);
 
       toast.success("Đăng nhập thành công");
       navigate("/", { replace: true });

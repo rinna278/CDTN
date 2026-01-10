@@ -13,15 +13,19 @@ import {
 
 // sửa path nếu cần (nếu userSlice nằm cùng thư mục redux thì dùng './...')
 import userReducer from './reducer+action/userSlice';
+//import cartReducer
+import cartReducer from './reducer+action/cartSlice';
+
 
 const rootReducer = combineReducers({
   user: userReducer,
+  cart: cartReducer,
 });
 
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['user'],
+  whitelist: ['user', 'cart'], //thêm vào whitelist để lưu vào localStorage
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

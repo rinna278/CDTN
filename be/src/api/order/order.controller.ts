@@ -75,6 +75,31 @@ export class OrderController {
     }
   }
 
+  /**
+   * VNPay callback endpoint - POST method
+   * Dùng cho testing hoặc frontend call API
+   */
+  @ApiOperation({
+    summary: 'VNPay callback (POST)',
+    description:
+      'Frontend hoặc test tools gọi endpoint này với VNPay query params',
+  })
+  @ApiOkResponse({ type: OrderResponseDto })
+  @Post('vnpay-callback')
+  @HttpCode(HttpStatus.OK)
+  async handleVNPayCallbackPost(@Body() body: any) {
+    console.log('📞 VNPay callback received (POST)');
+    console.debug('Body params:', JSON.stringify(body, null, 2));
+
+    try {
+      const result = await this.orderService.handleVNPayCallback(body);
+      console.log(`✅ Payment successful for order ${result.orderCode}`);
+      return result;
+    } catch (error) {
+      console.error('❌ Payment callback error:', error.message);
+      throw error;
+    }
+  }
   // ========== USER ENDPOINTS ==========
 
   @ApiOperation({

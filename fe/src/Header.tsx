@@ -10,6 +10,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "./redux/store";
 import { logout } from "./redux/reducer+action/userSlice";
+import { useSearch } from "./components/context/SearchContext";
 
 interface HeaderProps {
   selected: string;
@@ -24,6 +25,29 @@ const Header = ({ selected, setSelected }: HeaderProps) => {
   const isAdminPage = location.pathname.startsWith("/admin");
   const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  //query để search theo điều kiện
+  const {searchQuery, setSearchQuery, clearSearch} = useSearch();
+  //query ở page hiện tại
+  const [localQuery, setLocalQuery] = useState('');
+  //lấy số lượng item trong giỏ từ redux
+  const totalCartItems = useSelector((state: RootState) => state.cart.totalItems);
+
+  //hàm xử lí khi ấn enter để search
+  const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter'){
+      setSearchQuery(localQuery);
+      setIsSearching(true);
+    }
+  }
+
+  //hàm xử lí đóng nút search
+  const handleSearchClose = () => {
+    setIsSearching(false);
+    setLocalQuery('');
+    clearSearch();
+  }
+
+
 
   const roleName = useSelector((state: RootState) => state.user.role);
   const isAdmin = roleName === "Administrator";
@@ -171,7 +195,13 @@ const Header = ({ selected, setSelected }: HeaderProps) => {
                 className="search-input"
                 placeholder="Nhập từ khóa để tìm..."
                 autoFocus
+                value={localQuery}
+                onChange={(e) => setLocalQuery(e.target.value)}
+                onKeyDown={handleSearchSubmit}
               />
+              <button className="btn-close-search" onClick={handleSearchClose}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M504.6 148.5C515.9 134.9 514.1 114.7 500.5 103.4C486.9 92.1 466.7 93.9 455.4 107.5L320 270L184.6 107.5C173.3 93.9 153.1 92.1 139.5 103.4C125.9 114.7 124.1 134.9 135.4 148.5L278.3 320L135.4 491.5C124.1 505.1 125.9 525.3 139.5 536.6C153.1 547.9 173.3 546.1 184.6 532.5L320 370L455.4 532.5C466.7 546.1 486.9 547.9 500.5 536.6C514.1 525.3 515.9 505.1 504.6 491.5L361.7 320L504.6 148.5z"/></svg>
+              </button>
             </div>
           ) : (
             <div className="glass-radio-group">
@@ -257,6 +287,9 @@ const Header = ({ selected, setSelected }: HeaderProps) => {
               >
                 <path d="M64 64C46.3 64 32 78.3 32 96C32 113.7 46.3 128 64 128L80 128C88.8 128 96 135.2 96 144L96 432C96 471.8 125.1 504.8 163.1 511C161.1 516.3 160 522 160 528C160 554.5 181.5 576 208 576C234.5 576 256 554.5 256 528C256 522.4 255 517 253.3 512L450.8 512C449 517 448.1 522.4 448.1 528C448.1 554.5 469.6 576 496.1 576C522.6 576 544.1 554.5 544.1 528C544.1 522.4 543.1 517 541.4 512L576.1 512C593.8 512 608.1 497.7 608.1 480C608.1 462.3 593.8 448 576.1 448L176.1 448C167.3 448 160.1 440.8 160.1 432L160.1 144C160 99.8 124.2 64 80 64L64 64zM256 128C229.5 128 208 149.5 208 176L208 352C208 378.5 229.5 400 256 400L496 400C522.5 400 544 378.5 544 352L544 176C544 149.5 522.5 128 496 128L256 128z" />
               </svg>
+              {totalCartItems && (
+                <span className="badge">{totalCartItems}</span>
+              )}
             </button>
           </div>
         </div>

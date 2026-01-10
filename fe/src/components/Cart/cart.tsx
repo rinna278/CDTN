@@ -21,6 +21,8 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { postCreateOrder } from "../../services/apiService";
 import CheckoutModal from "../Checkout/checkout-modal";
+import { useDispatch } from "react-redux";
+import { fetchCartFromServer, setCartInfo } from "../../redux/reducer+action/cartSlice";
 
 interface HeaderProps {
   selected: string;
@@ -33,30 +35,24 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
 
-  // ✅ Debounce timers cho mỗi item
   const updateTimers = useRef<{ [key: string]: NodeJS.Timeout }>({});
-  // ✅ Lưu pending quantity cho mỗi item
   const pendingQuantities = useRef<{ [key: string]: number }>({});
 
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Thay thế hàm cũ bằng phiên bản này
+  const dispatch = useDispatch();
   const handleConfirmOrder = async (orderData: CreateOrderPayload) => {
     if (isSubmitting) return;
 
     try {
       setIsSubmitting(true);
 
-      // TypeScript bây giờ sẽ hiểu orderData khớp 100% với postCreateOrder
       const res = await postCreateOrder(orderData);
 
-      // Đóng modal
       setIsModalOpen(false);
 
-      // Kiểm tra phương thức thanh toán để điều hướng
-      // Lưu ý: So sánh trực tiếp với chuỗi vì CreateOrderPayload dùng union string
       if (orderData.paymentMethod === "vnpay" && res.paymentUrl) {
         window.location.href = res.paymentUrl;
       } else {
@@ -87,7 +83,10 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
       try {
         setLoading(true);
         const response = await getAllItemInCart();
-        console.log("✅ Giỏ hàng:", response);
+        dispatch(setCartInfo({
+          totalItems: response.totalItems,
+          distinctItems: response.items.length
+        }))
         setCart(response);
       } catch (error: any) {
         console.error("❌ Lỗi:", error);
@@ -256,6 +255,7 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
     try {
       const response = await deleteItemInCart(itemId);
       console.log("Sản phẩm đã xóa", response);
+      dispatch(fetchCartFromServer() as any);
 
       // ✅ Cập nhật UI ngay lập tức
       setCart((prevCart) => {
@@ -527,3 +527,5 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
 };
 
 export default Cart;
+
+
