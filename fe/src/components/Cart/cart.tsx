@@ -50,7 +50,7 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
       setIsSubmitting(true);
 
       const res = await postCreateOrder(orderData);
-
+      dispatch(fetchCartFromServer() as any);
       setIsModalOpen(false);
 
       if (orderData.paymentMethod === "vnpay" && res.paymentUrl) {

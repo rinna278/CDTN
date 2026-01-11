@@ -128,26 +128,26 @@ export class OrderResponseDto {
   @Expose()
   @Transform(toVN)
   shippedAt: Date;
-
+  
   @Expose()
   @Transform(toVN)
   deliveredAt: Date;
-
+  
   @Expose()
   cancelReason: string;
-
+  
   @Expose()
   @Transform(toVN)
   cancelledAt: Date;
-
+  
   @Expose()
   @Type(() => OrderItemResponseDto)
   items: OrderItemResponseDto[];
-
+  
   @Expose()
   @Transform(toVN)
   createdAt: Date;
-
+  
   @Expose()
   @Transform(toVN)
   updatedAt: Date;

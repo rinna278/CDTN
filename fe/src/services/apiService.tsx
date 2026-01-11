@@ -12,6 +12,7 @@ import {
   UpdateOrderStatusPayload,
   UpdateShippingPayload,
   CreateOrderPayload,
+  AdminOrderListResponse,
 } from "../types/type";
 import { Province } from "../types/type";
 import { District } from "../types/type";
@@ -360,7 +361,7 @@ const cancelOrder = async (orderId: string, payload: CancelOrderPayload) => {
 //admin: lấy tất cả đơn
 const getAllOrders = async (params: GetAllOrdersParams) => {
   const response = await instance.get(`api/v1/orders/admin/all`, { params });
-  return response.data as OrderListResponse;
+  return response.data as AdminOrderListResponse;
 };
 
 //Láy chi tiết đơn (admin)

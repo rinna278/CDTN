@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"; // Import hook điều hướng
 import "./orders.css";
 import { getMyOrders } from "../../services/apiService";
 import { Order, OrderStatus } from "../../types/type"; // Import từ type chung
-
+import { formatCurrency } from "../../utils/formatData";
 interface OrdersProps {
   selected?: string;
   setSelected?: React.Dispatch<React.SetStateAction<string>>;
@@ -52,6 +52,8 @@ const Orders: React.FC<OrdersProps> = ({ selected, setSelected }) => {
         });
 
         console.log(response);
+        console.log('first oder createdAt: ', response.data[0]?.createdAt);
+        console.log('Type of createdAt:', typeof response.data[0]?.createdAt);
         // Cập nhật danh sách đơn hàng
         setOrders(response.data || []);
 
@@ -85,62 +87,47 @@ const Orders: React.FC<OrdersProps> = ({ selected, setSelected }) => {
   const parseBackendDate = (value: any): Date | null => {
     if (!value) return null;
 
-    try {
-      // Date object
-      if (value instanceof Date) {
-        return isNaN(value.getTime()) ? null : value;
-      }
+    const date = new Date(value);
 
-      // Timestamp
-      if (typeof value === "number") {
-        return new Date(value < 1e12 ? value * 1000 : value);
-      }
-
-      // String
-      if (typeof value === "string") {
-        const trimmed = value.trim();
-
-        // Format: "2026-01-06 15:49:29.660"
-        if (trimmed.includes(" ") && !trimmed.includes("T")) {
-          // ⚠️ FIX TIMEZONE
-          const utcString = trimmed.replace(" ", "T") + "Z";
-          const date = new Date(utcString);
-          return isNaN(date.getTime()) ? null : date;
-        }
-
-        const date = new Date(trimmed);
-        return isNaN(date.getTime()) ? null : date;
-      }
-
-      return null;
-    } catch {
+    if (isNaN(date.getTime())) {
+      console.warn("Invalid date:", value);
       return null;
     }
+
+    return date;
   };
 
 
-  const formatDateVN = (value: any) => {
-    const date = parseBackendDate(value);
+  //Hàm lấy format date hiển thị ra fe
+  // Trong Orders.tsx
 
-    if (!date) {
-      console.warn("Cannot parse date:", value);
-      return "--";
-    }
+const formatDateVN = (value: string | Date) => {
+  if (!value) return "--";
 
-    try {
-      return date.toLocaleString("vi-VN", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false
-      });
-    } catch (error) {
-      console.error("Error formatting date:", error);
-      return "--";
-    }
-  };
+  let date: Date;
+
+  // Nếu backend trả string kiểu "2026-01-11 00:41:42"
+  if (typeof value === "string" && !value.includes("T")) {
+    // ép thành ISO + UTC
+    date = new Date(value.replace(" ", "T") + "+07:00");
+  } else {
+    date = new Date(value);
+  }
+
+  if (isNaN(date.getTime())) return "--";
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Ho_Chi_Minh",
+  }).format(date);
+};
+
+
 
 
 
@@ -156,12 +143,7 @@ const Orders: React.FC<OrdersProps> = ({ selected, setSelected }) => {
     return methodMap[method] || method.toUpperCase();
   };
 
-  const formatCurrency = (amount: number) => {
-    return Number(amount).toLocaleString("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    });
-  };
+  
   return (
     <div className="orders-container">
       {/* --- RENDER TABS --- */}

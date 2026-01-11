@@ -13,10 +13,15 @@
   backdrop-filter: blur(4px); /* Làm mờ nền nhẹ */
 }
 
-
 @keyframes slideIn {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* Header */
@@ -79,12 +84,12 @@
 }
 
 .address-item:hover {
-  border-color: #FC2B76;
+  border-color: #fc2b76;
   background-color: #fff0f5;
 }
 
 .address-item.active {
-  border-color: #FC2B76;
+  border-color: #fc2b76;
   background-color: #fff0f5;
 }
 
@@ -119,7 +124,7 @@
 }
 
 .payment-label:has(input:checked) {
-  border-color: #FC2B76;
+  border-color: #fc2b76;
   font-weight: 500;
 }
 
@@ -151,7 +156,7 @@
 .total-info .amount {
   font-size: 1.2rem;
   font-weight: bold;
-  color: #FC2B76;
+  color: #fc2b76;
 }
 
 .modal-actions {
@@ -159,7 +164,8 @@
   gap: 12px;
 }
 
-.modal-actions button {
+.modal-actions .btn-cancel,
+.modal-actions .btn-confirm {
   flex: 1;
   padding: 5px;
   border-radius: 8px;
@@ -175,7 +181,7 @@
 }
 
 .btn-confirm {
-  background-color: #FC2B76;
+  background-color: #fc2b76;
   color: white;
 }
 
@@ -197,14 +203,13 @@
 
 .btn-add-inline {
   background: none;
-  border: 1px dashed #FC2B76;
-  color: #FC2B76;
+  border: 1px dashed #fc2b76;
+  color: #fc2b76;
   padding: 4px 8px;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.8rem;
 }
-
 
 /* Đảm bảo khung modal chính là mốc tọa độ cho sub-modal */
 .checkout-modal {
@@ -246,7 +251,7 @@
 }
 
 /* Tinh chỉnh input để đồng bộ với modal chính */
-.sub-modal-content input, 
+.sub-modal-content input,
 .sub-modal-content select {
   padding: 12px;
   border: 1px solid #ddd;
@@ -272,7 +277,7 @@
 }
 
 .sub-modal-actions .btn-save {
-  background-color: #FC2B76;
+  background-color: #fc2b76;
   color: white;
   border: none;
 }
