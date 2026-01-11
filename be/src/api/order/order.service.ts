@@ -725,39 +725,6 @@ export class OrderService {
 
       await manager.save(order);
 
-      //load data sau khi update
-      const fullOrder = await manager.findOne(OrderEntity, {
-        where: { id },
-        relations: ['items', 'user'],
-      });
-
-      //thêm của Dũng
-      if (updateDto.status === OrderStatus.CANCELLED) {
-        this.orderQueueService.cancelAutoCancelJob(id).catch(() => {});
-
-        if (fullOrder.paymentStatus === PaymentStatus.PAID) {
-          for (const item of fullOrder.items) {
-            await this.productService.updateVariantStock(
-              item.productId,
-              item.color,
-              item.quantity,
-            );
-          }
-        }
-
-        if (fullOrder.user?.email) {
-          this.emailQueueService.addOrderCancellationEmailJob({
-            email: fullOrder.user.email,
-            orderCode: fullOrder.orderCode,
-            cancelReason: fullOrder.cancelReason,
-            totalAmount: Number(fullOrder.totalAmount),
-            cancelledAt: fullOrder.cancelledAt,
-            isPaid: fullOrder.paymentStatus === PaymentStatus.PAID,
-            isAutoCancel: false,
-          });
-        }
-      }
-
       return this.transformToResponse(order);
     });
   }

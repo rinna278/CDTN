@@ -2,6 +2,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -141,8 +142,8 @@ export class OrderController {
     const order = await this.orderService.findOne(param.id);
 
     // User chỉ xem được order của mình
-    if (order.userId !== user.id) {
-      throw new Error('Unauthorized');
+    if (!order || order.userId !== user.id) {
+      throw new ForbiddenException('You do not have access to this order');
     }
 
     return this.orderService['transformToResponse'](order);
