@@ -81,7 +81,7 @@ const Orders: React.FC<OrdersProps> = ({ selected, setSelected }) => {
   };
 
   const handleViewDetail = (orderId: string) => {
-    navigate(`/account/orders/${orderId}`);
+    navigate(`/orders/${orderId}`);
   };
 
   const parseBackendDate = (value: any): Date | null => {
