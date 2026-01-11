@@ -467,7 +467,7 @@ export class OrderService {
             email: fullOrder.user.email,
             orderCode: fullOrder.orderCode,
             cancelReason: `Thanh toán thất bại - Mã lỗi: ${query.vnp_ResponseCode}`,
-            totalAmount: Number(fullOrder.totalAmount),
+            totalAmount: Number(fullOrder.totalAmount), // ✅ Đảm bảo là number
             cancelledAt: new Date(), // Chỉ để hiển thị thời gian failed
             isPaid: false,
             isAutoCancel: false,
@@ -646,15 +646,27 @@ export class OrderService {
     updateDto: UpdateOrderStatusDto,
   ): Promise<OrderResponseDto> {
     return await this.dataSource.transaction(async (manager) => {
+      // ✅ Bước 1: Lock order trước (KHÔNG load relations)
       const order = await manager.findOne(OrderEntity, {
         where: { id },
-        relations: ['items', 'user'],
         lock: { mode: 'pessimistic_write' },
       });
 
       if (!order) {
         throw new NotFoundException(ERROR_ORDER.ORDER_NOT_FOUND.MESSAGE);
       }
+
+      // ✅ Bước 2: Load relations SAU khi đã lock (không cần lock nữa)
+      const fullOrder = await manager.findOne(OrderEntity, {
+        where: { id },
+        relations: ['items', 'user'],
+      });
+
+      // Merge data
+      Object.assign(order, {
+        items: fullOrder.items,
+        user: fullOrder.user,
+      });
 
       // Validate status transition
       const allowedTransitions = ORDER_STATUS_TRANSITIONS[order.orderStatus];
@@ -716,7 +728,6 @@ export class OrderService {
       return this.transformToResponse(order);
     });
   }
-
   async cancelOrder(
     id: string,
     userId: string,
