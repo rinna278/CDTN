@@ -103,12 +103,11 @@
                   <div
                     style='color: #6b7280; font-size: 14px; line-height: 1.8;'
                   >
-                    <strong>Thời gian hủy:</strong>
-                    {{formatDate cancelledAt}}<br />
+                    <strong>Thời gian hủy:</strong> {{cancelledAt}}<br />
                     <strong>Tổng giá trị đơn:</strong>
                     <span
                       style='color: #ef4444; font-weight: 600;'
-                    >{{formatCurrency totalAmount}}</span>
+                    >{{totalAmount}}</span>
                   </div>
                 </div>
 
@@ -126,7 +125,7 @@
                   >
                     {{#if isPaid}}
                       <li>Số tiền
-                        <strong>{{formatCurrency totalAmount}}</strong>
+                        <strong>{{totalAmount}}</strong>
                         sẽ được hoàn lại trong vòng
                         <strong>3-7 ngày làm việc</strong></li>
                       <li>Bạn sẽ nhận được email xác nhận khi hoàn tiền thành
@@ -148,7 +147,7 @@
                     <div
                       style='color: #92400e; font-size: 14px; line-height: 1.6;'
                     >
-                      <strong>⏰ Lưu ý:</strong>
+                      <strong>⏰ Lưu Ý:</strong>
                       Đơn hàng này đã bị hủy tự động do không được thanh toán
                       trong vòng 24 giờ. Để tránh tình trạng này, vui lòng thanh
                       toán ngay sau khi đặt hàng.

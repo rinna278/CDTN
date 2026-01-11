@@ -173,6 +173,7 @@ export class EmailService {
         discountAmount: this.formatCurrency(data.discountAmount),
         shippingFee: this.formatCurrency(data.shippingFee),
         totalAmount: this.formatCurrency(data.totalAmount),
+        paidAt: this.formatDate(data.paidAt), // ✅ Format ngay
         items: data.items.map((item) => ({
           ...item,
           price: this.formatCurrency(item.price),
@@ -180,10 +181,6 @@ export class EmailService {
           discount: this.formatCurrency(item.discount),
         })),
       };
-      console.log({
-        totalAmount: data.totalAmount,
-        typeof: typeof data.totalAmount,
-      });
 
       await this.mailerService.sendMail({
         to: data.email,
@@ -192,8 +189,8 @@ export class EmailService {
         context: {
           ...formattedData,
           appName,
-          formatDate: this.formatDate.bind(this),
-          formatCurrency: this.formatCurrency.bind(this),
+          transactionId: data.transactionId, // ✅ Không cần format
+          trackingUrl: data.trackingUrl,
         },
       });
 
@@ -231,14 +228,12 @@ export class EmailService {
         context: {
           orderCode: data.orderCode,
           cancelReason: data.cancelReason,
-          totalAmount: data.totalAmount,
-          cancelledAt: data.cancelledAt,
+          totalAmount: this.formatCurrency(data.totalAmount), // ✅ Format trước khi gửi
+          cancelledAt: this.formatDate(data.cancelledAt), // ✅ Format trước khi gửi
           isPaid: data.isPaid || false,
           isAutoCancel: data.isAutoCancel || false,
           shopUrl: frontendUrl,
           appName,
-          formatCurrency: this.formatCurrency.bind(this),
-          formatDate: this.formatDate.bind(this),
         },
       });
 
@@ -276,12 +271,10 @@ export class EmailService {
         context: {
           orderCode: data.orderCode,
           cancelReason: data.cancelReason,
-          totalAmount: data.totalAmount,
-          cancelledAt: data.cancelledAt,
+          totalAmount: this.formatCurrency(data.totalAmount), // ✅ Format trước khi gửi
+          cancelledAt: this.formatDate(data.cancelledAt), // ✅ Format trước khi gửi
           shopUrl: frontendUrl,
           appName,
-          formatCurrency: this.formatCurrency.bind(this),
-          formatDate: this.formatDate.bind(this),
         },
       });
 
