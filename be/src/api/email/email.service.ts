@@ -35,6 +35,12 @@ export interface OrderEmailData {
   trackingUrl: string;
 }
 
+// 🆕 Interface cho payment success email
+export interface PaymentSuccessEmailData extends OrderEmailData {
+  transactionId: string;
+  paidAt: Date;
+}
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -107,7 +113,8 @@ export class EmailService {
   }
 
   /**
-   * Send order confirmation email
+   * 📧 1. Send order confirmation email (COD or VNPay unpaid)
+   * Template: order-confirmation.hbs
    */
   async sendOrderConfirmationEmail(data: OrderEmailData): Promise<boolean> {
     try {
@@ -130,7 +137,7 @@ export class EmailService {
       await this.mailerService.sendMail({
         to: data.email,
         subject: `${appName} - Xác Nhận Đơn Hàng #${data.orderCode}`,
-        template: './order-confirmation',
+        template: './order-confirmation', // ✅ Template cho đặt hàng
         context: {
           ...formattedData,
           appName,
@@ -151,7 +158,61 @@ export class EmailService {
   }
 
   /**
-   * Send order cancellation email
+   * 📧 2. Send payment success email (VNPay paid)
+   * Template: payment-success.hbs
+   */
+  async sendPaymentSuccessEmail(
+    data: PaymentSuccessEmailData,
+  ): Promise<boolean> {
+    try {
+      const appName = this.configService.get('APP_NAME', 'AVICI');
+
+      const formattedData = {
+        ...data,
+        subtotal: this.formatCurrency(data.subtotal),
+        discountAmount: this.formatCurrency(data.discountAmount),
+        shippingFee: this.formatCurrency(data.shippingFee),
+        totalAmount: this.formatCurrency(data.totalAmount),
+        items: data.items.map((item) => ({
+          ...item,
+          price: this.formatCurrency(item.price),
+          subtotal: this.formatCurrency(item.subtotal),
+          discount: this.formatCurrency(item.discount),
+        })),
+      };
+      console.log({
+        totalAmount: data.totalAmount,
+        typeof: typeof data.totalAmount,
+      });
+
+      await this.mailerService.sendMail({
+        to: data.email,
+        subject: `${appName} - Thanh Toán Thành Công #${data.orderCode}`,
+        template: './payment-success', // ✅ Template riêng cho payment success
+        context: {
+          ...formattedData,
+          appName,
+          formatDate: this.formatDate.bind(this),
+          formatCurrency: this.formatCurrency.bind(this),
+        },
+      });
+
+      this.logger.log(
+        `Payment success email sent to ${data.email} for order ${data.orderCode}`,
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send payment success email to ${data.email}:`,
+        error,
+      );
+      return false;
+    }
+  }
+
+  /**
+   * 📧 3. Send order cancellation email (manual cancel or auto-cancel)
+   * Template: order-cancellation.hbs
    */
   async sendOrderCancellationEmail(
     data: OrderCancellationEmailData,
@@ -166,7 +227,7 @@ export class EmailService {
       await this.mailerService.sendMail({
         to: data.email,
         subject: `${appName} - Đơn Hàng #${data.orderCode} Đã Bị Hủy`,
-        template: './order-cancellation',
+        template: './order-cancellation', // ✅ Template cho cancellation
         context: {
           orderCode: data.orderCode,
           cancelReason: data.cancelReason,
@@ -195,7 +256,51 @@ export class EmailService {
   }
 
   /**
-   * Send payment reminder email (1 hour before auto-cancel)
+   * 📧 4. Send payment failed email (VNPay failed)
+   * Template: payment-failed.hbs
+   */
+  async sendPaymentFailedEmail(
+    data: OrderCancellationEmailData,
+  ): Promise<boolean> {
+    try {
+      const appName = this.configService.get('APP_NAME', 'AVICI');
+      const frontendUrl = this.configService.get(
+        'FRONTEND_URL',
+        'http://localhost:3000',
+      );
+
+      await this.mailerService.sendMail({
+        to: data.email,
+        subject: `${appName} - Thanh Toán Thất Bại #${data.orderCode}`,
+        template: './payment-failed', // ✅ Template riêng cho payment failed
+        context: {
+          orderCode: data.orderCode,
+          cancelReason: data.cancelReason,
+          totalAmount: data.totalAmount,
+          cancelledAt: data.cancelledAt,
+          shopUrl: frontendUrl,
+          appName,
+          formatCurrency: this.formatCurrency.bind(this),
+          formatDate: this.formatDate.bind(this),
+        },
+      });
+
+      this.logger.log(
+        `Payment failed email sent to ${data.email} for order ${data.orderCode}`,
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send payment failed email to ${data.email}:`,
+        error,
+      );
+      return false;
+    }
+  }
+
+  /**
+   * 📧 5. Send payment reminder email (23 hours after order creation)
+   * Template: payment-reminder.hbs
    */
   async sendPaymentReminderEmail(data: {
     email: string;
@@ -210,7 +315,7 @@ export class EmailService {
       await this.mailerService.sendMail({
         to: data.email,
         subject: `${appName} - Nhắc Nhở Thanh Toán Đơn #${data.orderCode}`,
-        template: './payment-reminder',
+        template: './payment-reminder', // ✅ Template cho reminder
         context: {
           orderCode: data.orderCode,
           totalAmount: this.formatCurrency(data.totalAmount),

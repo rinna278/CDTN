@@ -1,11 +1,10 @@
 import { Expose, Transform, Type } from 'class-transformer';
 import { OrderStatus, PaymentMethod, PaymentStatus } from '../order.constant';
-import { toVietnamTime } from 'src/share/utils/moment.util';
+import { toVietnamTime } from '../../../share/utils/moment.util';
 
 function toVN({ value }: { value: Date }) {
   return toVietnamTime(value);
 }
-
 export class OrderItemResponseDto {
   @Expose()
   id: string;
@@ -38,6 +37,23 @@ export class OrderItemResponseDto {
   subtotal: number;
 }
 
+export class ExpirationResponseDto {
+  @Expose()
+  remainingSeconds: number;
+
+  @Expose()
+  remainingMinutes: number;
+
+  @Expose()
+  remainingHours: number;
+
+  @Expose()
+  isExpired: boolean;
+
+  @Expose()
+  @Transform(toVN)
+  expiresAt: Date;
+}
 export class OrderResponseDto {
   @Expose()
   id: string;
@@ -137,11 +153,5 @@ export class OrderResponseDto {
   updatedAt: Date;
 
   @Expose()
-  expirationTime?: {
-    remainingSeconds: number;
-    remainingMinutes: number;
-    remainingHours: number;
-    isExpired: boolean;
-    expiresAt: Date;
-  };
+  expirationTime?: ExpirationResponseDto;
 }

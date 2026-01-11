@@ -10,6 +10,7 @@ import { UserModule } from '../user/user.module';
 import { ProductModule } from '../product/product.module';
 import { UserEntity } from '../user/user.entity';
 import { QueueModule } from '../queue/queue.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { QueueModule } from '../queue/queue.module';
     CartModule,
     UserModule,
     ProductModule,
+    EmailModule,
     QueueModule,
   ],
   controllers: [OrderController],

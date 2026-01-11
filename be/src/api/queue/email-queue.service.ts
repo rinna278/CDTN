@@ -1,4 +1,4 @@
-// api/queue/email-queue.service.ts
+// api/queue/email-queue.service.ts - UPDATED
 import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -79,7 +79,26 @@ export class EmailQueueService {
   }
 
   /**
-   * Add payment reminder email (23 hours after order creation for unpaid VNPay orders)
+   * 🆕 Add payment failed email job to queue
+   */
+  async addPaymentFailedEmailJob(
+    data: OrderCancellationEmailData,
+  ): Promise<void> {
+    await this.otpEmailQueue.add('send-payment-failed', data, {
+      attempts: 3,
+      delay: 500,
+      backoff: {
+        type: 'exponential',
+        delay: 2000,
+      },
+      removeOnComplete: true,
+      removeOnFail: false,
+      jobId: `payment-failed-${data.orderCode}-${Date.now()}`,
+    });
+  }
+
+  /**
+   * Add payment reminder email (23 hours after order creation)
    */
   async addPaymentReminderEmailJob(
     data: {
@@ -120,7 +139,7 @@ export class EmailQueueService {
   }
 
   /**
-   * Clean up old jobs manually (optional method for manual cleanup)
+   * Clean up old jobs manually
    */
   async cleanupOldJobs(): Promise<void> {
     try {

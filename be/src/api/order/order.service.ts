@@ -1,4 +1,4 @@
-// order.service.ts - PRODUCTION READY VERSION
+// order.service.ts - PRODUCTION READY VERSION - FIXED
 import {
   Injectable,
   NotFoundException,
@@ -29,7 +29,7 @@ import {
 } from './order.constant';
 import { EmailQueueService } from '../queue/email-queue.service';
 import { OrderQueueService } from '../queue/order-queue.service';
-import { OrderEmailData } from '../email/email.service';
+import { EmailService, OrderEmailData } from '../email/email.service';
 import { UserEntity } from '../user/user.entity';
 
 @Injectable()
@@ -48,6 +48,7 @@ export class OrderService {
     private readonly productService: ProductService,
     private readonly emailQueueService: EmailQueueService,
     private readonly orderQueueService: OrderQueueService,
+    private readonly emailService: EmailService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -296,10 +297,8 @@ export class OrderService {
 
       return this.transformToResponse(completeOrder);
     } else if (createDto.paymentMethod === PaymentMethod.VNPAY) {
-      // VNPay: Remove cart items but don't decrease stock yet
-      // for (const item of selectedItems) {
-      //   await this.cartService.removeCartItem(userId, item.id);
-      // }
+      // VNPay: Don't decrease stock yet, wait for payment
+      // Don't remove cart items yet
 
       // Create payment URL
       const paymentUrl = await this.createVNPayPaymentUrl(completeOrder);
@@ -352,7 +351,7 @@ export class OrderService {
   }
 
   /**
-   * Handle VNPay callback with transaction
+   * ✅ Handle VNPay callback - FIXED VERSION
    */
   async handleVNPayCallback(query: any): Promise<OrderResponseDto> {
     const { VNPayHelper } = await import('../../share/helper/vnpay.helper');
@@ -372,6 +371,7 @@ export class OrderService {
 
     const orderId = verifyResult.data.orderId;
 
+    // Transaction chỉ update DB
     const order = await this.dataSource.transaction(async (manager) => {
       const order = await manager.findOne(OrderEntity, {
         where: { id: orderId },
@@ -387,16 +387,26 @@ export class OrderService {
         throw new BadRequestException('Payment amount mismatch');
       }
 
+      // 🔥 PAYMENT FAILED - CHỈ CẬP NHẬT TRẠNG THÁI, KHÔNG HỦY ĐƠN
       if (query.vnp_ResponseCode !== '00') {
-        order.paymentStatus = PaymentStatus.FAILED;
-        await manager.save(order);
-        throw new BadRequestException('Payment failed');
-      }
-
-      if (order.paymentStatus === PaymentStatus.PAID) {
+        // ✅ Chỉ đánh dấu payment failed, GIỮ NGUYÊN orderStatus = PENDING
+        if (order.paymentStatus !== PaymentStatus.FAILED) {
+          order.paymentStatus = PaymentStatus.FAILED;
+          // ❌ KHÔNG set orderStatus = CANCELLED
+          // ❌ KHÔNG set cancelledAt
+          // ❌ KHÔNG set cancelReason
+          await manager.save(order);
+        }
         return order;
       }
 
+      // Skip nếu đã paid rồi (idempotent)
+      if (order.paymentStatus === PaymentStatus.PAID) {
+        this.logger.log(`Order ${order.orderCode} already paid, skipping...`);
+        return order;
+      }
+
+      // 🔥 PAYMENT SUCCESS
       order.paymentStatus = PaymentStatus.PAID;
       order.orderStatus = OrderStatus.CONFIRMED;
       order.paidAt = new Date();
@@ -406,36 +416,67 @@ export class OrderService {
       return order;
     });
 
-    // LOAD RELATIONS SAU TRANSACTION
+    // Load full relations
     const fullOrder = await this.orderRepository.findOne({
       where: { id: order.id },
       relations: ['items', 'user'],
     });
 
-    // NON-CRITICAL SIDE EFFECTS (OUTSIDE TRANSACTION)
-    this.orderQueueService.cancelAutoCancelJob(orderId).catch(() => {});
+    // 🔥 GỬI EMAIL DỰA VÀO TRẠNG THÁI
+    if (fullOrder.paymentStatus === PaymentStatus.PAID) {
+      // ✅ PAYMENT SUCCESS
 
-    for (const item of fullOrder.items) {
-      await this.productService.incrementSoldCount(
-        item.productId,
-        item.color,
-        item.quantity,
-      );
-    }
+      // Cancel auto-cancel job (vì đã thanh toán)
+      this.orderQueueService.cancelAutoCancelJob(orderId).catch(() => {});
 
-    const cart = await this.cartService.getCart(fullOrder.userId);
-    for (const item of fullOrder.items) {
-      const cartItem = cart.items.find(
-        (ci) => ci.productId === item.productId && ci.color === item.color,
-      );
-      if (cartItem) {
-        await this.cartService.removeCartItem(fullOrder.userId, cartItem.id);
+      // Giảm stock
+      for (const item of fullOrder.items) {
+        await this.productService.incrementSoldCount(
+          item.productId,
+          item.color,
+          item.quantity,
+        );
+      }
+
+      // Xóa giỏ hàng
+      const cart = await this.cartService.getCart(fullOrder.userId);
+      for (const item of fullOrder.items) {
+        const cartItem = cart.items.find(
+          (ci) => ci.productId === item.productId && ci.color === item.color,
+        );
+        if (cartItem) {
+          await this.cartService.removeCartItem(fullOrder.userId, cartItem.id);
+        }
+      }
+
+      // 📧 GỬI EMAIL PAYMENT SUCCESS
+      this.sendPaymentSuccessEmail(fullOrder).catch((error) => {
+        this.logger.error('Failed to send payment success email:', error);
+      });
+    } else if (fullOrder.paymentStatus === PaymentStatus.FAILED) {
+      // ✅ PAYMENT FAILED - CHỈ THÔNG BÁO, KHÔNG HỦY ĐƠN
+
+      // ❌ KHÔNG cancel auto-cancel job (vẫn để tự động hủy sau 24h)
+      // ❌ KHÔNG restore stock (chưa trừ stock)
+      // ❌ KHÔNG xóa cart (user có thể thanh toán lại)
+
+      // 📧 GỬI EMAIL PAYMENT FAILED (thông báo thanh toán thất bại)
+      if (fullOrder.user?.email) {
+        this.emailQueueService
+          .addPaymentFailedEmailJob({
+            email: fullOrder.user.email,
+            orderCode: fullOrder.orderCode,
+            cancelReason: `Thanh toán thất bại - Mã lỗi: ${query.vnp_ResponseCode}`,
+            totalAmount: Number(fullOrder.totalAmount),
+            cancelledAt: new Date(), // Chỉ để hiển thị thời gian failed
+            isPaid: false,
+            isAutoCancel: false,
+          })
+          .catch((error) => {
+            this.logger.error('Failed to send payment failure email:', error);
+          });
       }
     }
-
-    this.sendOrderConfirmationEmail(fullOrder, fullOrder.userId).catch(
-      () => {},
-    );
 
     return this.transformToResponse(fullOrder);
   }
@@ -461,6 +502,29 @@ export class OrderService {
       await this.emailQueueService.addOrderConfirmationEmailJob(emailData);
     } catch (error) {
       this.logger.error('Failed to queue order confirmation email:', error);
+    }
+  }
+
+  /**
+   * ✅ NEW: Send payment success email (riêng biệt với order confirmation)
+   */
+  private async sendPaymentSuccessEmail(order: OrderEntity): Promise<void> {
+    try {
+      if (!order.user?.email) {
+        this.logger.warn(`No email found for order ${order.orderCode}`);
+        return;
+      }
+
+      const emailData = this.prepareOrderEmailData(order, order.user.email);
+
+      // 🔥 Gọi service method MỚI cho payment success
+      await this.emailService.sendPaymentSuccessEmail({
+        ...emailData,
+        transactionId: order.paymentTransactionId,
+        paidAt: order.paidAt,
+      });
+    } catch (error) {
+      this.logger.error('Failed to send payment success email:', error);
     }
   }
 
