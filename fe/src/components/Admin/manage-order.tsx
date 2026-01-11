@@ -37,7 +37,6 @@ const ManageOrder = () => {
     refunded: 0,
   });
 
-  //state cho việc update status
   const [updateOrderId, setUpdateOrderId] = useState("");
   const [newStatus, setNewStatus] = useState("");
   const [updating, setUpdating] = useState(false);
@@ -51,7 +50,6 @@ const ManageOrder = () => {
     const selectedOrder = orders.find((o) => o.id === orderId);
 
     if (selectedOrder) {
-      // Chuyển từ label tiếng Việt ("Chờ xác nhận") về enum key ("pending")
       const statusKey =
         STATUS_LABELS_REVERSE[selectedOrder.status as OrderStatusLabel] || "";
       setCurrentOrderStatus(statusKey); // ✅ Lưu vào state
