@@ -45,6 +45,7 @@
     "dayjs": "^1.11.12",
     "install": "^0.13.0",
     "ioredis": "^5.8.2",
+    "moment-timezone": "^0.6.0",
     "nest-winston": "^1.9.7",
     "next-cloudinary": "^6.17.5",
     "nodemailer": "^7.0.10",

@@ -68,7 +68,7 @@ export interface Product {
 export interface AllUser {
   id: string;
   createdAt: string;
-  updateAt: string;
+  updatedAt: string;
   name: string;
   cart: string[] | null;
   email: string;
@@ -269,12 +269,64 @@ export interface Order {
   createdAt: string;
 }
 
+export interface OrderAdmin {
+  id: string;
+  orderCode: string;
+  userId: string;
+
+  recipientName: string;
+  phoneNumber: string;
+  street: string;
+  ward: string;
+  district: string;
+  city: string;
+
+  totalItems: number;
+  subtotal: string;
+  discountAmount: string;
+  shippingFee: string;
+  totalAmount: string;
+
+  orderStatus: OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymentMethod: PaymentMethod;
+
+  createdAt: string;
+  updatedAt: string;
+
+  expirationTime?: {
+    remainingSeconds: number;
+    remainingMinutes: number;
+    remainingHours: number;
+    isExpired: boolean;
+    expiresAt: string;
+  };
+}
+
+export interface AdminOrderListResponse {
+  data: OrderAdmin[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+
 export interface OrderListResponse {
   data: Order[];
   total: number;
   page: number;
   limit: number;
 }
+
+export interface ManageOrderItem {
+  id: string;
+  maDon: string;
+  nameCustomer: string;
+  totalPrice: string;
+  status: string;
+  date: string;
+}
+
 
 //search context
 export interface SearchContextType {

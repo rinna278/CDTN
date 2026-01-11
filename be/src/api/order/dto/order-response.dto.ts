@@ -1,5 +1,10 @@
 import { Expose, Transform, Type } from 'class-transformer';
 import { OrderStatus, PaymentMethod, PaymentStatus } from '../order.constant';
+import { toVietnamTime } from 'src/share/utils/moment.util';
+
+function toVN({ value }: { value: Date }) {
+  return toVietnamTime(value);
+}
 
 export class OrderItemResponseDto {
   @Expose()
@@ -95,7 +100,7 @@ export class OrderResponseDto {
   paymentTransactionId: string;
 
   @Expose()
-  // @Transform(({ value }) => value && new Date(value).toISOString())
+  @Transform(toVN)
   paidAt: Date;
 
   @Expose()
@@ -105,30 +110,30 @@ export class OrderResponseDto {
   trackingNumber: string;
 
   @Expose()
-  // @Transform(({ value }) => value && new Date(value).toISOString())
+  @Transform(toVN)
   shippedAt: Date;
-
+  
   @Expose()
-  // @Transform(({ value }) => value && new Date(value).toISOString())
+  @Transform(toVN)
   deliveredAt: Date;
-
+  
   @Expose()
   cancelReason: string;
-
+  
   @Expose()
-  // @Transform(({ value }) => value && new Date(value).toISOString())
+  @Transform(toVN)
   cancelledAt: Date;
-
+  
   @Expose()
   @Type(() => OrderItemResponseDto)
   items: OrderItemResponseDto[];
-
+  
   @Expose()
-  // @Transform(({ value }) => value && new Date(value).toISOString())
+  @Transform(toVN)
   createdAt: Date;
-
+  
   @Expose()
-  // @Transform(({ value }) => value && new Date(value).toISOString())
+  @Transform(toVN)
   updatedAt: Date;
 
   @Expose()
