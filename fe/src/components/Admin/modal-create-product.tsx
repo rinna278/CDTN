@@ -23,7 +23,7 @@ interface ProductVariant {
   id: string; // ✅ Thêm ID để quản lý list variant ổn định hơn
   color: string;
   image: { url: string; publicId: string } | null;
-  stock: number;
+  stock: number | "";
 }
 
 const ModalCreateProduct = ({
@@ -52,7 +52,7 @@ const ModalCreateProduct = ({
 
   // ✅ Quản lý variants (Có thêm ID)
   const [variants, setVariants] = useState<ProductVariant[]>([
-    { id: crypto.randomUUID(), color: "", image: null, stock: 0 },
+    { id: crypto.randomUUID(), color: "", image: null, stock: "" },
   ]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -277,7 +277,7 @@ const ModalCreateProduct = ({
 
     // Validate variants
     const validVariants = variants.filter(
-      (v) => v.color.trim() && v.image && v.stock >= 0
+      (v) => v.color.trim() && v.image && Number(v.stock) >= 0
     );
 
     if (validVariants.length === 0) {
@@ -649,6 +649,7 @@ const ModalCreateProduct = ({
                           type="text"
                           placeholder="Tên màu (VD: Đỏ, Xanh)"
                           value={variant.color}
+                          className="name-color"
                           onChange={(e) =>
                             handleVariantChange(index, "color", e.target.value)
                           }
@@ -656,6 +657,7 @@ const ModalCreateProduct = ({
                         <input
                           type="number"
                           placeholder="Tồn kho"
+                          className="stock-color"
                           value={variant.stock}
                           onChange={(e) =>
                             handleVariantChange(

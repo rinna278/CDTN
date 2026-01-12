@@ -16,12 +16,22 @@ const OrderDetail = () => {
     if (!orderId) return;
 
     const fetchOrder = async () => {
-      const res = await getOrderById(orderId);
-      setOrder(res.data ?? res);
+      try {
+        const res = await getOrderById(orderId);
+        setOrder(res.data ?? res);
+      } catch (err: any) {
+        const status = err.response?.status;
+
+        if (status === 401) {
+          setLoading(true);
+          navigate("/login", { replace: true });
+          return;
+        }
+      }
     };
 
     fetchOrder();
-  }, [orderId]);
+  }, [orderId, navigate]);
 
   const handleCancelOrder = async () => {
     if (!order) return;
@@ -49,7 +59,22 @@ const OrderDetail = () => {
     }
   };
 
-  if (!order) return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="newtons-cradle">
+          <div className="newtons-cradle__dot"></div>
+          <div className="newtons-cradle__dot"></div>
+          <div className="newtons-cradle__dot"></div>
+          <div className="newtons-cradle__dot"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return null; // hoặc trang not found
+  }
 
   const btnCancel = order.orderStatus === "pending";
 

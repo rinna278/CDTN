@@ -1,31 +1,23 @@
 import "./manage-order.css";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { getAllOrders, updateOrderStatus } from "../../services/apiService";
 import { formatCurrency } from "../../utils/formatData";
-import { OrderStatus, ManageOrderItem } from "../../types/type";
+import { OrderStatus, ManageOrderItem, OrderItem } from "../../types/type";
 import { ORDER_STATUS_LABEL } from "../../utils/orderStatusMap";
-import axios, { AxiosError } from "axios";
 import { toast } from "react-toastify";
+import OrderDetailModalAdmin from "../Order/order-detail-modal-admin";
 
-//Map status với enum bên backend
 export const mapStatus = (status: OrderStatus): string => {
   return ORDER_STATUS_LABEL[status] ?? status;
 };
 
-type OrderStatusLabel = keyof typeof STATUS_LABELS_REVERSE;
-
-const STATUS_LABELS_REVERSE = {
-  "Chờ xác nhận": "pending",
-  "Đã xác nhận": "confirmed",
-  "Đang xử lý": "processing",
-  "Đang giao": "shipping",
-  "Đã giao": "delivered",
-  "Đã hủy": "cancelled",
-  "Hoàn tiền": "refunded",
-};
+// Interface mở rộng để quản lý logic status
+interface OrderExtended extends ManageOrderItem {
+  rawStatus: string;
+}
 
 const ManageOrder = () => {
-  const [orders, setOrders] = useState<ManageOrderItem[]>([]);
+  const [orders, setOrders] = useState<OrderExtended[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     pending: 0,
@@ -37,166 +29,141 @@ const ManageOrder = () => {
     refunded: 0,
   });
 
+  const [filterStatus, setFilterStatus] = useState<string>("all"); // Lọc đơn hàng theo loại
   const [updateOrderId, setUpdateOrderId] = useState("");
   const [newStatus, setNewStatus] = useState("");
   const [updating, setUpdating] = useState(false);
-  const [currentOrderStatus, setCurrentOrderStatus] = useState("");
+  const [currentOrderRawStatus, setCurrentOrderRawStatus] = useState("");
 
-  const handleOrderChange = (orderId: string) => {
-    setUpdateOrderId(orderId);
-    setNewStatus("");
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+  });
 
-    // Tìm order được chọn
-    const selectedOrder = orders.find((o) => o.id === orderId);
+  interface OrderExtended extends ManageOrderItem {
+    rawStatus: string;
+    items: OrderItem[]; // thêm đây
+  }
 
-    if (selectedOrder) {
-      const statusKey =
-        STATUS_LABELS_REVERSE[selectedOrder.status as OrderStatusLabel] || "";
-      setCurrentOrderStatus(statusKey); // ✅ Lưu vào state
-      console.log("Order được chọn:", selectedOrder.maDon);
-      console.log("Status hiện tại:", statusKey);
-    }
+
+  // Quản lý hiển thị khi hover Chi tiết
+  const [hoveredOrder, setHoveredOrder] = useState<OrderExtended | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  // 1. Lọc danh sách đơn hàng cho Dropdown dựa trên filterStatus
+  const filteredOrdersForSelect = useMemo(() => {
+    if (filterStatus === "all") return orders;
+    return orders.filter((o) => o.rawStatus === filterStatus);
+  }, [filterStatus, orders]);
+
+  // 2. Định nghĩa các bước đi tiếp theo hợp lệ cho từng trạng thái
+  const getAvailableNextStatuses = (currentStatus: string) => {
+    const statusFlow: Record<string, { label: string; value: string }[]> = {
+      pending: [
+        { label: "Đã xác nhận", value: "confirmed" },
+        { label: "Đã hủy", value: "cancelled" },
+      ],
+      confirmed: [
+        { label: "Đang xử lý", value: "processing" },
+        { label: "Đã hủy", value: "cancelled" },
+      ],
+      processing: [
+        { label: "Đang giao hàng", value: "shipping" },
+        { label: "Đã hủy", value: "cancelled" },
+      ],
+      shipping: [
+        { label: "Đã giao hàng", value: "delivered" },
+        { label: "Đã hủy", value: "cancelled" },
+      ],
+      delivered: [{ label: "Hoàn tiền", value: "refunded" }],
+      cancelled: [], // Không thể chuyển đi đâu
+      refunded: [], // Không thể chuyển đi đâu
+    };
+    return statusFlow[currentStatus] || [];
   };
 
-  //gọi API cập nhật
+  const handleOrderSelection = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value;
+    setUpdateOrderId(id);
+    setNewStatus("");
+    const selected = orders.find((o) => o.id === id);
+    setCurrentOrderRawStatus(selected ? selected.rawStatus : "");
+  };
+
   const handleUpdateStatus = async () => {
-    if (!updateOrderId || !newStatus || newStatus === "Chọn trạng thái") {
-      alert("Vui lòng nhập đầy đủ mã đơn hàng và chọn trạng thái!");
+    if (!updateOrderId || !newStatus) {
+      toast.warning("Vui lòng chọn đầy đủ thông tin!");
       return;
     }
     try {
       setUpdating(true);
-      // Validation theo logic của bạn
-      if (
-        currentOrderStatus === "pending" &&
-        newStatus !== "confirmed" &&
-        newStatus !== "cancelled"
-      ) {
-        toast.error(
-          'Từ "Chờ xác nhận" chỉ cập nhật sang "Đã xác nhận" hoặc "Đã hủy"'
-        );
-        return;
-      }
-
-      if (
-        currentOrderStatus === "confirmed" &&
-        newStatus !== "processing" &&
-        newStatus !== "cancelled"
-      ) {
-        toast.error(
-          'Từ "Đã xác nhận" chỉ cập nhật sang "Đang xử lý" hoặc "Đã hủy"'
-        );
-        return;
-      }
-
-      if (
-        currentOrderStatus === "processing" &&
-        newStatus !== "shipping" &&
-        newStatus !== "cancelled"
-      ) {
-        toast.error(
-          'Từ "Đang xử lý" chỉ cập nhật sang "Đang giao hàng" hoặc "Đã hủy"'
-        );
-        return;
-      }
-
-      if (
-        currentOrderStatus === "shipping" &&
-        newStatus !== "delivered" &&
-        newStatus !== "cancelled"
-      ) {
-        toast.error(
-          'Từ "Đang giao hàng" chỉ cập nhật sang "Đã giao hàng" hoặc "Đã hủy"'
-        );
-        return;
-      }
-
-      if (currentOrderStatus === "delivered" && newStatus !== "refunded") {
-        toast.error('Từ "Đã giao hàng" chỉ cập nhật sang "Hoàn tiền"');
-        return;
-      }
-
-      if (
-        currentOrderStatus === "cancelled" ||
-        currentOrderStatus === "refunded"
-      ) {
-        toast.error(
-          'Không thể thay đổi trạng thái từ "Đã hủy" hoặc "Hoàn tiền"'
-        );
-        return;
-      }
-
-      const payload = {
-        status: newStatus,
-        // reason: "Admin cập nhật trạng thái" // Bạn có thể thêm input để nhập lý do nếu status là CANCELLED
-      };
-      console.log("trạng thái mới cần set: ", newStatus);
-      const res = await updateOrderStatus(updateOrderId, payload);
-
+      const res = await updateOrderStatus(updateOrderId, { status: newStatus });
       if (res) {
-        alert("Cập nhật trạng thái thành công!");
-        setUpdateOrderId(""); // Reset form
+        toast.success("Cập nhật thành công!");
+        setUpdateOrderId("");
         setNewStatus("");
-        fetchDataOrders(); // Tải lại danh sách để cập nhật UI
+        fetchDataOrders();
       }
     } catch (error) {
-      console.error("Lỗi cập nhật:", error);
-      if (axios.isAxiosError(error)) {
-        alert(
-          error?.response?.data?.message ||
-            "Không tìm thấy mã đơn hàng hoặc có lỗi xảy ra"
-        );
-      } else {
-        alert("Có lỗi không xác định xảy ra");
-      }
+      toast.error("Lỗi cập nhật trạng thái");
     } finally {
       setUpdating(false);
     }
   };
 
-  useEffect(() => {
-    fetchDataOrders();
-  }, []);
-
   const fetchDataOrders = async () => {
     try {
       setLoading(true);
-      const res = await getAllOrders({ page: 1, limit: 100 });
-      console.log("Response trả về", res.data);
-      if (res && res.data) {
-        const formattedData = res.data.map((order) => ({
+      const res = await getAllOrders({ page: pagination.page, limit: pagination.limit });
+      if (res?.data) {
+        const formatted = res.data.map((order: any) => ({
           id: order.id,
           maDon: order.orderCode,
           nameCustomer: order.recipientName,
           totalPrice: formatCurrency(order.totalAmount),
           status: mapStatus(order.orderStatus),
+          rawStatus: order.orderStatus,
           date: new Date(order.createdAt).toLocaleDateString("vi-VN"),
+          items: order.items || []
         }));
-        setOrders(formattedData);
+        setOrders(formatted);
+        setPagination((prev) => ({
+          ...prev,
+          total: res.total,
+          totalPages: Math.ceil(res.total / prev.limit),
+        }));
 
-        const newStats = {
-          pending: res.data.filter((o) => o.orderStatus === "pending").length,
-          confirmed: res.data.filter((o) => o.orderStatus === "confirmed")
-            .length,
-          processing: res.data.filter((o) => o.orderStatus === "processing")
-            .length,
-          shipping: res.data.filter((o) => o.orderStatus === "shipping").length,
-          delivered: res.data.filter((o) => o.orderStatus === "delivered")
-            .length,
-          cancelled: res.data.filter((o) => o.orderStatus === "cancelled")
-            .length,
-          refunded: res.data.filter((o) => o.orderStatus === "refunded").length,
+        // Cập nhật stats
+        const s = {
+          pending: 0,
+          confirmed: 0,
+          processing: 0,
+          shipping: 0,
+          delivered: 0,
+          cancelled: 0,
+          refunded: 0,
         };
-        setStats(newStats);
+        res.data.forEach((o: any) => {
+          if (s.hasOwnProperty(o.orderStatus)) (s as any)[o.orderStatus]++;
+        });
+        setStats(s);
       }
     } catch (err) {
-      console.log("Lỗi fetch đơn hàng bên admin", err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchDataOrders();
+  }, [pagination.page]);
+
   if (loading)
     return <div style={{ padding: "20px" }}>Đang tải dữ liệu...</div>;
+
   return (
     <>
       <div className="content-top-order">
@@ -205,6 +172,7 @@ const ManageOrder = () => {
           <h5>Danh sách và cập nhật trạng thái đơn hàng</h5>
         </div>
       </div>
+
       <div className="content-middle-order">
         <div className="item-order">
           <div className="status-order-1">
@@ -220,7 +188,7 @@ const ManageOrder = () => {
             <p>{stats.processing}</p>
           </div>
           <div className="status-order-4">
-            <h4>Đang giao </h4>
+            <h4>Đang giao</h4>
             <p>{stats.shipping}</p>
           </div>
           <div className="status-order-5">
@@ -236,6 +204,7 @@ const ManageOrder = () => {
             <p>{stats.refunded}</p>
           </div>
         </div>
+
         <div className="table-orders">
           <div className="title_table">
             <h2>Danh Sách Đơn Hàng</h2>
@@ -246,7 +215,7 @@ const ManageOrder = () => {
               <thead>
                 <tr>
                   <th>Mã Đơn Hàng</th>
-                  <th>Mã Khách Hàng</th>
+                  <th>Tên Khách Hàng</th>
                   <th>Tổng tiền</th>
                   <th>Trạng thái đơn</th>
                   <th>Ngày</th>
@@ -260,23 +229,7 @@ const ManageOrder = () => {
                     <td>{order.nameCustomer}</td>
                     <td>{`₫${order.totalPrice}`}</td>
                     <td>
-                      <span
-                        className={`status-badge ${
-                          order.status === "Chờ xác nhận"
-                            ? "pending"
-                            : order.status === "Đã xác nhận"
-                            ? "confirmed"
-                            : order.status === "Đang xử lý"
-                            ? "processing"
-                            : order.status === "Đang giao"
-                            ? "shipping"
-                            : order.status === "Đã giao"
-                            ? "delivered"
-                            : order.status === "Đã hủy"
-                            ? "cancelled"
-                            : "refunded"
-                        }`}
-                      >
+                      <span className={`status-badge ${order.rawStatus}`}>
                         {order.status === "Chờ xác nhận" && (
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -354,7 +307,7 @@ const ManageOrder = () => {
                             />
                           </svg>
                         )}
-                        <span>{order.status}</span>
+                        {order.status}
                       </span>
                     </td>
                     <td>{order.date}</td>
@@ -366,50 +319,108 @@ const ManageOrder = () => {
                       >
                         <path d="M320 96C239.2 96 174.5 132.8 127.4 176.6C80.6 220.1 49.3 272 34.4 307.7C31.1 315.6 31.1 324.4 34.4 332.3C49.3 368 80.6 420 127.4 463.4C174.5 507.1 239.2 544 320 544C400.8 544 465.5 507.2 512.6 463.4C559.4 419.9 590.7 368 605.6 332.3C608.9 324.4 608.9 315.6 605.6 307.7C590.7 272 559.4 220 512.6 176.6C465.5 132.9 400.8 96 320 96zM176 320C176 240.5 240.5 176 320 176C399.5 176 464 240.5 464 320C464 399.5 399.5 464 320 464C240.5 464 176 399.5 176 320zM320 256C320 291.3 291.3 320 256 320C244.5 320 233.7 317 224.3 311.6C223.3 322.5 224.2 333.7 227.2 344.8C240.9 396 293.6 426.4 344.8 412.7C396 399 426.4 346.3 412.7 295.1C400.5 249.4 357.2 220.3 311.6 224.3C316.9 233.6 320 244.4 320 256z" />
                       </svg>
-                      <span>Chi tiết</span>
+                      <span
+                        onClick={() => {
+                          setHoveredOrder(order);
+                          setModalVisible(true);
+                        }}
+                        style={{ cursor: "pointer", color: "#2169fc" }}
+                      >
+                        Chi tiết
+                      </span>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {pagination.totalPages > 1 && (
+            <div className="pagination-controls">
+              <button
+                disabled={pagination.page === 1}
+                onClick={() =>
+                  setPagination((p) => ({ ...p, page: p.page - 1 }))
+                }
+              >
+                Previous
+              </button>
+
+              <span>
+                Page {pagination.page} / {pagination.totalPages}
+              </span>
+
+              <button
+                disabled={pagination.page === pagination.totalPages}
+                onClick={() =>
+                  setPagination((p) => ({ ...p, page: p.page + 1 }))
+                }
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
       <div className="content-bottom-order">
         <div className="title-bottom-order">
           <h2>Cập nhật Trạng thái Đơn hàng</h2>
-          <h5>Thay đổi trạng thái xử lý đơn hàng</h5>
+          <h5>Lọc theo trạng thái hiện tại để cập nhật nhanh hơn</h5>
         </div>
+
         <div className="update-status">
+          {/* 1. DROP DOWN LỌC TRẠNG THÁI */}
           <select
-            value={updateOrderId}
-            onChange={(e) => setUpdateOrderId(e.target.value)}
+            value={filterStatus}
+            onChange={(e) => {
+              setFilterStatus(e.target.value);
+              setUpdateOrderId("");
+            }}
           >
-            <option value="">Chọn đơn hàng</option>
-            {orders.map((order) => (
+            <option value="all">Tất cả trạng thái đơn</option>
+            <option value="pending">Chờ xác nhận</option>
+            <option value="confirmed">Đã xác nhận</option>
+            <option value="processing">Đang xử lý</option>
+            <option value="shipping">Đang giao</option>
+            <option value="delivered">Đã giao</option>
+          </select>
+
+          {/* 2. DROP DOWN CHỌN ĐƠN HÀNG (Đã được lọc) */}
+          <select value={updateOrderId} onChange={handleOrderSelection}>
+            <option value="">Chọn đơn hàng cần cập nhật</option>
+            {filteredOrdersForSelect.map((order) => (
               <option key={order.id} value={order.id}>
                 {order.maDon} - {order.nameCustomer} ({order.status})
               </option>
             ))}
           </select>
+
           <select
             value={newStatus}
             onChange={(e) => setNewStatus(e.target.value)}
+            disabled={!updateOrderId}
           >
-            <option value="">Chọn trạng thái</option>
-            <option value="pending">Chờ xác nhận</option>
-            <option value="confirmed">Đã xác nhận</option>
-            <option value="processing">Đang xử lý</option>
-            <option value="shipping">Đang giao hàng</option>
-            <option value="delivered">Đã giao hàng</option>
-            <option value="cancelled">Đã hủy</option>
-            <option value="refunded">Hoàn tiền</option>
+            <option value="">Cập nhật thành...</option>
+            {getAvailableNextStatuses(currentOrderRawStatus).map((st) => (
+              <option key={st.value} value={st.value}>
+                {st.label}
+              </option>
+            ))}
           </select>
-          <button onClick={handleUpdateStatus} disabled={updating}>
+
+          <button
+            onClick={handleUpdateStatus}
+            disabled={updating || !newStatus}
+          >
             {updating ? "Đang xử lý" : "Cập nhật"}
           </button>
         </div>
       </div>
+      <OrderDetailModalAdmin
+        order={hoveredOrder}
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+      />
     </>
   );
 };

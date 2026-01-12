@@ -1,107 +1,118 @@
-.content-middle-order{
-    width: 100%;
+.content-middle-order {
+  width: 100%;
 }
-.item-order{
-    display: flex;
-    justify-content: space-between;
+.item-order {
+  display: flex;
+  justify-content: space-between;
 }
-.item-order .status-order-1, .item-order .status-order-2, .item-order .status-order-3, .status-order-4, .status-order-5, .status-order-6, .status-order-7{
-    background-color: #fff;
-    border-radius: 10px;
-    margin: 0.5vh 0;
-    padding: 1rem;
-    width: 7vw;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.item-order .status-order-1,
+.item-order .status-order-2,
+.item-order .status-order-3,
+.status-order-4,
+.status-order-5,
+.status-order-6,
+.status-order-7 {
+  background-color: #fff;
+  border-radius: 10px;
+  margin: 0.5vh 0;
+  padding: 1rem;
+  width: 7vw;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
-.item-order .status-order-1 h4, .item-order .status-order-2 h4, .item-order .status-order-3 h4, .item-order .status-order-4 h4, .item-order .status-order-5 h4, .item-order .status-order-6 h4, .item-order .status-order-7 h4{
-    color: gray;
+.item-order .status-order-1 h4,
+.item-order .status-order-2 h4,
+.item-order .status-order-3 h4,
+.item-order .status-order-4 h4,
+.item-order .status-order-5 h4,
+.item-order .status-order-6 h4,
+.item-order .status-order-7 h4 {
+  color: gray;
 }
-.item-order .status-order-1 p{
-    font-size: 25px;
-    color: #EA9D4A;
-    font-weight: 800;
+.item-order .status-order-1 p {
+  font-size: 25px;
+  color: #ea9d4a;
+  font-weight: 800;
 }
-.item-order .status-order-2 p{
-    font-size: 25px;
-    color: #2169FC;
-    font-weight: 800;
+.item-order .status-order-2 p {
+  font-size: 25px;
+  color: #2169fc;
+  font-weight: 800;
 }
-.item-order .status-order-3 p{
-    font-size: 25px;
-    color: #3FAD82;
-    font-weight: 800;
+.item-order .status-order-3 p {
+  font-size: 25px;
+  color: #3fad82;
+  font-weight: 800;
 }
-.item-order .status-order-4 p{
-    font-size: 25px;
-    color: #18d0f2;
-    font-weight: 800;
+.item-order .status-order-4 p {
+  font-size: 25px;
+  color: #18d0f2;
+  font-weight: 800;
 }
-.item-order .status-order-5 p{
-    font-size: 25px;
-    color: #d46dc4;
-    font-weight: 800;
+.item-order .status-order-5 p {
+  font-size: 25px;
+  color: #d46dc4;
+  font-weight: 800;
 }
-.item-order .status-order-6 p{
-    font-size: 25px;
-    color: #630310;
-    font-weight: 800;
+.item-order .status-order-6 p {
+  font-size: 25px;
+  color: #630310;
+  font-weight: 800;
 }
-.item-order .status-order-7 p{
-    font-size: 25px;
-    color: #e9004e;
-    font-weight: 800;
+.item-order .status-order-7 p {
+  font-size: 25px;
+  color: #e9004e;
+  font-weight: 800;
 }
 
-/* CSS table */
-.table-orders{
-    height: 55vh;
-    margin-top: 5vh;
-    background: #fff;
-    border-radius: 10px;
-    padding: 2vw;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    overflow: hidden; /* Ẩn phần tràn ra ngoài */
+.table-orders {
+  height: 55vh;
+  margin-top: 5vh;
+  background: #fff;
+  border-radius: 10px;
+  padding: 2vw;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden; 
 }
-.order-data{
-    max-height: 40vh;
-    overflow-y: auto;
+.order-data {
+  max-height: 40vh;
+  overflow-y: auto;
 }
 .title_table h5 {
-    color: rgb(143, 140, 140);
+  color: rgb(143, 140, 140);
 }
 table {
-    width: 100%;
-    border-collapse: collapse; /* Xóa khoảng cách giữa các cell */
-    text-align: left;
+  width: 100%;
+  border-collapse: collapse; 
+  text-align: left;
 }
 table th {
-    background-color: #f9f9f9;
-    font-weight: bold;
-    color: #1f2937;
-    position: sticky; /* Đảm bảo tiêu đề dính khi cuộn */
-    top: 0; /* Đặt tiêu đề ở trên cùng */
-    z-index: 1; /* Đảm bảo tiêu đề nằm trên các hàng */
-    padding: 0.5rem;
-    border: 1px solid #ddd;
+  background-color: #f9f9f9;
+  font-weight: bold;
+  color: #1f2937;
+  position: sticky; 
+  top: 0; 
+  z-index: 1; 
+  padding: 0.5rem;
+  border: 1px solid #ddd;
 }
 table td {
-    color: #555;
-    padding: 0.5rem;
-    border: 1px solid #ddd;
+  color: #555;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
 }
 table tr:nth-child(even) {
-    background-color: #f7f7f7;
+  background-color: #f7f7f7;
 }
 
 table tr:nth-child(odd) {
-    background-color: #fff;
+  background-color: #fff;
 }
 
 table tr:hover {
-    background-color: #f0f0f0; /* Màu nền khi hover chuột */
+  background-color: #f0f0f0;
 }
 
-/* Căn icon + chữ "Chi tiết" nằm ngang, giữa */
+
 td svg {
   vertical-align: middle;
 }
@@ -114,12 +125,12 @@ td:last-child {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #E6004C; /* màu mặc định cho cả icon và text */
+  color: #e6004c; 
   transition: color 0.2s ease;
 }
 
 td:last-child:hover {
-  color: black; /* Khi hover thì đổi sang đen */
+  color: black; 
   cursor: pointer;
 }
 
@@ -157,14 +168,14 @@ td:last-child {
 
 .status-badge.confirmed {
   background-color: #e5f0ff;
-  color: #2169FC;
+  color: #2169fc;
 }
 
 .status-badge.processing {
   background-color: #e5fff2;
-  color: #3FAD82;
+  color: #3fad82;
 }
-.status-badge.shipping{
+.status-badge.shipping {
   background-color: #e5f0ff;
   color: #18d0f2;
 }
@@ -176,45 +187,55 @@ td:last-child {
   background-color: #e5f0ff;
   color: #630310;
 }
-.status-badge.refunded{
+.status-badge.refunded {
   background-color: #e5f0ff;
   color: #e9004e;
 }
 
-
 /* CSS nội dung cuối */
-.content-bottom-order{
-    height: 20vh;
-    margin-top: 5vh;
-    background: #fff;
-    border-radius: 10px;
-    padding: 2vw;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    overflow: hidden; /* Ẩn phần tràn ra ngoài */
+.content-bottom-order {
+  height: 20vh;
+  margin-top: 5vh;
+  background: #fff;
+  border-radius: 10px;
+  padding: 2vw;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
-.title-bottom-order h5{
-    color: rgb(143, 140, 140);
+.title-bottom-order h5 {
+  color: rgb(143, 140, 140);
 }
 
-.update-status{
-    display: flex;
-    gap: 5vh;
+.update-status {
+  display: flex;
+  gap: 5vh;
+  padding-bottom: 3vh;
 }
-.update-status input{
-    width: 45vw;
-    border-radius: 5px;
-    border: 1px solid rgb(169, 169, 169);
-    padding-left: 10px;
+
+.content-bottom-order h2 {
+  margin-top: 0;
 }
-.update-status select{
-    padding: 0 2vh;
-    border-radius: 5px;
+.update-status input {
+  width: 45vw;
+  border-radius: 5px;
+  border: 1px solid rgb(169, 169, 169);
+  padding-left: 10px;
+}
+.update-status select {
+  padding: 0 2vh;
+  border-radius: 5px;
+}
+.update-status select:nth-child(1){
+  width: 150px;
+}
+.update-status select:nth-child(2){
+  width: 350px;
 }
 .update-status select option:checked {
   background-color: rgb(86, 210, 210);
   color: white;
 }
-.update-status button{
+.update-status button {
   background: linear-gradient(to right, #f43f5e, #ec4899);
   padding: 2vh 0;
   width: 7vw;

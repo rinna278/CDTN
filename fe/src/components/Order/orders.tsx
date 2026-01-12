@@ -84,22 +84,6 @@ const Orders: React.FC<OrdersProps> = ({ selected, setSelected }) => {
     navigate(`/orders/${orderId}`);
   };
 
-  const parseBackendDate = (value: any): Date | null => {
-    if (!value) return null;
-
-    const date = new Date(value);
-
-    if (isNaN(date.getTime())) {
-      console.warn("Invalid date:", value);
-      return null;
-    }
-
-    return date;
-  };
-
-
-  //Hàm lấy format date hiển thị ra fe
-  // Trong Orders.tsx
 
 const formatDateVN = (value: string | Date) => {
   if (!value) return "--";

@@ -219,7 +219,7 @@
 
 /* Inputs */
 
-.form-grid input, .form-grid textarea, .form-grid select {
+.form-grid .form-group input, .form-grid .form-group textarea, .form-grid .form-group select {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border-color);
@@ -484,7 +484,8 @@ button {
   margin-bottom: 12px;
 }
 
-.variant-fields input {
+.variant-fields .name-color, .variant-fields .stock-color {
+  width: 84% !important;
   padding: 10px;
   border: 1px solid #ced4da;
   border-radius: 4px;
