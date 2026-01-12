@@ -98,6 +98,8 @@ const getAllUser = async () => {
   return response.data as AllUserResponse; // ✅ Trả về đúng cấu trúc
 };
 
+
+
 const PatchUpdateUser = (id: string, name: string, phone: string) => {
   return instance.patch(`api/v1/users/${id}`, {
     name: name,
@@ -183,6 +185,8 @@ const setAsDefaultAddress = async (id: string) => {
 
 //Product
 
+
+//phân trang
 const getAllProduct = async (params: GetProductsParams) => {
   const response = await instance.get("api/v1/products", {
     params,
@@ -218,14 +222,13 @@ const updateVariantStock = async (
   return response.data;
 };
 
-// ✅ Lấy available colors
 const getAvailableColors = async (productId: string) => {
   const response = await instance.get(
     `api/v1/products/${productId}/available-colors`
   );
   return response.data as string[];
 };
-// ✅ Lấy variant theo màu
+
 const getVariantByColor = async (productId: string, color: string) => {
   const response = await instance.get(
     `api/v1/products/${productId}/variant/${color}`
@@ -294,7 +297,6 @@ const getSignedUploadParams = async () => {
   return response.data;
 };
 
-// ✅ Cập nhật postAddToCart để hỗ trợ color
 const postAddToCart = async (
   productID: string,
   quantity: number,
@@ -303,7 +305,7 @@ const postAddToCart = async (
   const response = await instance.post("api/v1/cart/items", {
     productId: productID,
     quantity: quantity,
-    color: color, // ✅ Thêm màu
+    color: color, 
   });
   return response.data;
 };
@@ -327,7 +329,6 @@ const deleteItemInCart = async (itemId: string) => {
 };
 
 
-// Hàm gọi API tạo đơn hàng
 const postCreateOrder = async (payload: CreateOrderPayload) => {
   const response = await instance.post(`api/v1/orders`, payload);
   return response.data; 
@@ -335,7 +336,6 @@ const postCreateOrder = async (payload: CreateOrderPayload) => {
   // Nếu là VNPay, trả về { paymentUrl: string, orderId: string }
 };
 
-//Lấy danh sách đơn hàng của người dùng
 const getMyOrders = async (params: GetMyOrdersParams) => {
   const response = await instance.get(`api/v1/orders/my-orders`, { params });
   return response.data as OrderListResponse;
@@ -355,7 +355,6 @@ const cancelOrder = async (orderId: string, payload: CancelOrderPayload) => {
   );
   return response.data;
 };
-
 
 
 //admin: lấy tất cả đơn

@@ -1,6 +1,6 @@
 import "./manage-product.css";
 import { getAllProduct, deleteProduct } from "../../services/apiService";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState} from "react";
 import ModalCreateProduct from "./modal-create-product";
 import ModalEditProduct from "./modal-edit-product";
 import ModalConfirmDelete from "./modal-confirm-delete";
@@ -19,40 +19,48 @@ const ManageProduct = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  //load khi tạo hoặc sửa
+  const [reloadKey, setReloadKey] = useState(0);
 
-  const [currentPage, setCurrentPage] = useState(1);
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [totalPages, setTotalPages] = useState(1);
-  const ITEMS_PER_PAGE = 10;
 
-  const fetchProducts = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const res = await getAllProduct({
-        page: currentPage,
-        limit: ITEMS_PER_PAGE,
-        search: searchTerm || undefined,
-      });
-
-      console.log("Raw API Response:", res);
-      console.log("First product:", res?.data?.[0]);
-
-      if (res && res.data) {
-        setProducts(res.data);
-        setTotalProducts(res.total || 0);
-        setTotalPages(res.totalPages || 1);
-      }
-    } catch (error) {
-      console.error("Lỗi khi lấy danh sách sản phẩm:", error);
-      toast.error("Không thể tải danh sách sản phẩm");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentPage, searchTerm]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 5,
+    total: 0,
+    totalPages: 0,
+  });
 
   useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setIsLoading(true);
+
+        const response = await getAllProduct({
+          page: pagination.page,
+          limit: pagination.limit,
+          search: searchTerm || undefined,
+        });
+
+        setProducts(response.data || []);
+
+        setPagination((prev) => ({
+          ...prev,
+          total: response.total,
+          totalPages: Math.ceil(response.total / prev.limit),
+        }));
+
+        setTotalProducts(response.total);
+      } catch (error) {
+        toast.error("Không thể tải danh sách sản phẩm");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchProducts();
-  }, [fetchProducts]);
+  }, [pagination.page, searchTerm, reloadKey]);
 
   console.log("Danh sách sản phẩm: ", products);
 
@@ -82,7 +90,8 @@ const ManageProduct = () => {
   };
 
   const handleSuccess = () => {
-    fetchProducts();
+    setPagination((p) => ({ ...p, page: 1 }));
+    setReloadKey((k) => k + 1);
   };
 
   const handleOpenDeleteModal = (product: Product) => {
@@ -109,7 +118,7 @@ const ManageProduct = () => {
 
       setIsDeleteModalOpen(false);
       setProductToDelete(null);
-      fetchProducts();
+      setPagination((p) => ({ ...p, page: p.page }));
     } catch (error: any) {
       console.error("Lỗi khi xóa sản phẩm:", error);
 
@@ -132,12 +141,12 @@ const ManageProduct = () => {
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1);
+    setPagination((p) => ({ ...p, page: 1 }));
   };
 
   const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
+    if (page >= 1 && page <= pagination.totalPages) {
+      setPagination((p) => ({ ...p, page }));
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
@@ -316,55 +325,30 @@ const ManageProduct = () => {
               )}
             </tbody>
           </table>
+          {pagination.totalPages > 1 && (
+            <div className="pagination-controls">
+              <button
+                disabled={pagination.page === 1}
+                onClick={() =>
+                  setPagination((p) => ({ ...p, page: p.page - 1 }))
+                }
+              >
+                Previous
+              </button>
+              <span>
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
+              <button
+                disabled={pagination.page === pagination.totalPages}
+                onClick={() =>
+                  setPagination((p) => ({ ...p, page: p.page + 1 }))
+                }
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
-
-        {!isLoading && totalPages > 1 && (
-          <div className="pagination">
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="pagination-btn"
-            >
-              « Trước
-            </button>
-
-            {[...Array(totalPages)].map((_, index) => {
-              const page = index + 1;
-              if (
-                page === 1 ||
-                page === totalPages ||
-                (page >= currentPage - 2 && page <= currentPage + 2)
-              ) {
-                return (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`pagination-btn ${
-                      currentPage === page ? "active" : ""
-                    }`}
-                  >
-                    {page}
-                  </button>
-                );
-              } else if (page === currentPage - 3 || page === currentPage + 3) {
-                return (
-                  <span key={page} className="pagination-dots">
-                    ...
-                  </span>
-                );
-              }
-              return null;
-            })}
-
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="pagination-btn"
-            >
-              Sau »
-            </button>
-          </div>
-        )}
       </div>
 
       <CategoryManager />

@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 import { Product } from "../../types/type";
 import { fetchCartFromServer } from "../../redux/reducer+action/cartSlice"; // Điều chỉnh đường dẫn cho đúng
 import { useDispatch } from "react-redux";
+import CheckoutModal from "../Checkout/checkout-modal";
 
 interface ProductVariant {
   color: string;
@@ -53,6 +54,14 @@ const DetailProduct: React.FC<DetailProductProps> = ({
   const { productID } = useParams<{ productID: string }>();
   const location = useLocation();
   const navigate = useNavigate();
+  //đóng mở checkout khi ấn mua ngay
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [checkoutItem, setCheckoutItem] = useState<{
+    id: string;
+    quantity: number;
+    color: string;
+    price: number;
+  } | null>(null);
 
   const [product, setProduct] = useState<Product | null>(
     location.state?.product || null
@@ -203,7 +212,6 @@ const DetailProduct: React.FC<DetailProductProps> = ({
       ? [currentVariant.image]
       : [];
 
-
   const imageUrls =
     displayImages.length > 0
       ? displayImages.map((img) => getImageUrl([img]))
@@ -244,7 +252,21 @@ const DetailProduct: React.FC<DetailProductProps> = ({
       toast.error("Vui lòng chọn màu sắc");
       return;
     }
-    alert("Chức năng mua hàng đang được phát triển!");
+
+    if (!currentVariant || currentVariant.stock < quantity) {
+      toast.error("Không đủ hàng trong kho");
+      return;
+    }
+
+    // Chuẩn bị dữ liệu cho CheckoutModal
+    setCheckoutItem({
+      id: product.id,
+      quantity: quantity,
+      color: selectedColor,
+      price: discountedPrice,
+    });
+
+    setIsCheckoutOpen(true);
   };
 
   const handleSimilarProductClick = (similarProduct: Product) => {
@@ -253,6 +275,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
       replace: false,
     });
   };
+
 
   return (
     <div className="detail-product-page">
@@ -289,19 +312,24 @@ const DetailProduct: React.FC<DetailProductProps> = ({
             <div className="stars">★★★★★</div>
             <span className="rating-count">5.0 (100 đánh giá)</span>
             <span className="comment-count">
-              {" "}
-              | {product.soldCount || 0} đã bán
+              {product.soldCount > 0 ? `| ${product.soldCount} đã bán` : ""}
             </span>
           </div>
 
           <div className="product-price-section">
-            {product.discount && product.discount > 0 && (
-              <span className="discount-badge">-{product.discount}%</span>
-            )}
-            <div className="prices">
-              {product.discount && product.discount > 0 && (
-                <span className="old-price">{formatPrice(product.price)}</span>
-              )}
+            {product.discount && product.discount > 0 ? (
+              <span className="discount-badge">-{product.discount}%</span>)
+              :
+              <></>
+            }
+            <div
+              className={`prices ${!product.discount ? "single-price" : ""}`}
+            >
+              {product.discount && product.discount > 0 ? (
+                <span className="old-price">{formatPrice(product.price)}</span>)
+              :
+              <></>
+              }
               <span className="current-price">
                 {formatPrice(discountedPrice)}
               </span>
@@ -471,7 +499,10 @@ const DetailProduct: React.FC<DetailProductProps> = ({
                 </div>
                 <div className="detail-row">
                   <span className="detail-label">Tổng kho</span>
-                  <span className="detail-value">{product.totalStock}</span>
+                  <span className="detail-value">
+                    {product.totalStock > 0 ? product.totalStock : ""}
+                  </span>
+
                   <span className="detail-label">Màu sắc</span>
                   <span className="detail-value">
                     {product.variants?.map((v) => v.color).join(", ") || "N/A"}
@@ -546,6 +577,20 @@ const DetailProduct: React.FC<DetailProductProps> = ({
             ))}
           </div>
         </div>
+      )}
+
+      {checkoutItem && (
+        <CheckoutModal
+          isOpen={isCheckoutOpen}
+          onClose={() => setIsCheckoutOpen(false)}
+          onConfirm={(data) => {
+            console.log("Order confirmed:", data);
+            toast.success("Đặt hàng thành công!");
+            setIsCheckoutOpen(false);
+          }}
+          totalAmount={checkoutItem.price * checkoutItem.quantity}
+          selectedItemIds={[checkoutItem.id]}
+        />
       )}
     </div>
   );

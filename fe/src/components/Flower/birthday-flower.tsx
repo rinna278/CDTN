@@ -3,16 +3,7 @@ import ReactPaginate from "react-paginate";
 import "./birthday-flower.css";
 import { useNavigate } from "react-router-dom";
 import { Product } from "../../types/type";
-import { useSearch } from "../context/SearchContext";
 import { useFlowerSearch } from "../../hooks/useFlowerSearch";
-
-// interface ApiResponse {
-//   data: Product[];
-//   total: number;
-//   page: number;
-//   limit: number;
-//   totalPages: number;
-// }
 
 
 const formatPrice = (price: number): string => {
@@ -65,8 +56,10 @@ const FlowerCard = ({ flower }: { flower: Product }) => {
   };
 
   const handleBuyProduct = () => {
-    navigate('/my-orders');
-  }
+    navigate(`/detail-product/${flower.id}`,{
+      state: {product: flower},
+    })
+  };
 
   return (
     <div className="flip-card">
@@ -113,7 +106,6 @@ const BirthdayFlower = () => {
     setSortOption,
   } = useFlowerSearch({ occasion: "birthday" });
   //query cho page birthday flower
-  const {searchQuery} = useSearch();
 
   // const itemsPerPage = 10;
 
