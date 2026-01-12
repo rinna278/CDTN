@@ -2,7 +2,13 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmailSendType } from 'src/share/common/app.interface';
-import { OrderCancellationEmailData } from '../queue/email-queue.service';
+import {
+  AdminRefundNotificationData,
+  OrderCancellationEmailData,
+  RefundApprovedEmailData,
+  RefundRejectedEmailData,
+  RefundRequestedEmailData,
+} from '../queue/email-queue.service';
 
 export interface OrderEmailData {
   email: string;
@@ -325,6 +331,171 @@ export class EmailService {
     } catch (error) {
       this.logger.error(
         `Failed to send payment reminder email to ${data.email}:`,
+        error,
+      );
+      return false;
+    }
+  }
+
+  /**
+   * 📧 6. Send refund requested email (User confirmation)
+   * Template: refund-requested.hbs
+   */
+  async sendRefundRequestedEmail(
+    data: RefundRequestedEmailData,
+  ): Promise<boolean> {
+    try {
+      const appName = this.configService.get('APP_NAME', 'AVICI');
+
+      await this.mailerService.sendMail({
+        to: data.email,
+        subject: `${appName} - Yêu Cầu Hoàn Tiền #${data.orderCode}`,
+        template: './refund-requested',
+        context: {
+          orderCode: data.orderCode,
+          refundReason: data.refundReason,
+          refundDescription: data.refundDescription,
+          totalAmount: this.formatCurrency(data.totalAmount),
+          requestedAt: this.formatDate(data.requestedAt),
+          appName,
+        },
+      });
+
+      this.logger.log(
+        `Refund requested email sent to ${data.email} for order ${data.orderCode}`,
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send refund requested email to ${data.email}:`,
+        error,
+      );
+      return false;
+    }
+  }
+
+  /**
+   * 📧 7. Send admin refund notification (Admin alert)
+   * Template: admin-refund-notification.hbs
+   */
+  async sendAdminRefundNotification(
+    data: AdminRefundNotificationData,
+  ): Promise<boolean> {
+    try {
+      const appName = this.configService.get('APP_NAME', 'AVICI');
+      const adminPanelUrl = this.configService.get(
+        'ADMIN_PANEL_URL',
+        'http://localhost:3001',
+      );
+
+      await this.mailerService.sendMail({
+        to: data.adminEmail,
+        subject: `🚨 [ADMIN] Yêu Cầu Hoàn Tiền Mới - ${data.orderCode}`,
+        template: './admin-refund-notification',
+        context: {
+          orderCode: data.orderCode,
+          userName: data.userName,
+          userEmail: data.userEmail,
+          refundReason: data.refundReason,
+          refundDescription: data.refundDescription,
+          totalAmount: this.formatCurrency(data.totalAmount),
+          orderId: data.orderId,
+          adminPanelUrl,
+          appName,
+        },
+      });
+
+      this.logger.log(
+        `Admin refund notification sent for order ${data.orderCode}`,
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send admin refund notification for order ${data.orderCode}:`,
+        error,
+      );
+      return false;
+    }
+  }
+
+  /**
+   * 📧 8. Send refund approved email (User success notification)
+   * Template: refund-approved.hbs
+   */
+  async sendRefundApprovedEmail(
+    data: RefundApprovedEmailData,
+  ): Promise<boolean> {
+    try {
+      const appName = this.configService.get('APP_NAME', 'AVICI');
+
+      // Map payment method to Vietnamese text
+      const paymentMethodText =
+        {
+          cod: 'Thanh toán khi nhận hàng (COD)',
+          vnpay: 'VNPay',
+          momo: 'MoMo',
+          zalopay: 'ZaloPay',
+          bank_transfer: 'Chuyển khoản ngân hàng',
+        }[data.paymentMethod] || data.paymentMethod;
+
+      await this.mailerService.sendMail({
+        to: data.email,
+        subject: `${appName} - Hoàn Tiền Thành Công #${data.orderCode}`,
+        template: './refund-approved',
+        context: {
+          orderCode: data.orderCode,
+          totalAmount: this.formatCurrency(data.totalAmount),
+          refundedAt: this.formatDate(data.refundedAt),
+          adminNote: data.adminNote,
+          paymentMethod: data.paymentMethod,
+          paymentMethodText,
+          appName,
+        },
+      });
+
+      this.logger.log(
+        `Refund approved email sent to ${data.email} for order ${data.orderCode}`,
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send refund approved email to ${data.email}:`,
+        error,
+      );
+      return false;
+    }
+  }
+
+  /**
+   * 📧 9. Send refund rejected email (User rejection notification)
+   * Template: refund-rejected.hbs
+   */
+  async sendRefundRejectedEmail(
+    data: RefundRejectedEmailData,
+  ): Promise<boolean> {
+    try {
+      const appName = this.configService.get('APP_NAME', 'AVICI');
+
+      await this.mailerService.sendMail({
+        to: data.email,
+        subject: `${appName} - Yêu Cầu Hoàn Tiền #${data.orderCode}`,
+        template: './refund-rejected',
+        context: {
+          orderCode: data.orderCode,
+          totalAmount: this.formatCurrency(data.totalAmount),
+          rejectedReason: data.rejectedReason,
+          rejectedAt: this.formatDate(data.rejectedAt),
+          appName,
+        },
+      });
+
+      this.logger.log(
+        `Refund rejected email sent to ${data.email} for order ${data.orderCode}`,
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send refund rejected email to ${data.email}:`,
         error,
       );
       return false;

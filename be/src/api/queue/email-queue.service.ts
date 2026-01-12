@@ -1,4 +1,4 @@
-// api/queue/email-queue.service.ts - UPDATED
+// api/queue/email-queue.service.ts - COMPLETE VERSION WITH REFUND
 import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -20,6 +20,47 @@ export interface OrderCancellationEmailData {
   isPaid?: boolean;
   isAutoCancel?: boolean;
 }
+
+// ==================== 🆕 REFUND EMAIL INTERFACES ====================
+
+export interface RefundRequestedEmailData {
+  email: string;
+  orderCode: string;
+  refundReason: string;
+  refundDescription?: string;
+  totalAmount: number;
+  requestedAt: Date;
+}
+
+export interface AdminRefundNotificationData {
+  adminEmail: string;
+  orderCode: string;
+  userName: string;
+  userEmail: string;
+  refundReason: string;
+  refundDescription?: string;
+  totalAmount: number;
+  orderId: string;
+}
+
+export interface RefundApprovedEmailData {
+  email: string;
+  orderCode: string;
+  totalAmount: number;
+  refundedAt: Date;
+  adminNote?: string;
+  paymentMethod: string;
+}
+
+export interface RefundRejectedEmailData {
+  email: string;
+  orderCode: string;
+  totalAmount: number;
+  rejectedReason: string;
+  rejectedAt: Date;
+}
+
+// ==================== SERVICE ====================
 
 @Injectable()
 export class EmailQueueService {
@@ -79,7 +120,7 @@ export class EmailQueueService {
   }
 
   /**
-   * 🆕 Add payment failed email job to queue
+   * Add payment failed email job to queue
    */
   async addPaymentFailedEmailJob(
     data: OrderCancellationEmailData,
@@ -137,6 +178,86 @@ export class EmailQueueService {
       console.error(`Failed to cancel reminder job for ${orderCode}:`, error);
     }
   }
+
+  // ==================== 🆕 REFUND EMAIL JOBS ====================
+
+  /**
+   * 🆕 Add refund requested email job (gửi cho User)
+   */
+  async addRefundRequestedEmailJob(
+    data: RefundRequestedEmailData,
+  ): Promise<void> {
+    await this.otpEmailQueue.add('send-refund-requested', data, {
+      attempts: 3,
+      delay: 500,
+      backoff: {
+        type: 'exponential',
+        delay: 2000,
+      },
+      removeOnComplete: true,
+      removeOnFail: false,
+      jobId: `refund-req-${data.orderCode}-${Date.now()}`,
+    });
+  }
+
+  /**
+   * 🆕 Add admin refund notification job (gửi cho Admin)
+   */
+  async addAdminRefundNotificationJob(
+    data: AdminRefundNotificationData,
+  ): Promise<void> {
+    await this.otpEmailQueue.add('send-admin-refund-notification', data, {
+      attempts: 3,
+      delay: 500,
+      backoff: {
+        type: 'exponential',
+        delay: 2000,
+      },
+      removeOnComplete: true,
+      removeOnFail: false,
+      jobId: `admin-refund-${data.orderCode}-${Date.now()}`,
+    });
+  }
+
+  /**
+   * 🆕 Add refund approved email job (gửi cho User khi approve)
+   */
+  async addRefundApprovedEmailJob(
+    data: RefundApprovedEmailData,
+  ): Promise<void> {
+    await this.otpEmailQueue.add('send-refund-approved', data, {
+      attempts: 3,
+      delay: 500,
+      backoff: {
+        type: 'exponential',
+        delay: 2000,
+      },
+      removeOnComplete: true,
+      removeOnFail: false,
+      jobId: `refund-approved-${data.orderCode}-${Date.now()}`,
+    });
+  }
+
+  /**
+   * 🆕 Add refund rejected email job (gửi cho User khi reject)
+   */
+  async addRefundRejectedEmailJob(
+    data: RefundRejectedEmailData,
+  ): Promise<void> {
+    await this.otpEmailQueue.add('send-refund-rejected', data, {
+      attempts: 3,
+      delay: 500,
+      backoff: {
+        type: 'exponential',
+        delay: 2000,
+      },
+      removeOnComplete: true,
+      removeOnFail: false,
+      jobId: `refund-rejected-${data.orderCode}-${Date.now()}`,
+    });
+  }
+
+  // ==================== CLEANUP ====================
 
   /**
    * Clean up old jobs manually

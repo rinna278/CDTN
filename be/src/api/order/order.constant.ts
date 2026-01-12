@@ -4,6 +4,7 @@ export const ORDER_CONST = {
   MODEL_NAME: 'orders',
   // Thời gian hết hạn order (milliseconds) - 24 giờ
   EXPIRATION_TIME: 24 * 60 * 60 * 1000,
+  REFUND_WINDOW_HOURS: 72,
 };
 
 export enum OrderStatus {
@@ -12,6 +13,7 @@ export enum OrderStatus {
   PROCESSING = 'processing', // Đang xử lý
   SHIPPING = 'shipping', // Đang giao
   DELIVERED = 'delivered', // Đã giao
+  REFUND_REQUESTED = 'refund_requested', // Yêu cầu hoàn tiền
   CANCELLED = 'cancelled', // Đã hủy
   REFUNDED = 'refunded', // Đã hoàn tiền
 }
@@ -36,7 +38,8 @@ export const ORDER_STATUS_TRANSITIONS = {
   [OrderStatus.CONFIRMED]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
   [OrderStatus.PROCESSING]: [OrderStatus.SHIPPING],
   [OrderStatus.SHIPPING]: [OrderStatus.DELIVERED],
-  [OrderStatus.DELIVERED]: [OrderStatus.REFUNDED],
+  [OrderStatus.DELIVERED]: [OrderStatus.REFUND_REQUESTED],
+  [OrderStatus.REFUND_REQUESTED]: [OrderStatus.REFUNDED],
   [OrderStatus.CANCELLED]: [],
   [OrderStatus.REFUNDED]: [],
 };

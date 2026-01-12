@@ -1,0 +1,132 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoàn Tiền Thành Công</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif; background-color: #f7fafc;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f7fafc; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" border="0" cellspacing="0" cellpadding="0" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1); max-width: 600px;">
+                    
+                    <!-- HEADER -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 50px 40px; text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
+                            <h1 style="color: white; font-size: 28px; font-weight: 700; margin: 0;">Yêu Cầu Hoàn Tiền Được Chấp Nhận</h1>
+                            <p style="color: rgba(255,255,255,0.9); font-size: 16px; margin-top: 8px;">Tiền sẽ được hoàn về tài khoản của bạn</p>
+                        </td>
+                    </tr>
+
+                    <!-- CONTENT -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            
+                            <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 20px 0;">
+                                Xin chào,
+                            </p>
+
+                            <!-- Success Message -->
+                            <div style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-radius: 12px; padding: 20px; margin-bottom: 30px; border: 2px solid #10b981; text-align: center;">
+                                <div style="font-size: 32px; margin-bottom: 10px;">✅</div>
+                                <div style="color: #065f46; font-size: 16px; font-weight: 600; margin-bottom: 8px;">
+                                    Tin vui! Yêu cầu hoàn tiền đã được chấp nhận!
+                                </div>
+                                <div style="color: #059669; font-size: 14px;">
+                                    Đơn hàng <strong>{{orderCode}}</strong> sẽ được hoàn tiền
+                                </div>
+                            </div>
+
+                            <!-- Refund Details -->
+                            <div style="margin-bottom: 30px;">
+                                <h3 style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0 0 15px 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                                    💰 Thông Tin Hoàn Tiền
+                                </h3>
+                                <div style="background: #f9fafb; border-radius: 8px; padding: 15px;">
+                                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; padding: 8px 0;">Mã đơn hàng:</td>
+                                            <td align="right" style="color: #1f2937; font-size: 14px; font-weight: 700; font-family: 'Courier New', monospace;">{{orderCode}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; padding: 8px 0;">Số tiền hoàn:</td>
+                                            <td align="right" style="color: #10b981; font-size: 20px; font-weight: 800;">{{totalAmount}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; padding: 8px 0;">Phương thức:</td>
+                                            <td align="right" style="color: #1f2937; font-size: 14px; font-weight: 600;">{{paymentMethodText}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; padding: 8px 0;">Thời gian xử lý:</td>
+                                            <td align="right" style="color: #1f2937; font-size: 14px; font-weight: 600;">{{refundedAt}}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {{#if adminNote}}
+                            <!-- Admin Note -->
+                            <div style="margin-bottom: 30px;">
+                                <h3 style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0 0 15px 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                                    📝 Ghi Chú
+                                </h3>
+                                <div style="background: #f0fdf4; border: 2px solid #10b981; border-radius: 8px; padding: 15px; color: #065f46; font-size: 14px; line-height: 1.6;">
+                                    {{adminNote}}
+                                </div>
+                            </div>
+                            {{/if}}
+
+                            <!-- Timeline -->
+                            <div style="margin-bottom: 30px;">
+                                <h3 style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0 0 15px 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                                    ⏱️ Thời Gian Nhận Tiền
+                                </h3>
+                                <ul style="color: #4b5563; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                                    <li><strong>VNPay/MoMo/ZaloPay:</strong> 3-5 ngày làm việc</li>
+                                    <li><strong>Chuyển khoản ngân hàng:</strong> 5-7 ngày làm việc</li>
+                                    <li><strong>Tiền mặt (COD):</strong> Chúng tôi sẽ liên hệ để sắp xếp</li>
+                                </ul>
+                            </div>
+
+                            <!-- Warning -->
+                            <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 20px; margin-bottom: 30px; border-left: 4px solid #f59e0b;">
+                                <div style="color: #78350f; font-size: 14px; line-height: 1.6;">
+                                    <strong>💡 Lưu ý:</strong> Nếu sau thời gian trên bạn chưa nhận được tiền, vui lòng liên hệ ngay với chúng tôi để được hỗ trợ.
+                                </div>
+                            </div>
+
+                            <!-- Apology -->
+                            <div style="background: #f9fafb; border-radius: 12px; padding: 20px; text-align: center;">
+                                <p style="color: #4b5563; font-size: 14px; line-height: 1.6; margin: 0;">
+                                    Chúng tôi xin lỗi vì sự bất tiện này và cảm ơn bạn đã tin tưởng sử dụng dịch vụ của chúng tôi!
+                                </p>
+                            </div>
+
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 30px 40px; text-align: center; border-top: 1px solid rgba(226, 232, 240, 0.5);">
+                            <div style="color: #2d3748; font-size: 15px; font-weight: 600; margin-bottom: 8px;">
+                                Trân trọng
+                            </div>
+                            <div style="color: #10b981; font-size: 14px; font-weight: 500; margin-bottom: 15px;">
+                                Đội Ngũ {{appName}}
+                            </div>
+                            <div style="color: #a0aec0; font-size: 12px; line-height: 1.6;">
+                                Cần hỗ trợ? <a href="mailto:support@avici.com" style="color: #10b981; text-decoration: none; font-weight: 500;">Liên hệ chúng tôi</a><br>
+                                Hotline: 1900-xxxx | Email: support@avici.com
+                            </div>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -34,6 +34,9 @@ import { QueryOrderDto } from './dto/query-order.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { UpdateShippingDto } from './dto/update-shipping.dto';
+import { RequestRefundDto } from './dto/request-refund.dto';
+import { ProcessRefundDto } from './dto/process-refund.dto';
+import { OrderStatus } from './order.constant';
 
 @Controller({
   version: [API_CONFIG.VERSION_V1],
@@ -164,6 +167,28 @@ export class OrderController {
   }
 
   /**
+   * User yêu cầu hoàn tiền
+   * Chỉ được yêu cầu trong vòng 72h sau khi nhận hàng
+   */
+  @ApiOperation({
+    summary: 'Yêu cầu hoàn tiền',
+    description:
+      'Chỉ áp dụng cho đơn hàng đã giao (DELIVERED) trong vòng 72 giờ. Yêu cầu sẽ được admin xem xét.',
+  })
+  @ApiOkResponse({ type: OrderResponseDto })
+  @Patch(':id/request-refund')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  requestRefund(
+    @Param() param: ParamIdBaseDto,
+    @Body() refundDto: RequestRefundDto,
+    @GetUser() user: UserEntity,
+  ) {
+    return this.orderService.requestRefund(param.id, user.id, refundDto);
+  }
+
+  /**
    * VNPay callback endpoint - GET method
   //  * VNPay sẽ redirect user về URL này sau khi thanh toán
   //  */
@@ -254,5 +279,43 @@ export class OrderController {
     @Body() updateDto: UpdateShippingDto,
   ) {
     return this.orderService.updateShipping(param.id, updateDto);
+  }
+
+  /**
+   * Admin xử lý yêu cầu hoàn tiền
+   */
+  @ApiOperation({
+    summary: '[ADMIN] Xử lý yêu cầu hoàn tiền',
+    description:
+      'Chấp nhận (approve) hoặc từ chối (reject) yêu cầu hoàn tiền từ khách hàng. Nếu approve, hệ thống sẽ tự động restore stock.',
+  })
+  @ApiOkResponse({ type: OrderResponseDto })
+  @Patch('admin/:id/process-refund')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  processRefund(
+    @Param() param: ParamIdBaseDto,
+    @Body() processDto: ProcessRefundDto,
+  ) {
+    return this.orderService.processRefund(param.id, processDto);
+  }
+
+  /**
+   * [ADMIN] Lấy danh sách đơn hàng chờ hoàn tiền
+   */
+  @ApiOperation({ summary: '[ADMIN] Lấy danh sách đơn yêu cầu hoàn tiền' })
+  @ApiOkResponse({ type: [OrderResponseDto] })
+  @Get('admin/refund-requests')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  getRefundRequests(@Query() query: QueryOrderDto) {
+    return this.orderService.findAll({
+      ...query,
+      orderStatus: OrderStatus.REFUND_REQUESTED,
+    });
   }
 }

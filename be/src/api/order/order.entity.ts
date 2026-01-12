@@ -153,4 +153,19 @@ export class OrderEntity extends BaseEntity {
     cascade: true,
   })
   items: OrderDetailEntity[];
+
+  @Column({ type: 'text', nullable: true, name: 'refund_reason' })
+  refundReason: string;
+
+  @Column({ type: 'text', nullable: true, name: 'refund_description' })
+  refundDescription: string;
+
+  @Column({ type: 'timestamp', nullable: true, name: 'refund_requested_at' })
+  refundRequestedAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true, name: 'refunded_at' })
+  refundedAt: Date;
+
+  @Column({ type: 'text', nullable: true, name: 'admin_refund_note' })
+  adminRefundNote: string;
 }

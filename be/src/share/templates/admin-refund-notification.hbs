@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[ADMIN] Yêu Cầu Hoàn Tiền Mới</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif; background-color: #f7fafc;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f7fafc; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" border="0" cellspacing="0" cellpadding="0" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1); max-width: 600px;">
+                    
+                    <!-- HEADER -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); padding: 50px 40px; text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">🚨</div>
+                            <h1 style="color: white; font-size: 28px; font-weight: 700; margin: 0;">YÊU CẦU HOÀN TIỀN MỚI</h1>
+                            <p style="color: rgba(255,255,255,0.9); font-size: 16px; margin-top: 8px;">Cần xử lý ngay</p>
+                        </td>
+                    </tr>
+
+                    <!-- CONTENT -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            
+                            <!-- Urgent Alert -->
+                            <div style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border-radius: 12px; padding: 20px; margin-bottom: 30px; border-left: 4px solid #e74c3c;">
+                                <div style="color: #7f1d1d; font-size: 16px; font-weight: 600;">
+                                    ⚠️ CẦN XỬ LÝ: Có yêu cầu hoàn tiền mới cần được xem xét!
+                                </div>
+                            </div>
+
+                            <!-- Order Info -->
+                            <div style="margin-bottom: 30px;">
+                                <h3 style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0 0 15px 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                                    📋 Thông Tin Đơn Hàng
+                                </h3>
+                                <div style="background: #f9fafb; border-radius: 8px; padding: 15px;">
+                                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; padding: 8px 0;">Mã đơn hàng:</td>
+                                            <td align="right" style="color: #1f2937; font-size: 14px; font-weight: 700; font-family: 'Courier New', monospace;">{{orderCode}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; padding: 8px 0;">Khách hàng:</td>
+                                            <td align="right" style="color: #1f2937; font-size: 14px; font-weight: 600;">{{userName}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; padding: 8px 0;">Email:</td>
+                                            <td align="right" style="color: #1f2937; font-size: 14px; font-weight: 600;">{{userEmail}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #6b7280; font-size: 14px; padding: 8px 0;">Số tiền:</td>
+                                            <td align="right" style="color: #e74c3c; font-size: 18px; font-weight: 800;">{{totalAmount}}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Refund Reason -->
+                            <div style="margin-bottom: 30px;">
+                                <h3 style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0 0 15px 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                                    💬 Lý Do Hoàn Tiền
+                                </h3>
+                                <div style="background: white; border: 2px solid #e74c3c; border-radius: 8px; padding: 15px;">
+                                    <div style="color: #1f2937; font-size: 14px; font-weight: 600; margin-bottom: 8px;">
+                                        Lý do:
+                                    </div>
+                                    <div style="color: #4b5563; font-size: 14px; line-height: 1.6; padding: 10px; background: #f9fafb; border-radius: 6px;">
+                                        {{refundReason}}
+                                    </div>
+                                    {{#if refundDescription}}
+                                    <div style="color: #1f2937; font-size: 14px; font-weight: 600; margin: 15px 0 8px 0;">
+                                        Chi tiết:
+                                    </div>
+                                    <div style="color: #4b5563; font-size: 14px; line-height: 1.6; padding: 10px; background: #f9fafb; border-radius: 6px;">
+                                        {{refundDescription}}
+                                    </div>
+                                    {{/if}}
+                                </div>
+                            </div>
+
+                            <!-- Action Button -->
+                            <div style="text-align: center; margin-bottom: 30px;">
+                                <a href="{{adminPanelUrl}}/orders/{{orderId}}" style="display: inline-block; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);">
+                                    🔍 Xem Chi Tiết & Xử Lý
+                                </a>
+                            </div>
+
+                            <!-- Note -->
+                            <div style="background: #fffbeb; border-radius: 12px; padding: 20px; border-left: 4px solid #f59e0b;">
+                                <div style="color: #78350f; font-size: 14px; line-height: 1.6;">
+                                    <strong>⏰ Lưu ý:</strong> Vui lòng xử lý yêu cầu này trong vòng <strong>24-48 giờ</strong> để đảm bảo trải nghiệm khách hàng tốt nhất.
+                                </div>
+                            </div>
+
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 30px 40px; text-align: center; border-top: 1px solid rgba(226, 232, 240, 0.5);">
+                            <div style="color: #2d3748; font-size: 15px; font-weight: 600; margin-bottom: 8px;">
+                                Admin Notification System
+                            </div>
+                            <div style="color: #a0aec0; font-size: 12px;">
+                                Email này được gửi tự động từ hệ thống quản lý đơn hàng
+                            </div>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

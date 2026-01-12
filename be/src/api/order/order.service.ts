@@ -27,10 +27,16 @@ import {
   ERROR_ORDER,
   ORDER_CONST,
 } from './order.constant';
-import { EmailQueueService } from '../queue/email-queue.service';
+import {
+  AdminRefundNotificationData,
+  EmailQueueService,
+  RefundRequestedEmailData,
+} from '../queue/email-queue.service';
 import { OrderQueueService } from '../queue/order-queue.service';
 import { EmailService, OrderEmailData } from '../email/email.service';
 import { UserEntity } from '../user/user.entity';
+import { RequestRefundDto } from './dto/request-refund.dto';
+import { ProcessRefundDto } from './dto/process-refund.dto';
 
 @Injectable()
 export class OrderService {
@@ -777,6 +783,259 @@ export class OrderService {
 
     response.expirationTime = this.calculateExpirationTime(order);
 
+    if (
+      order.orderStatus === OrderStatus.DELIVERED &&
+      order.paymentStatus === PaymentStatus.PAID &&
+      !order.refundRequestedAt
+    ) {
+      const refundWindowMs = ORDER_CONST.REFUND_WINDOW_HOURS * 60 * 60 * 1000;
+      const now = new Date();
+      const deliveredTime = order.deliveredAt.getTime();
+      const timeSinceDelivery = now.getTime() - deliveredTime;
+      const remainingMs = refundWindowMs - timeSinceDelivery;
+
+      response.refundWindowRemaining = Math.max(
+        0,
+        Math.floor(remainingMs / 1000),
+      );
+    }
+
     return response;
+  }
+
+  /**
+   * ✅ User request refund
+   */
+  async requestRefund(
+    orderId: string,
+    userId: string,
+    refundDto: RequestRefundDto,
+  ): Promise<OrderResponseDto> {
+    return await this.dataSource.transaction(async (manager) => {
+      // 🔒 Lock order
+      const order = await manager.findOne(OrderEntity, {
+        where: { id: orderId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!order) {
+        throw new NotFoundException(ERROR_ORDER.ORDER_NOT_FOUND.MESSAGE);
+      }
+
+      // Load relations
+      const fullOrder = await manager.findOne(OrderEntity, {
+        where: { id: orderId },
+        relations: ['items', 'user'],
+      });
+
+      Object.assign(order, {
+        items: fullOrder.items,
+        user: fullOrder.user,
+      });
+
+      // ✅ Validate ownership
+      if (order.userId !== userId) {
+        throw new BadRequestException(
+          'Bạn chỉ có thể yêu cầu hoàn tiền đơn hàng của mình',
+        );
+      }
+
+      // ✅ Validate status - chỉ cho phép DELIVERED
+      if (order.orderStatus !== OrderStatus.DELIVERED) {
+        throw new BadRequestException(
+          'Chỉ có thể yêu cầu hoàn tiền cho đơn hàng đã giao hàng thành công',
+        );
+      }
+
+      // ✅ Validate payment status
+      if (order.paymentStatus !== PaymentStatus.PAID) {
+        throw new BadRequestException(
+          'Đơn hàng chưa được thanh toán, không thể hoàn tiền',
+        );
+      }
+
+      // ✅ Check if already requested
+      if (order.refundRequestedAt) {
+        throw new BadRequestException(
+          'Bạn đã yêu cầu hoàn tiền cho đơn hàng này rồi',
+        );
+      }
+
+      // ✅ Check refund window (72 hours)
+      const refundWindowMs = ORDER_CONST.REFUND_WINDOW_HOURS * 60 * 60 * 1000;
+      const now = new Date();
+      const deliveredTime = order.deliveredAt.getTime();
+      const timeSinceDelivery = now.getTime() - deliveredTime;
+
+      if (timeSinceDelivery > refundWindowMs) {
+        const hoursOver = Math.floor(
+          (timeSinceDelivery - refundWindowMs) / (1000 * 60 * 60),
+        );
+        throw new BadRequestException(
+          `Đã quá thời hạn yêu cầu hoàn tiền. Bạn chỉ có thể yêu cầu trong vòng ${ORDER_CONST.REFUND_WINDOW_HOURS}h sau khi nhận hàng (đã quá ${hoursOver}h)`,
+        );
+      }
+
+      // ✅ Update order
+      order.orderStatus = OrderStatus.REFUND_REQUESTED;
+      order.refundReason = refundDto.reason;
+      order.refundDescription = refundDto.description;
+      order.refundRequestedAt = new Date();
+
+      await manager.save(order);
+
+      this.logger.log(
+        `Refund requested for order ${order.orderCode} by user ${userId}`,
+      );
+
+      // 📧 Send email to user (confirmation)
+      if (order.user?.email) {
+        // ✅ Tạo data object với type RefundRequestedEmailData
+        const emailData: RefundRequestedEmailData = {
+          email: order.user.email,
+          orderCode: order.orderCode,
+          refundReason: order.refundReason,
+          refundDescription: order.refundDescription,
+          totalAmount: Number(order.totalAmount),
+          requestedAt: order.refundRequestedAt,
+        };
+
+        this.emailQueueService
+          .addRefundRequestedEmailJob(emailData)
+          .catch((error) => {
+            this.logger.error('Failed to send refund request email:', error);
+          });
+      }
+
+      // 📧 Send notification to admin
+      const adminEmail = process.env.ADMIN_EMAIL;
+      if (adminEmail) {
+        // ✅ Tạo data object với type AdminRefundNotificationData
+        const adminEmailData: AdminRefundNotificationData = {
+          adminEmail,
+          orderCode: order.orderCode,
+          userName: order.recipientName,
+          userEmail: order.user?.email || 'N/A',
+          refundReason: order.refundReason,
+          refundDescription: order.refundDescription,
+          totalAmount: Number(order.totalAmount),
+          orderId: order.id,
+        };
+
+        this.emailQueueService
+          .addAdminRefundNotificationJob(adminEmailData)
+          .catch((error) => {
+            this.logger.error(
+              'Failed to send admin refund notification:',
+              error,
+            );
+          });
+      }
+
+      return this.transformToResponse(order);
+    });
+  }
+
+  /**
+   * ✅ Admin process refund (approve/reject)
+   */
+  async processRefund(
+    orderId: string,
+    processDto: ProcessRefundDto,
+  ): Promise<OrderResponseDto> {
+    return await this.dataSource.transaction(async (manager) => {
+      // 🔒 Lock order
+      const order = await manager.findOne(OrderEntity, {
+        where: { id: orderId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!order) {
+        throw new NotFoundException(ERROR_ORDER.ORDER_NOT_FOUND.MESSAGE);
+      }
+
+      // Load relations
+      const fullOrder = await manager.findOne(OrderEntity, {
+        where: { id: orderId },
+        relations: ['items', 'user'],
+      });
+
+      Object.assign(order, {
+        items: fullOrder.items,
+        user: fullOrder.user,
+      });
+
+      // ✅ Validate status
+      if (order.orderStatus !== OrderStatus.REFUND_REQUESTED) {
+        throw new BadRequestException(
+          `Đơn hàng không trong trạng thái chờ hoàn tiền. Trạng thái hiện tại: ${order.orderStatus}`,
+        );
+      }
+
+      if (processDto.action === 'approve') {
+        // ✅ APPROVE REFUND
+        order.orderStatus = OrderStatus.REFUNDED;
+        order.paymentStatus = PaymentStatus.REFUNDED;
+        order.refundedAt = new Date();
+        order.adminRefundNote =
+          processDto.adminNote || 'Yêu cầu hoàn tiền được chấp nhận';
+
+        // 📦 Restore stock (trả lại hàng vào kho)
+        for (const item of order.items) {
+          await this.productService.updateVariantStock(
+            item.productId,
+            item.color,
+            item.quantity, // Cộng lại số lượng
+          );
+        }
+
+        await manager.save(order);
+
+        this.logger.log(`Refund approved for order ${order.orderCode}`);
+
+        // 📧 Send refund success email to user
+        if (order.user?.email) {
+          this.emailQueueService
+            .addRefundApprovedEmailJob({
+              email: order.user.email,
+              orderCode: order.orderCode,
+              totalAmount: Number(order.totalAmount),
+              refundedAt: order.refundedAt,
+              adminNote: order.adminRefundNote,
+              paymentMethod: order.paymentMethod,
+            })
+            .catch((error) => {
+              this.logger.error('Failed to send refund approved email:', error);
+            });
+        }
+      } else {
+        // ✅ REJECT REFUND
+        order.orderStatus = OrderStatus.DELIVERED; // Trở về trạng thái delivered
+        order.adminRefundNote =
+          processDto.adminNote || 'Yêu cầu hoàn tiền bị từ chối';
+
+        await manager.save(order);
+
+        this.logger.log(`Refund rejected for order ${order.orderCode}`);
+
+        // 📧 Send refund rejected email to user
+        if (order.user?.email) {
+          this.emailQueueService
+            .addRefundRejectedEmailJob({
+              email: order.user.email,
+              orderCode: order.orderCode,
+              totalAmount: Number(order.totalAmount),
+              rejectedReason:
+                processDto.adminNote || 'Không đủ điều kiện hoàn tiền',
+              rejectedAt: new Date(),
+            })
+            .catch((error) => {
+              this.logger.error('Failed to send refund rejected email:', error);
+            });
+        }
+      }
+
+      return this.transformToResponse(order);
+    });
   }
 }
