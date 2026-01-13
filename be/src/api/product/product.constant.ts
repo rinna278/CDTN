@@ -17,6 +17,7 @@ export interface IProductVariant {
   color: string; // Tên màu: "Đỏ", "Xanh", "Trắng"
   image: IProductImage;
   stock: number; // Số lượng tồn kho của màu này
+  reservedStock?: number; // Số lượng đã đặt nhưng chưa thanh toán
 }
 
 export enum ProductStatus {

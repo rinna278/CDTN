@@ -10,7 +10,6 @@ import {
   Patch,
   Post,
   Query,
-  Redirect,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -50,60 +49,45 @@ export class OrderController {
    * VNPay callback endpoint - GET method
    * VNPay sẽ redirect user về URL này sau khi thanh toán
    */
+  @ApiOperation({
+    summary: 'VNPay callback (GET)',
+    description: 'Frontend forward nguyên query params từ VNPay',
+  })
+  @ApiOkResponse({ type: OrderResponseDto })
   @Get('vnpay-callback')
-  @Redirect()
-  async handleVNPayCallbackGet(@Query() query: any) {
+  @HttpCode(HttpStatus.OK)
+  async handleVNPayCallback(@Query() query: any) {
     console.log('📞 VNPay callback received (GET)');
     console.debug('Query params:', JSON.stringify(query, null, 2));
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-
-    try {
-      const result = await this.orderService.handleVNPayCallback(query);
-
-      console.log(`✅ Payment successful for order ${result.orderCode}`);
-
-      // Redirect về frontend với order ID và status success
-      return {
-        url: `${frontendUrl}/orders/${result.id}?status=success&paymentStatus=paid`,
-        statusCode: 302,
-      };
-    } catch (error) {
-      console.error('❌ Payment callback error:', error.message);
-
-      // Redirect về frontend với error
-      return {
-        url: `${frontendUrl}/orders?status=failed&error=${encodeURIComponent(error.message)}`,
-        statusCode: 302,
-      };
-    }
+    return this.orderService.handleVNPayCallback(query);
   }
 
-  /**
-   * VNPay callback endpoint - POST method
-   * Dùng cho testing hoặc frontend call API
-   */
-  @ApiOperation({
-    summary: 'VNPay callback (POST)',
-    description:
-      'Frontend hoặc test tools gọi endpoint này với VNPay query params',
-  })
-  @ApiOkResponse({ type: OrderResponseDto })
-  @Post('vnpay-callback')
-  @HttpCode(HttpStatus.OK)
-  async handleVNPayCallbackPost(@Body() body: any) {
-    console.log('📞 VNPay callback received (POST)');
-    console.debug('Body params:', JSON.stringify(body, null, 2));
+  // /**
+  //  * VNPay callback endpoint - POST method
+  //  * Dùng cho testing hoặc frontend call API
+  //  */
+  // @ApiOperation({
+  //   summary: 'VNPay callback (POST)',
+  //   description:
+  //     'Frontend hoặc test tools gọi endpoint này với VNPay query params',
+  // })
+  // @ApiOkResponse({ type: OrderResponseDto })
+  // @Post('vnpay-callback')
+  // @HttpCode(HttpStatus.OK)
+  // async handleVNPayCallbackPost(@Body() body: any) {
+  //   console.log('📞 VNPay callback received (POST)');
+  //   console.debug('Body params:', JSON.stringify(body, null, 2));
 
-    try {
-      const result = await this.orderService.handleVNPayCallback(body);
-      console.log(`✅ Payment successful for order ${result.orderCode}`);
-      return result;
-    } catch (error) {
-      console.error('❌ Payment callback error:', error.message);
-      throw error;
-    }
-  }
+  //   try {
+  //     const result = await this.orderService.handleVNPayCallback(body);
+  //     console.log(`✅ Payment successful for order ${result.orderCode}`);
+  //     return result;
+  //   } catch (error) {
+  //     console.error('❌ Payment callback error:', error.message);
+  //     throw error;
+  //   }
+  // }
   // ========== USER ENDPOINTS ==========
 
   @ApiOperation({

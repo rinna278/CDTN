@@ -219,13 +219,45 @@ export class OrderService {
             },
           );
 
-          const variant = product.variants.find((v) => v.color === item.color);
+          // const variant = product.variants.find((v) => v.color === item.color);
 
-          if (!variant || variant.stock < item.quantity) {
+          // if (!variant || variant.stock < item.quantity) {
+          //   throw new BadRequestException(
+          //     `Không đủ hàng cho ${item.productName} - ${item.color}. Còn lại: ${variant?.stock || 0}`,
+          //   );
+          // }
+          if (!product) {
             throw new BadRequestException(
-              `Không đủ hàng cho ${item.productName} - ${item.color}. Còn lại: ${variant?.stock || 0}`,
+              `Sản phẩm không tồn tại: ${item.productName}`,
             );
           }
+
+          const variant = product.variants.find((v) => v.color === item.color);
+          if (!variant) {
+            throw new BadRequestException(
+              `Không tồn tại màu ${item.color} cho ${item.productName}`,
+            );
+          }
+
+          // ensure reservedStock field exists
+          if (typeof variant.reservedStock !== 'number') {
+            variant.reservedStock = 0;
+          }
+
+          const available = (variant.stock || 0) - (variant.reservedStock || 0);
+
+          if (available < item.quantity) {
+            throw new BadRequestException(
+              `Không đủ hàng cho ${item.productName} - ${item.color}. Còn lại: ${available}`,
+            );
+          }
+
+          // RESERVE: tăng reservedStock, KHÔNG trừ stock thật
+          variant.reservedStock += item.quantity;
+
+          // assign back and persist product
+          product.variants = [...product.variants];
+          await manager.save(product);
         }
 
         // Generate order code
@@ -251,6 +283,7 @@ export class OrderService {
           paymentMethod: createDto.paymentMethod,
           orderStatus: OrderStatus.PENDING,
           paymentStatus: PaymentStatus.PENDING,
+          stockReserved: true,
         });
 
         const savedOrder = await manager.save(order);
@@ -286,11 +319,12 @@ export class OrderService {
     if (createDto.paymentMethod === PaymentMethod.COD) {
       // COD: Decrease stock immediately
       for (const item of selectedItems) {
-        await this.productService.incrementSoldCount(
-          item.productId,
-          item.color,
-          item.quantity,
-        );
+        // COD: DON'T decrease stock here (we already reserved)
+        // await this.productService.incrementSoldCount(
+        //   item.productId,
+        //   item.color,
+        //   item.quantity,
+        // );
 
         // Remove from cart
         await this.cartService.removeCartItem(userId, item.id);
@@ -328,6 +362,84 @@ export class OrderService {
     }
 
     throw new BadRequestException('Payment method not supported yet');
+  }
+
+  async commitOrderPayment(orderId: string): Promise<OrderEntity> {
+    return await this.dataSource.transaction(async (manager) => {
+      // 1. Load & lock order
+      const order = await manager.findOne(OrderEntity, {
+        where: { id: orderId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!order) {
+        throw new NotFoundException('Order not found');
+      }
+
+      // 2. Idempotency
+      if (order.paymentStatus === PaymentStatus.PAID) {
+        return order;
+      }
+      const items = await manager.find(OrderDetailEntity, {
+        where: { orderId },
+      });
+
+      // 3. Commit stock
+      for (const item of items) {
+        const product = await manager.findOne(
+          this.productService['productRepository'].target,
+          {
+            where: { id: item.productId },
+            lock: { mode: 'pessimistic_write' },
+          },
+        );
+
+        if (!product) {
+          throw new BadRequestException(
+            `Sản phẩm không tồn tại: ${item.productName}`,
+          );
+        }
+
+        const variant = product.variants.find((v) => v.color === item.color);
+        if (!variant) {
+          throw new BadRequestException(
+            `Không tồn tại màu ${item.color} cho ${item.productName}`,
+          );
+        }
+
+        // default values
+        variant.stock ??= 0;
+        variant.reservedStock ??= 0;
+
+        if (variant.reservedStock < item.quantity) {
+          this.logger.warn(
+            `reservedStock < quantity | product=${product.id}, color=${item.color}`,
+          );
+        }
+
+        // TRỪ STOCK THẬT
+        variant.stock = Math.max(0, variant.stock - item.quantity);
+
+        // RELEASE RESERVE
+        variant.reservedStock = Math.max(
+          0,
+          variant.reservedStock - item.quantity,
+        );
+
+        product.variants = [...product.variants];
+        await manager.save(product);
+      }
+
+      // 4. Update order status
+      order.paymentStatus = PaymentStatus.PAID;
+      order.orderStatus = OrderStatus.PROCESSING;
+      order.paidAt = new Date();
+
+      await manager.save(order);
+      order.items = items;
+
+      return order;
+    });
   }
 
   private async createVNPayPaymentUrl(order: OrderEntity): Promise<string> {
@@ -376,6 +488,7 @@ export class OrderService {
     }
 
     const orderId = verifyResult.data.orderId;
+    const responseCode = query.vnp_ResponseCode;
 
     // Transaction chỉ update DB
     const order = await this.dataSource.transaction(async (manager) => {
@@ -398,9 +511,6 @@ export class OrderService {
         // ✅ Chỉ đánh dấu payment failed, GIỮ NGUYÊN orderStatus = PENDING
         if (order.paymentStatus !== PaymentStatus.FAILED) {
           order.paymentStatus = PaymentStatus.FAILED;
-          // ❌ KHÔNG set orderStatus = CANCELLED
-          // ❌ KHÔNG set cancelledAt
-          // ❌ KHÔNG set cancelReason
           await manager.save(order);
         }
         return order;
@@ -412,69 +522,66 @@ export class OrderService {
         return order;
       }
 
-      // 🔥 PAYMENT SUCCESS
-      order.paymentStatus = PaymentStatus.PAID;
-      order.orderStatus = OrderStatus.CONFIRMED;
-      order.paidAt = new Date();
+      // Chỉ lưu transaction info, commit stock làm chỗ khác
       order.paymentTransactionId = verifyResult.data.transactionNo;
-
       await manager.save(order);
+
       return order;
     });
 
-    // Load full relations
+    // 3. Reload full order
     const fullOrder = await this.orderRepository.findOne({
       where: { id: order.id },
       relations: ['items', 'user'],
     });
 
-    // 🔥 GỬI EMAIL DỰA VÀO TRẠNG THÁI
-    if (fullOrder.paymentStatus === PaymentStatus.PAID) {
-      // ✅ PAYMENT SUCCESS
+    if (!fullOrder) {
+      throw new NotFoundException('Order not found after callback');
+    }
 
-      // Cancel auto-cancel job (vì đã thanh toán)
+    // 4. XỬ LÝ THEO TRẠNG THÁI
+    if (responseCode === '00') {
+      // 🔥 PAYMENT SUCCESS
+
+      // Commit stock + update orderStatus/paymentStatus
+      const paidOrder = await this.commitOrderPayment(fullOrder.id);
+
+      // Cancel auto-cancel job
       this.orderQueueService.cancelAutoCancelJob(orderId).catch(() => {});
 
-      // Giảm stock
-      for (const item of fullOrder.items) {
-        await this.productService.incrementSoldCount(
-          item.productId,
-          item.color,
-          item.quantity,
-        );
-      }
-
-      // Xóa giỏ hàng
-      const cart = await this.cartService.getCart(fullOrder.userId);
-      for (const item of fullOrder.items) {
+      // Xóa cart items
+      const cart = await this.cartService.getCart(paidOrder.userId);
+      for (const item of paidOrder.items) {
         const cartItem = cart.items.find(
           (ci) => ci.productId === item.productId && ci.color === item.color,
         );
         if (cartItem) {
-          await this.cartService.removeCartItem(fullOrder.userId, cartItem.id);
+          await this.cartService.removeCartItem(paidOrder.userId, cartItem.id);
         }
       }
 
-      // 📧 GỬI EMAIL PAYMENT SUCCESS
-      this.sendPaymentSuccessEmail(fullOrder).catch((error) => {
+      // Gửi email thanh toán thành công
+      this.sendPaymentSuccessEmail(paidOrder).catch((error) => {
         this.logger.error('Failed to send payment success email:', error);
       });
-    } else if (fullOrder.paymentStatus === PaymentStatus.FAILED) {
-      // ✅ PAYMENT FAILED - CHỈ THÔNG BÁO, KHÔNG HỦY ĐƠN
 
-      // ❌ KHÔNG cancel auto-cancel job (vẫn để tự động hủy sau 24h)
-      // ❌ KHÔNG restore stock (chưa trừ stock)
-      // ❌ KHÔNG xóa cart (user có thể thanh toán lại)
+      return this.transformToResponse(paidOrder);
+    }
 
-      // 📧 GỬI EMAIL PAYMENT FAILED (thông báo thanh toán thất bại)
+    // 🔥 PAYMENT FAILED
+    if (responseCode !== '00') {
+      // Không cancel auto-cancel
+      // Không release stock (auto-cancel sẽ làm)
+      // Không xóa cart
+
       if (fullOrder.user?.email) {
         this.emailQueueService
           .addPaymentFailedEmailJob({
             email: fullOrder.user.email,
             orderCode: fullOrder.orderCode,
-            cancelReason: `Thanh toán thất bại - Mã lỗi: ${query.vnp_ResponseCode}`,
-            totalAmount: Number(fullOrder.totalAmount), // ✅ Đảm bảo là number
-            cancelledAt: new Date(), // Chỉ để hiển thị thời gian failed
+            cancelReason: `Thanh toán thất bại - Mã lỗi: ${responseCode}`,
+            totalAmount: Number(fullOrder.totalAmount),
+            cancelledAt: new Date(),
             isPaid: false,
             isAutoCancel: false,
           })
@@ -482,8 +589,11 @@ export class OrderService {
             this.logger.error('Failed to send payment failure email:', error);
           });
       }
+
+      return this.transformToResponse(fullOrder);
     }
 
+    // fallback (không bao giờ vào)
     return this.transformToResponse(fullOrder);
   }
 
