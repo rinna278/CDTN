@@ -432,7 +432,7 @@ export class OrderService {
 
       // 4. Update order status
       order.paymentStatus = PaymentStatus.PAID;
-      order.orderStatus = OrderStatus.PROCESSING;
+      order.orderStatus = OrderStatus.CONFIRMED;
       order.paidAt = new Date();
 
       await manager.save(order);
