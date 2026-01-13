@@ -80,6 +80,10 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   const [wards, setWards] = useState<Ward[]>([]);
   const phoneRegex = /^[0-9]{7,20}$/;
 
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+
+
   // State form địa chỉ
   const [addressForm, setAddressForm] = useState({
     recipientName: "",
@@ -162,8 +166,11 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   };
 
   const handleEdit = () => {
+    setEditName(fullNameRef.current);
+    setEditPhone(phoneRef.current);
     setIsEditing(true);
   };
+
   // Hủy chế độ chỉnh sửa
   const handleCancelEdit = () => {
     setShowConfirmPopUp(false);
@@ -174,11 +181,10 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   };
 
   const handleCancel = () => {
-    setShowConfirmPopUp(false);
     setIsEditing(false);
-    // reset value
-    setForceUpdate((prev) => prev + 1);
+    setShowConfirmPopUp(false);
   };
+
   const handleCancelPopup = () => {
     setShowConfirmPopUp(false);
   };
@@ -206,26 +212,16 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   };
 
   const handleSaveInfo = async () => {
-    try {
-      setIsUpdating(true);
-      const name = fullNameRef.current;
-      const id = idRef.current;
-      const phone = phoneRef.current;
+    setIsUpdating(true);
+    await PatchUpdateUser(idRef.current, editName, editPhone);
 
-      const userResponse = await PatchUpdateUser(id, name, phone);
+    fullNameRef.current = editName;
+    phoneRef.current = editPhone;
 
-      if (userResponse.status === 200 || userResponse.status === 204) {
-        toast.success("Cập nhật thông tin thành công");
-        setShowConfirmPopUp(false);
-        setIsEditing(false);
-      }
-    } catch (err: any) {
-      console.error("Update Info Error:", err);
-      toast.error("Lỗi cập nhật thông tin");
-    } finally {
-      setIsUpdating(false);
-    }
+    setIsEditing(false);
+    setShowConfirmPopUp(false);
   };
+
 
   const handleSavePassword = async () => {
     try {
@@ -572,9 +568,8 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
             {isEditing ? (
               <input
                 type="text"
-                defaultValue={fullNameRef.current}
-                onChange={handleFullNameChange}
-                className="profile-input"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
               />
             ) : (
               <h3>{fullNameRef.current}</h3>
@@ -585,9 +580,8 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
             {isEditing ? (
               <input
                 type="phone"
-                defaultValue={phoneRef.current}
-                onChange={handlePhoneChange}
-                className="profile-input"
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
               />
             ) : (
               <h3>{phoneRef.current}</h3>
