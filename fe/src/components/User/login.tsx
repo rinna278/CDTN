@@ -52,8 +52,8 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
     setLoading(true);
     setErrorMsg("");
 
-    const email = emailRef.current?.value || "";
-    const password = passwordRef.current?.value || "";
+    const email = emailRef.current?.value.trim() || "";
+    const password = passwordRef.current?.value.trim() || "";
 
     if (!validateEmail(email)) {
       toast.error("Invalid email");
@@ -91,7 +91,7 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
       if (status === 500){
         toast.error('Tài khoản không tồn tại');
       }
-      const msg = error.response?.data?.message || "Login failed";
+      const msg = "Login failed";
       setErrorMsg(msg);
       dispatch(loginFailure(msg));
 

@@ -255,8 +255,7 @@ const BirthdayFlower = () => {
           >
             {flowers.length === 0 && !loading ? (
               <div className="no-products">
-                <p>Không tìm thấy sản phẩm hoa sinh nhật nào</p>
-                <small>Vui lòng kiểm tra lại dữ liệu hoặc thử lại sau</small>
+                <p>Hiện không có sản phẩm nào </p>
               </div>
             ) : (
               flowers.map((flower) => (

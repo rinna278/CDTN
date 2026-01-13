@@ -1,20 +1,20 @@
 import "./manage-order.css";
-import { useEffect, useState, useMemo } from "react";
-import { getAllOrders, updateOrderStatus } from "../../services/apiService";
+import { useEffect, useState } from "react";
+import { getAllOrders } from "../../services/apiService";
 import { formatCurrency } from "../../utils/formatData";
 import { OrderStatus, ManageOrderItem, OrderItem } from "../../types/type";
 import { ORDER_STATUS_LABEL } from "../../utils/orderStatusMap";
-import { toast } from "react-toastify";
 import OrderDetailModalAdmin from "../Order/order-detail-modal-admin";
 
 export const mapStatus = (status: OrderStatus): string => {
   return ORDER_STATUS_LABEL[status] ?? status;
 };
 
-// Interface mở rộng để quản lý logic status
-interface OrderExtended extends ManageOrderItem {
-  rawStatus: string;
-}
+// interface OrderExtended extends ManageOrderItem {
+//   rawStatus: string;
+//   item: OrderItem[];
+//   userId: string;
+// }
 
 const ManageOrder = () => {
   const [orders, setOrders] = useState<OrderExtended[]>([]);
@@ -27,13 +27,8 @@ const ManageOrder = () => {
     delivered: 0,
     cancelled: 0,
     refunded: 0,
+    refund_requested: 0
   });
-
-  const [filterStatus, setFilterStatus] = useState<string>("all"); // Lọc đơn hàng theo loại
-  const [updateOrderId, setUpdateOrderId] = useState("");
-  const [newStatus, setNewStatus] = useState("");
-  const [updating, setUpdating] = useState(false);
-  const [currentOrderRawStatus, setCurrentOrderRawStatus] = useState("");
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -44,89 +39,29 @@ const ManageOrder = () => {
 
   interface OrderExtended extends ManageOrderItem {
     rawStatus: string;
-    items: OrderItem[]; // thêm đây
+    items: OrderItem[];
+    userId: string;
   }
 
-
-  // Quản lý hiển thị khi hover Chi tiết
   const [hoveredOrder, setHoveredOrder] = useState<OrderExtended | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-
-  // 1. Lọc danh sách đơn hàng cho Dropdown dựa trên filterStatus
-  const filteredOrdersForSelect = useMemo(() => {
-    if (filterStatus === "all") return orders;
-    return orders.filter((o) => o.rawStatus === filterStatus);
-  }, [filterStatus, orders]);
-
-  // 2. Định nghĩa các bước đi tiếp theo hợp lệ cho từng trạng thái
-  const getAvailableNextStatuses = (currentStatus: string) => {
-    const statusFlow: Record<string, { label: string; value: string }[]> = {
-      pending: [
-        { label: "Đã xác nhận", value: "confirmed" },
-        { label: "Đã hủy", value: "cancelled" },
-      ],
-      confirmed: [
-        { label: "Đang xử lý", value: "processing" },
-        { label: "Đã hủy", value: "cancelled" },
-      ],
-      processing: [
-        { label: "Đang giao hàng", value: "shipping" },
-        { label: "Đã hủy", value: "cancelled" },
-      ],
-      shipping: [
-        { label: "Đã giao hàng", value: "delivered" },
-        { label: "Đã hủy", value: "cancelled" },
-      ],
-      delivered: [{ label: "Hoàn tiền", value: "refunded" }],
-      cancelled: [], // Không thể chuyển đi đâu
-      refunded: [], // Không thể chuyển đi đâu
-    };
-    return statusFlow[currentStatus] || [];
-  };
-
-  const handleOrderSelection = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const id = e.target.value;
-    setUpdateOrderId(id);
-    setNewStatus("");
-    const selected = orders.find((o) => o.id === id);
-    setCurrentOrderRawStatus(selected ? selected.rawStatus : "");
-  };
-
-  const handleUpdateStatus = async () => {
-    if (!updateOrderId || !newStatus) {
-      toast.warning("Vui lòng chọn đầy đủ thông tin!");
-      return;
-    }
-    try {
-      setUpdating(true);
-      const res = await updateOrderStatus(updateOrderId, { status: newStatus });
-      if (res) {
-        toast.success("Cập nhật thành công!");
-        setUpdateOrderId("");
-        setNewStatus("");
-        fetchDataOrders();
-      }
-    } catch (error) {
-      toast.error("Lỗi cập nhật trạng thái");
-    } finally {
-      setUpdating(false);
-    }
-  };
 
   const fetchDataOrders = async () => {
     try {
       setLoading(true);
       const res = await getAllOrders({ page: pagination.page, limit: pagination.limit });
+      console.log("API lấy đơn hàng",res);
       if (res?.data) {
         const formatted = res.data.map((order: any) => ({
-          id: order.id,
+          id: String(order.id),
           maDon: order.orderCode,
           nameCustomer: order.recipientName,
           totalPrice: formatCurrency(order.totalAmount),
           status: mapStatus(order.orderStatus),
           rawStatus: order.orderStatus,
           date: new Date(order.createdAt).toLocaleDateString("vi-VN"),
-          items: order.items || []
+          items: order.items || [],
+          userId: order.userId
         }));
         setOrders(formatted);
         setPagination((prev) => ({
@@ -144,6 +79,7 @@ const ManageOrder = () => {
           delivered: 0,
           cancelled: 0,
           refunded: 0,
+          refund_requested: 0
         };
         res.data.forEach((o: any) => {
           if (s.hasOwnProperty(o.orderStatus)) (s as any)[o.orderStatus]++;
@@ -203,11 +139,26 @@ const ManageOrder = () => {
             <h4>Hoàn tiền</h4>
             <p>{stats.refunded}</p>
           </div>
+          <div className="status-order-8">
+            <h4>Yêu cầu hoàn tiền</h4>
+            <p>{stats.refund_requested}</p>
+          </div>
         </div>
 
         <div className="table-orders">
           <div className="title_table">
-            <h2>Danh Sách Đơn Hàng</h2>
+            <div className="header-table_search">
+              <h2>Danh Sách Đơn Hàng</h2>
+              <div className="search-input-order">
+                <input type="text" placeholder="Tìm kiếm theo mã đơn hàng" />
+                <input type="text" placeholder="Tìm kiếm theo tên khách hàng" />
+                <button className="btn-search-order">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+                    <path d="M480 272C480 317.9 465.1 360.3 440 394.7L566.6 521.4C579.1 533.9 579.1 554.2 566.6 566.7C554.1 579.2 533.8 579.2 521.3 566.7L394.7 440C360.3 465.1 317.9 480 272 480C157.1 480 64 386.9 64 272C64 157.1 157.1 64 272 64C386.9 64 480 157.1 480 272zM272 416C351.5 416 416 351.5 416 272C416 192.5 351.5 128 272 128C192.5 128 128 192.5 128 272C128 351.5 192.5 416 272 416z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
             <h5>Tổng cộng có {orders.length} đơn hàng gần đây</h5>
           </div>
           <div className="order-data">
@@ -226,7 +177,9 @@ const ManageOrder = () => {
                 {orders.map((order, index) => (
                   <tr key={index}>
                     <td>{order.maDon}</td>
-                    <td>{order.nameCustomer}</td>
+                    <td className="name_id">
+                      {order.nameCustomer} - [{order.userId}]
+                    </td>
                     <td>{`₫${order.totalPrice}`}</td>
                     <td>
                       <span className={`status-badge ${order.rawStatus}`}>
@@ -362,64 +315,11 @@ const ManageOrder = () => {
         </div>
       </div>
 
-      <div className="content-bottom-order">
-        <div className="title-bottom-order">
-          <h2>Cập nhật Trạng thái Đơn hàng</h2>
-          <h5>Lọc theo trạng thái hiện tại để cập nhật nhanh hơn</h5>
-        </div>
-
-        <div className="update-status">
-          {/* 1. DROP DOWN LỌC TRẠNG THÁI */}
-          <select
-            value={filterStatus}
-            onChange={(e) => {
-              setFilterStatus(e.target.value);
-              setUpdateOrderId("");
-            }}
-          >
-            <option value="all">Tất cả trạng thái đơn</option>
-            <option value="pending">Chờ xác nhận</option>
-            <option value="confirmed">Đã xác nhận</option>
-            <option value="processing">Đang xử lý</option>
-            <option value="shipping">Đang giao</option>
-            <option value="delivered">Đã giao</option>
-          </select>
-
-          {/* 2. DROP DOWN CHỌN ĐƠN HÀNG (Đã được lọc) */}
-          <select value={updateOrderId} onChange={handleOrderSelection}>
-            <option value="">Chọn đơn hàng cần cập nhật</option>
-            {filteredOrdersForSelect.map((order) => (
-              <option key={order.id} value={order.id}>
-                {order.maDon} - {order.nameCustomer} ({order.status})
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={newStatus}
-            onChange={(e) => setNewStatus(e.target.value)}
-            disabled={!updateOrderId}
-          >
-            <option value="">Cập nhật thành...</option>
-            {getAvailableNextStatuses(currentOrderRawStatus).map((st) => (
-              <option key={st.value} value={st.value}>
-                {st.label}
-              </option>
-            ))}
-          </select>
-
-          <button
-            onClick={handleUpdateStatus}
-            disabled={updating || !newStatus}
-          >
-            {updating ? "Đang xử lý" : "Cập nhật"}
-          </button>
-        </div>
-      </div>
       <OrderDetailModalAdmin
         order={hoveredOrder}
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
+        onUpdated={fetchDataOrders}
       />
     </>
   );

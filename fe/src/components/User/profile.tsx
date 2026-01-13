@@ -18,7 +18,6 @@ import { AddressData } from "../../types/type";
 import Orders from "../Order/orders";
 import { useLocation } from "react-router-dom";
 
-
 interface HeaderProps {
   selected: string;
   setSelected: React.Dispatch<React.SetStateAction<string>>;
@@ -57,11 +56,11 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
   const [selectedMenu, setSelectedMenu] = useState("profile");
   const location = useLocation();
-
-
+  const [showConfirmPopUp, setShowConfirmPopUp] = useState(false);
 
   // State quản lý hiển thị Modal đổi mật khẩu
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -79,7 +78,7 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
-
+  const phoneRegex = /^[0-9]{7,20}$/;
 
   // State form địa chỉ
   const [addressForm, setAddressForm] = useState({
@@ -109,8 +108,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
       setSelectedMenu(tab);
     }
   }, [location.search]);
-
-
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -167,15 +164,50 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   const handleEdit = () => {
     setIsEditing(true);
   };
+  // Hủy chế độ chỉnh sửa
+  const handleCancelEdit = () => {
+    setShowConfirmPopUp(false);
+    setIsEditing(false);
+
+    // reset lại giá trị ban đầu
+    setForceUpdate((prev) => prev + 1);
+  };
 
   const handleCancel = () => {
+    setShowConfirmPopUp(false);
     setIsEditing(false);
+    // reset value
     setForceUpdate((prev) => prev + 1);
+  };
+  const handleCancelPopup = () => {
+    setShowConfirmPopUp(false);
+  };
+
+  const handleShowPopup = () => {
+    const name = fullNameRef.current?.trim();
+    const phone = phoneRef.current?.trim();
+
+    if (!name || !phone) {
+      toast.warning("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+
+    if (!/^\d+$/.test(phone)) {
+      toast.warning("Số điện thoại chỉ được chứa chữ số");
+      return;
+    }
+
+    if (!phoneRegex.test(phone)) {
+      toast.warning("Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0)");
+      return;
+    }
+
+    setShowConfirmPopUp(true);
   };
 
   const handleSaveInfo = async () => {
     try {
-      setIsEditing(false);
+      setIsUpdating(true);
       const name = fullNameRef.current;
       const id = idRef.current;
       const phone = phoneRef.current;
@@ -184,10 +216,14 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
 
       if (userResponse.status === 200 || userResponse.status === 204) {
         toast.success("Cập nhật thông tin thành công");
+        setShowConfirmPopUp(false);
+        setIsEditing(false);
       }
     } catch (err: any) {
       console.error("Update Info Error:", err);
       toast.error("Lỗi cập nhật thông tin");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -395,7 +431,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
         return;
       }
 
-      const phoneRegex = /^[0-9]{7,20}$/;
       if (!phoneRegex.test(addressForm.phoneNumber.replace(/\s/g, ""))) {
         toast.warning("Số điện thoại không hợp lệ (7-20 chữ số)");
         return;
@@ -561,7 +596,7 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
           <div className="profile-action">
             {isEditing ? (
               <div className="save-close">
-                <button onClick={handleSaveInfo} className="btn-save">
+                <button onClick={handleShowPopup} className="btn-save">
                   Save
                 </button>
                 <button onClick={handleCancel} className="btn-cancel">
@@ -656,7 +691,7 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
       )}
 
       {selectedMenu === "orders" && (
-        <Orders selected={selected} setSelected={setSelected}/>
+        <Orders selected={selected} setSelected={setSelected} />
       )}
 
       {/* MODAL ĐỔI MẬT KHẨU */}
@@ -899,7 +934,9 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                 {deletingAddress.district}, {deletingAddress.city}
               </p>
             </div>
-            <p className="delete-note-address">Hành động này không thể hoàn tác!</p>
+            <p className="delete-note-address">
+              Hành động này không thể hoàn tác!
+            </p>
             <div className="modal-actions-address">
               <button
                 onClick={confirmDeleteAddress}
@@ -907,9 +944,47 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
               >
                 Xóa địa chỉ
               </button>
-              <button onClick={closeDeleteModal} className="btn-cancel-delete-address">
+              <button
+                onClick={closeDeleteModal}
+                className="btn-cancel-delete-address"
+              >
                 Hủy bỏ
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* popup xác nhận sửa name+sđt */}
+      {showConfirmPopUp && (
+        <div className="modal-overlay">
+          <div
+            className="modal-container-confirm-delete-product"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Content */}
+            <div className="modal-content">
+              <h2 className="modal-title">Xác nhận cập nhật</h2>
+
+              <p className="modal-message">Bạn có chắc chắn muốn cập nhật?</p>
+
+              {/* Action Buttons */}
+              <div className="modal-actions">
+                <button
+                  onClick={handleCancelPopup}
+                  className="btn-cancel-order"
+                  disabled={isUpdating}
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleSaveInfo}
+                  className="btn-update-status"
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? "Đang cập nhật..." : "Xác nhận"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
