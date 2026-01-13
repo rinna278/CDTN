@@ -198,7 +198,6 @@ export class ProductService extends BaseService<ProductEntity> {
     return true;
   }
 
-  // Cập nhật stock cho một variant cụ thể
   async updateVariantStock(
     productId: string,
     color: string,
@@ -225,12 +224,53 @@ export class ProductService extends BaseService<ProductEntity> {
 
     // Cập nhật stock
     variant.stock += quantity;
+    if (variant.stock < 0) variant.stock = 0;
     product.variants[variantIndex] = variant;
 
-    // Tính lại totalStock
+    // ✅ TÍNH LẠI TOTALSTOCK (SUM TẤT CẢ VARIANTS)
     product.totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
 
-    // Kiểm tra nếu tất cả variants hết hàng
+    // ✅ CẬP NHẬT STATUS DựA TRÊN TOTALSTOCK
+    if (product.totalStock === 0) {
+      product.status = ProductStatus.OUT_OF_STOCK;
+    } else if (product.status === ProductStatus.OUT_OF_STOCK) {
+      // Nếu đang out of stock mà có hàng trở lại → chuyển về ACTIVE
+      product.status = ProductStatus.ACTIVE;
+    }
+
+    return await this.productRepository.save(product);
+  }
+
+  // dùng để **release reservedStock** khi order bị cancel (chưa thanh toán)
+  async releaseReservedStock(
+    productId: string,
+    color: string,
+    quantity: number,
+  ): Promise<ProductEntity> {
+    const product = await this.findOne(productId);
+
+    const variantIndex = product.variants.findIndex((v) => v.color === color);
+    if (variantIndex === -1) {
+      throw new NotFoundException(
+        `Variant with color "${color}" not found in product`,
+      );
+    }
+
+    const variant = product.variants[variantIndex];
+
+    // Ensure reservedStock exists
+    if (typeof variant.reservedStock !== 'number') variant.reservedStock = 0;
+
+    variant.reservedStock = Math.max(0, variant.reservedStock - quantity);
+
+    product.variants[variantIndex] = variant;
+
+    // ✅ NOTE: reservedStock KHÔNG ẢNH HƯỞNG totalStock
+    // totalStock = sum of actual stock (variant.stock)
+    // Nhưng vẫn phải tính lại để đảm bảo consistency
+    product.totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+
+    // ✅ CẬP NHẬT STATUS (dựa trên stock thật, không phải reserved)
     if (product.totalStock === 0) {
       product.status = ProductStatus.OUT_OF_STOCK;
     } else if (product.status === ProductStatus.OUT_OF_STOCK) {

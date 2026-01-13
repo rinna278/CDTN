@@ -260,11 +260,26 @@ export class CartService {
     const totalPrice =
       cart.items?.reduce((sum, item) => sum + Number(item.subtotal), 0) || 0;
 
-    cart.totalItems = totalItems;
-    cart.totalPrice = Number(totalPrice.toFixed(2));
-
-    await this.cartRepository.save(cart);
+    await this.cartRepository.update(cartId, {
+      totalItems,
+      totalPrice: Number(totalPrice.toFixed(2)),
+    });
   }
+
+  // private async updateCartTotals(cartId: string): Promise<void> {
+  //   // ✅ Calculate totals trực tiếp từ DB
+  //   const result = await this.cartDetailRepository
+  //     .createQueryBuilder('item')
+  //     .select('SUM(item.quantity)', 'totalItems')
+  //     .addSelect('SUM(item.subtotal)', 'totalPrice')
+  //     .where('item.cartId = :cartId', { cartId })
+  //     .getRawOne();
+
+  //   await this.cartRepository.update(cartId, {
+  //     totalItems: parseInt(result.totalItems) || 0,
+  //     totalPrice: parseFloat(result.totalPrice) || 0,
+  //   });
+  // }
 
   private transformCartToResponse(cart: CartEntity): CartResponseDto {
     const items: CartItemResponseDto[] =
