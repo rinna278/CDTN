@@ -78,5 +78,4 @@ Nest is [MIT licensed](LICENSE).
 
 
 // cancel chưa trừ stock
-// popup confirm logout
 // ban user (có xử lý order như nào)

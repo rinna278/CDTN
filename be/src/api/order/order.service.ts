@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -544,8 +545,16 @@ export class OrderService {
       // 🔥 PAYMENT SUCCESS
 
       // Commit stock + update orderStatus/paymentStatus
-      const paidOrder = await this.commitOrderPayment(fullOrder.id);
+      await this.commitOrderPayment(fullOrder.id);
 
+      const paidOrder = await this.orderRepository.findOne({
+        where: { id: fullOrder.id },
+        relations: ['items', 'user'],
+      });
+
+      if (!paidOrder || !paidOrder.items) {
+        throw new InternalServerErrorException('Paid order data invalid');
+      }
       // Cancel auto-cancel job
       this.orderQueueService.cancelAutoCancelJob(orderId).catch(() => {});
 
