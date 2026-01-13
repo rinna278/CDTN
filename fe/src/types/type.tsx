@@ -213,7 +213,7 @@ export interface GetAllOrdersParams {
 }
 
 export interface UpdateOrderStatusPayload {
-  status: string; // 'pending' | 'confirmed' | 'processing' | 'shipping' | 'delivered' | 'cancelled'
+  status: OrderStatus; // 'pending' | 'confirmed' | 'processing' | 'shipping' | 'delivered' | 'cancelled'
   reason?: string; // Bắt buộc nếu status = 'cancelled'
 }
 
@@ -226,13 +226,14 @@ export interface UpdateShippingPayload {
 
 
 export enum OrderStatus {
-  PENDING = "pending",
-  CONFIRMED = "confirmed",
-  PROCESSING = "processing",
-  SHIPPING = "shipping",
-  DELIVERED = "delivered",
-  CANCELLED = "cancelled",
-  REFUNDED = "refunded",
+  PENDING = "pending", // Chờ xác nhận
+  CONFIRMED = "confirmed", // Đã xác nhận
+  PROCESSING = "processing", // Đang xử lý
+  SHIPPING = "shipping", // Đang giao
+  DELIVERED = "delivered", // Đã giao
+  REFUND_REQUESTED = "refund_requested", // Yêu cầu hoàn tiền
+  CANCELLED = "cancelled", // Đã hủy
+  REFUNDED = "refunded", // Đã hoàn tiền
 }
 
 export enum PaymentStatus {
@@ -244,6 +245,7 @@ export enum PaymentStatus {
 export interface OrderItem {
   id: string;
   productId: string;
+  userId:string;
   productName: string;
   productImage: string;
   color: string;
@@ -321,6 +323,7 @@ export interface OrderListResponse {
 export interface ManageOrderItem {
   id: string;
   maDon: string;
+  userId: string;
   nameCustomer: string;
   totalPrice: string;
   status: string;

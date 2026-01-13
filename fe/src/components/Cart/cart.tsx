@@ -22,7 +22,10 @@ import { useNavigate } from "react-router-dom";
 import { postCreateOrder } from "../../services/apiService";
 import CheckoutModal from "../Checkout/checkout-modal";
 import { useDispatch } from "react-redux";
-import { fetchCartFromServer, setCartInfo } from "../../redux/reducer+action/cartSlice";
+import {
+  fetchCartFromServer,
+  setCartInfo,
+} from "../../redux/reducer+action/cartSlice";
 
 interface HeaderProps {
   selected: string;
@@ -83,10 +86,12 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
       try {
         setLoading(true);
         const response = await getAllItemInCart();
-        dispatch(setCartInfo({
-          totalItems: response.totalItems,
-          distinctItems: response.items.length
-        }))
+        dispatch(
+          setCartInfo({
+            totalItems: response.totalItems,
+            distinctItems: response.items.length,
+          })
+        );
         setCart(response);
       } catch (error: any) {
         console.error("❌ Lỗi:", error);
@@ -241,6 +246,7 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
       return;
     }
     handleQuantityChange(itemId, currentQuantity + 1);
+    dispatch(fetchCartFromServer() as any);
   };
 
   // ✅ Handler riêng cho nút giảm số lượng
@@ -249,6 +255,7 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
       return;
     }
     handleQuantityChange(itemId, currentQuantity - 1);
+    dispatch(fetchCartFromServer() as any);
   };
 
   const handleDeleteItem = async (itemId: string) => {
@@ -527,5 +534,3 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
 };
 
 export default Cart;
-
-

@@ -11,4 +11,5 @@ export const mapAdminOrderToManageOrderItem = (
   status: order.orderStatus,
   date: order.createdAt,
   items: (order as any).items || [], // API thực tế không trả items thì để []
+  userId: order.userId
 });

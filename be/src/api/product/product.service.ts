@@ -69,8 +69,9 @@ export class ProductService extends BaseService<ProductEntity> {
       maxPrice,
     } = query;
 
-    const queryBuilder = this.productRepository.createQueryBuilder('product');
-
+    const queryBuilder = this.productRepository
+      .createQueryBuilder('product')
+      .andWhere('product.deletedAt IS NULL');
     if (status !== undefined) {
       queryBuilder.andWhere('product.status = :status', { status });
     }
