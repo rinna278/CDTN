@@ -16,6 +16,7 @@ import DetailProduct from "../components/Flower/detail-product";
 import Orders from "../components/Order/orders";
 import CheckoutModal from "../components/Checkout/checkout-modal";
 import OrderDetail from "../components/Order/order-detail";
+import VNPAY_CALLBACK from "../components/Order/vnpay_callback";
 interface UserRoutesProps {
   selected: string;
   setSelected: Dispatch<SetStateAction<string>>;
@@ -24,24 +25,48 @@ interface UserRoutesProps {
 const UserRoutes = ({ selected, setSelected }: UserRoutesProps) => {
   return (
     <Routes>
-        <Route path='/' element={<HomePage/>}>
-            <Route path='birthday-flower' element={<BirthdayFlower/>}/>
-            <Route path='decorate-flower' element={<DecorateFlower/>}/>
-            <Route path='wedding-flower' element={<WeddingFlower/>}/>
-            <Route path='graduate-flower' element={<GraduateFlower/>}/>
-            <Route path='funeral-flower' element={<FuneralFlower/>}/>
-        </Route>
-        <Route path="/register" element={<Register selected={selected} setSelected={setSelected} />} />
-        <Route path="/login" element={<Login selected={selected} setSelected={setSelected} />} />
-        <Route path="/profile" element={<Profile selected={selected} setSelected={setSelected}/>}/>
-        <Route path="/cart" element={<Cart selected={selected} setSelected={setSelected} />}/>
-        <Route path="/forgot-password" element={<ForgotPassword selected={selected} setSelected={setSelected}/>} />
-        <Route path="/detail-product/:productID" element={<DetailProduct selected={selected} setSelected={setSelected}/>}/>
-        <Route path="/my-orders" element={<Orders selected={selected} setSelected={setSelected} />}/>
-        <Route path="/orders/:orderId" element={<OrderDetail />} />
+      <Route path="/" element={<HomePage />}>
+        <Route path="birthday-flower" element={<BirthdayFlower />} />
+        <Route path="decorate-flower" element={<DecorateFlower />} />
+        <Route path="wedding-flower" element={<WeddingFlower />} />
+        <Route path="graduate-flower" element={<GraduateFlower />} />
+        <Route path="funeral-flower" element={<FuneralFlower />} />
+      </Route>
+      <Route
+        path="/register"
+        element={<Register selected={selected} setSelected={setSelected} />}
+      />
+      <Route
+        path="/login"
+        element={<Login selected={selected} setSelected={setSelected} />}
+      />
+      <Route
+        path="/profile"
+        element={<Profile selected={selected} setSelected={setSelected} />}
+      />
+      <Route
+        path="/cart"
+        element={<Cart selected={selected} setSelected={setSelected} />}
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <ForgotPassword selected={selected} setSelected={setSelected} />
+        }
+      />
+      <Route
+        path="/detail-product/:productID"
+        element={
+          <DetailProduct selected={selected} setSelected={setSelected} />
+        }
+      />
+      <Route
+        path="/my-orders"
+        element={<Orders selected={selected} setSelected={setSelected} />}
+      />
+      <Route path="/orders/:orderId" element={<OrderDetail />} />
+      <Route path="/order/payment-callback" element={<VNPAY_CALLBACK />} />
     </Routes>
-
-
   );
 };
 
