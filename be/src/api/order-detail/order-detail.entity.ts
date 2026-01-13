@@ -28,9 +28,6 @@ export class OrderDetailEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 500, name: 'product_image' })
   productImage: string;
 
-  @Column({ type: 'varchar', length: 50, nullable: true })
-  sku: string;
-
   // Giá tại thời điểm đặt
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   price: number;

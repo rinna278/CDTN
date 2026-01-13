@@ -33,7 +33,7 @@ const Orders: React.FC<OrdersProps> = ({ selected, setSelected }) => {
   // State phân trang
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 5, // Load 5 đơn mỗi trang cho gọn
+    limit: 2, // Load 5 đơn mỗi trang cho gọn
     total: 0,
     totalPages: 0,
   });
@@ -211,10 +211,11 @@ const formatDateVN = (value: string | Date) => {
               </div>
             ))}
 
-            {/* --- PAGINATION CONTROLS --- */}
+            {/* --- PAGINATION --- */}
             {pagination.totalPages > 1 && (
-              <div className="pagination-controls">
+              <div className="orders-pagination">
                 <button
+                  className="page-btn"
                   disabled={pagination.page === 1}
                   onClick={() =>
                     setPagination((p) => ({ ...p, page: p.page - 1 }))
@@ -222,10 +223,14 @@ const formatDateVN = (value: string | Date) => {
                 >
                   Previous
                 </button>
-                <span>
-                  Page {pagination.page} of {pagination.totalPages}
+
+                <span className="page-info">
+                  Page <strong>{pagination.page}</strong> /{" "}
+                  {pagination.totalPages}
                 </span>
+
                 <button
+                  className="page-btn"
                   disabled={pagination.page === pagination.totalPages}
                   onClick={() =>
                     setPagination((p) => ({ ...p, page: p.page + 1 }))

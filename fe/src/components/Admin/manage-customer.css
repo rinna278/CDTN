@@ -86,7 +86,7 @@
     overflow: hidden; /* Ẩn phần tràn ra ngoài */
 }
 .customer-data{
-    max-height: 40vh;
+    max-height: 70vh;
     overflow-y: auto;
 }
 .title_table h5 {

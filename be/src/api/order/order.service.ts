@@ -544,10 +544,13 @@ export class OrderService {
       // 🔥 PAYMENT SUCCESS
 
       // Commit stock + update orderStatus/paymentStatus
-      const paidOrder = await this.commitOrderPayment(fullOrder.id);
-
-      // Cancel auto-cancel job
-      this.orderQueueService.cancelAutoCancelJob(orderId).catch(() => {});
+       await this.commitOrderPayment(fullOrder.id);
+       const paidOrder = await this.orderRepository.findOne({
+        where : {id: fullOrder.id},
+        relations: ["items", "user"],
+       })
+        // Cancel auto-cancel job
+        this.orderQueueService.cancelAutoCancelJob(orderId).catch(() => {});
 
       // Xóa cart items
       const cart = await this.cartService.getCart(paidOrder.userId);

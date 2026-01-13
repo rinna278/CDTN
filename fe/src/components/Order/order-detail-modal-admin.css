@@ -1,194 +1,254 @@
-/* Overlay nền mờ */
+/* ===============================
+   OVERLAY & MODAL
+================================ */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.6); /* tối hơn để nổi bật modal */
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  padding: 10px;
+  z-index: 9999;
+  animation: fadeIn 0.25s ease;
 }
 
-/* Nội dung modal */
 .modal-content {
   background: #fff;
-  padding: 25px 30px;
-  max-width: 700px;
-  width: 100%;
-  border-radius: 15px;
-  position: relative;
-  max-height: 80vh;
+  width: 900px;
+  max-width: 95%;
+  max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-  font-family: 'Arial', sans-serif;
+  border-radius: 14px;
+  padding: 24px 20px;
+  position: relative;
+  animation: scaleUp 0.25s ease;
 }
 
-.modal-message{
-  color: rgb(53, 143, 240)
-}
-
-
-
-/* Nút đóng */
+/* Close button */
 .modal-close-btn {
   position: absolute;
-  top: 15px;
-  right: 20px;
-  background: #f5f5f5;
+  top: 14px;
+  right: 18px;
+  font-size: 28px;
   border: none;
-  font-size: 26px;
-  font-weight: bold;
-  color: #333;
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
+  background: transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  color: #555;
 }
+
 .modal-close-btn:hover {
-  background: #e6004e;
-  color: #fff;
-  transform: rotate(90deg);
+  color: #000;
 }
 
-/* Header modal */
+/* ===============================
+   HEADER & INFO
+================================ */
 .modal-content h2 {
-  margin-top: 0;
-  font-size: 24px;
-  color: #2169fc;
-  margin-bottom: 15px;
-}
-
-/* Thông tin đơn hàng */
-.order-info p {
-  margin: 6px 0;
-  font-size: 15px;
-}
-.order-info b {
+  margin-bottom: 20px;
+  font-size: 22px;
+  text-align: center;
   color: #333;
 }
 
-/* Danh sách sản phẩm */
-.order-items {
-  margin-top: 20px;
-}
-.order-items h3 {
-  margin-bottom: 10px;
-  color: #2169fc;
-  font-size: 18px;
-  border-bottom: 2px solid #2169fc;
-  padding-bottom: 3px;
+.order-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
-/* Một sản phẩm */
+.order-info p {
+  background: #f8f8f8;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+/* ===============================
+   ORDER ITEMS
+================================ */
+.order-items h3 {
+  margin-bottom: 12px;
+  font-size: 18px;
+  color: #444;
+}
+
 .order-item {
   display: flex;
-  gap: 15px;
-  margin-bottom: 15px;
+  gap: 14px;
+  padding: 12px;
   border-radius: 10px;
-  padding: 10px;
-  border: 1px solid #eee;
-  background-color: #fafafa;
-  align-items: center;
-}
-.order-item img {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid #ddd;
+  background: #fafafa;
+  margin-bottom: 12px;
+  transition: box-shadow 0.2s;
 }
 
-/* Thông tin sản phẩm */
+.order-item:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.order-item-image {
+  width: 90px;
+  height: 90px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid #eee;
+}
+
 .item-info p {
   margin: 3px 0;
   font-size: 14px;
 }
-.item-info b {
-  color: #333;
+
+/* ===============================
+   UPDATE STATUS
+================================ */
+.update-status-modal {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
 }
 
-/* Dropdown + button cập nhật trạng thái */
-.update-status-modal {
-  margin-top: 20px;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
 .update-status-modal select {
-  padding: 8px 12px;
+  flex: 1;
+  padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid #ccc;
-  min-width: 180px;
   font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.update-status-modal select:focus {
-  outline: none;
-  border-color: #2169fc;
-  box-shadow: 0 0 5px rgba(33,105,252,0.4);
 }
 
 .update-status-modal button {
-  padding: 8px 16px;
-  background-color: #2169fc;
-  color: #fff;
-  border: none;
+  padding: 10px 18px;
   border-radius: 8px;
+  border: none;
+  background: #c88ea7;
+  color: #fff;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
+  transition: all 0.25s;
 }
-.update-status-modal button:hover:not(:disabled) {
-  background-color: #1a54c6;
+
+.update-status-modal button:hover {
+  background: #b37792;
 }
+
 .update-status-modal button:disabled {
-  background-color: #aaa;
+  background: #ccc;
   cursor: not-allowed;
 }
-/* popup */
 
-.btn-cancel-order,
-.btn-update-status {
-  flex: 1;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  font-family: inherit;
+/* ===============================
+   CONFIRM POPUP
+================================ */
+.modal-container-confirm-delete-product {
+  background: #fff;
+  width: 420px;
+  max-width: 90%;
+  border-radius: 14px;
+  padding: 24px;
+  animation: scaleUp 0.25s ease;
+}
+
+.modal-title {
+  font-size: 20px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.modal-message {
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
 }
 
 .btn-cancel-order {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.btn-cancel-order:hover:not(:disabled) {
-  background: #e5e7eb;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  background: #ddd;
+  cursor: pointer;
 }
 
 .btn-update-status {
-  background: #08cc60;
-  color: white;
-  box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.3);
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  background: #c88ea7;
+  color: #fff;
+  cursor: pointer;
 }
 
-.btn-update-status:hover:not(:disabled) {
-  background: #03a035;
-  box-shadow: 0 6px 8px -1px rgba(220, 38, 38, 0.4);
+/* ===============================
+   ANIMATIONS
+================================ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.btn-cancel-order:disabled,
-.btn-update-status:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ===============================
+   RESPONSIVE – TABLET
+================================ */
+@media (max-width: 768px) {
+  .order-info {
+    grid-template-columns: 1fr;
+  }
+
+  .order-item {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .order-item-image {
+    width: 120px;
+    height: 120px;
+  }
+
+  .update-status-modal {
+    flex-direction: column;
+  }
+}
+
+/* ===============================
+   RESPONSIVE – MOBILE
+================================ */
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 18px;
+  }
+
+  .modal-content h2 {
+    font-size: 18px;
+  }
+
+  .item-info p {
+    font-size: 13px;
+  }
+
+  .update-status-modal button {
+    width: 100%;
+  }
 }

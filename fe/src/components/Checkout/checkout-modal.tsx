@@ -297,7 +297,7 @@ const CheckoutModal = ({
             </span>
           </div>
           <div className="modal-actions">
-            <button className="btn-cancel" onClick={onClose}>
+            <button className="btn-cancel-checkout" onClick={onClose}>
               Quay lại
             </button>
             <button

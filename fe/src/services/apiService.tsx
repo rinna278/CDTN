@@ -391,6 +391,11 @@ const updateShipping = async (
   return response.data;
 };
 
+const getvnpayCallback = async(queryString: string) => {
+  const response = await instance.get(`api/v1/orders/vnpay-callback${queryString}`)
+  return response;
+}
+
 export {
   postLogin,
   postSendOTP,
@@ -435,5 +440,6 @@ export {
   getAllOrders,
   getOrderByIdAdmin,
   updateOrderStatus,
-  updateShipping
+  updateShipping,
+  getvnpayCallback
 };

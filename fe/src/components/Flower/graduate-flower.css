@@ -176,3 +176,80 @@
 .description-1, .description-2, .description-3, .description-4, .description-5{
   margin: 0 4vw;
 }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .graduate-flower-container {
+    padding: 0 12px;
+  }
+
+  /* Arrangement xuống giữa */
+  .arrangement {
+    justify-content: center;
+    margin-right: 0;
+    flex-wrap: wrap;
+  }
+
+  .arrangement button {
+    width: auto;
+    height: auto;
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+
+  /* Dropdown sort */
+  .selected {
+    font-size: 14px;
+    height: auto;
+  }
+
+  .option {
+    font-size: 14px;
+    width: 130px;
+  }
+
+  /* Message */
+  .message-1,
+  .message-2,
+  .message-3 {
+    font-size: 20px;
+    margin-top: 30px;
+  }
+
+  /* Description */
+  .description-1,
+  .description-2,
+  .description-3,
+  .description-4,
+  .description-5 {
+    margin: 0 12px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Pagination dễ bấm */
+  .page-link {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+}
+
+/* ===============================
+   RESPONSIVE – MOBILE NHỎ
+================================ */
+@media (max-width: 480px) {
+  .message-1,
+  .message-2,
+  .message-3 {
+    font-size: 18px;
+  }
+
+  .arrangement {
+    gap: 6px;
+  }
+
+  .page-link {
+    padding: 5px 8px;
+    font-size: 13px;
+  }
+}
