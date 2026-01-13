@@ -432,7 +432,7 @@ export class OrderService {
 
       // 4. Update order status
       order.paymentStatus = PaymentStatus.PAID;
-      order.orderStatus = OrderStatus.PROCESSING;
+      order.orderStatus = OrderStatus.CONFIRMED;
       order.paidAt = new Date();
 
       await manager.save(order);
@@ -756,13 +756,18 @@ export class OrderService {
 
   /**
    * Update order status with transaction
+   * ✅ FIXED: Handle stock commit for COD orders
+   */
+  /**
+   * Update order status with transaction
+   * ✅ FIXED: Properly restore stock when cancelling orders
    */
   async updateStatus(
     id: string,
     updateDto: UpdateOrderStatusDto,
   ): Promise<OrderResponseDto> {
     return await this.dataSource.transaction(async (manager) => {
-      // ✅ Bước 1: Lock order trước (KHÔNG load relations)
+      // 🔒 Bước 1: Lock order trước (KHÔNG load relations)
       const order = await manager.findOne(OrderEntity, {
         where: { id },
         lock: { mode: 'pessimistic_write' },
@@ -772,7 +777,7 @@ export class OrderService {
         throw new NotFoundException(ERROR_ORDER.ORDER_NOT_FOUND.MESSAGE);
       }
 
-      // ✅ Bước 2: Load relations SAU khi đã lock (không cần lock nữa)
+      // ✅ Bước 2: Load relations SAU khi đã lock
       const fullOrder = await manager.findOne(OrderEntity, {
         where: { id },
         relations: ['items', 'user'],
@@ -784,6 +789,10 @@ export class OrderService {
         user: fullOrder.user,
       });
 
+      // 🔥 LƯU LẠI TRẠNG THÁI CŨ TRƯỚC KHI THAY ĐỔI (QUAN TRỌNG!)
+      const oldOrderStatus = order.orderStatus;
+      const oldPaymentStatus = order.paymentStatus;
+
       // Validate status transition
       const allowedTransitions = ORDER_STATUS_TRANSITIONS[order.orderStatus];
       if (!allowedTransitions.includes(updateDto.status)) {
@@ -792,15 +801,72 @@ export class OrderService {
         );
       }
 
+      // Cập nhật trạng thái mới
       order.orderStatus = updateDto.status;
 
-      // Update timestamps
-      if (updateDto.status === OrderStatus.SHIPPING) {
+      // 🔥 XỬ LÝ THEO TỪNG TRẠNG THÁI
+      if (updateDto.status === OrderStatus.CONFIRMED) {
+        // ✅ KHI XÁC NHẬN ĐƠN COD → COMMIT STOCK
+        if (
+          order.paymentMethod === PaymentMethod.COD &&
+          oldPaymentStatus === PaymentStatus.PENDING
+        ) {
+          // Trừ stock thật + release reserved stock
+          for (const item of order.items) {
+            const product = await manager.findOne(
+              this.productService['productRepository'].target,
+              {
+                where: { id: item.productId },
+                lock: { mode: 'pessimistic_write' },
+              },
+            );
+
+            if (!product) {
+              throw new BadRequestException(
+                `Sản phẩm không tồn tại: ${item.productName}`,
+              );
+            }
+
+            const variant = product.variants.find(
+              (v) => v.color === item.color,
+            );
+            if (!variant) {
+              throw new BadRequestException(
+                `Không tồn tại màu ${item.color} cho ${item.productName}`,
+              );
+            }
+
+            // Default values
+            variant.stock ??= 0;
+            variant.reservedStock ??= 0;
+
+            // TRỪ STOCK THẬT
+            variant.stock = Math.max(0, variant.stock - item.quantity);
+
+            // RELEASE RESERVE
+            variant.reservedStock = Math.max(
+              0,
+              variant.reservedStock - item.quantity,
+            );
+
+            product.variants = [...product.variants];
+            await manager.save(product);
+          }
+
+          this.logger.log(
+            `✅ Stock committed for COD order ${order.orderCode} (CONFIRMED)`,
+          );
+        }
+      } else if (updateDto.status === OrderStatus.SHIPPING) {
         order.shippedAt = new Date();
       } else if (updateDto.status === OrderStatus.DELIVERED) {
         order.deliveredAt = new Date();
-        order.paymentStatus = PaymentStatus.PAID;
-        order.paidAt = new Date();
+
+        // ✅ ĐÃ GIAO HÀNG → ĐÁNH DẤU ĐÃ THANH TOÁN (CHỈ CHO COD)
+        if (order.paymentMethod === PaymentMethod.COD) {
+          order.paymentStatus = PaymentStatus.PAID;
+          order.paidAt = new Date();
+        }
       } else if (updateDto.status === OrderStatus.CANCELLED) {
         order.cancelledAt = new Date();
         order.cancelReason = updateDto.reason;
@@ -810,15 +876,54 @@ export class OrderService {
           this.logger.error('Failed to cancel auto-cancel job:', error);
         });
 
-        // Restore stock if already paid
-        if (order.paymentStatus === PaymentStatus.PAID) {
+        // 🔥 CHECK ĐIỀU KIỆN RESTORE STOCK - DÙNG TRẠNG THÁI CŨ!
+        const shouldRestoreStock =
+          oldPaymentStatus === PaymentStatus.PAID ||
+          (order.paymentMethod === PaymentMethod.COD &&
+            oldOrderStatus === OrderStatus.CONFIRMED);
+
+        this.logger.log(`🔍 [CANCEL ORDER] ${order.orderCode}:
+        - Payment Method: ${order.paymentMethod}
+        - Old Order Status: ${oldOrderStatus}
+        - Old Payment Status: ${oldPaymentStatus}
+        - Should Restore Stock: ${shouldRestoreStock}
+      `);
+
+        // 🔥 LUÔN RELEASE RESERVED STOCK CHO MỌI ĐƠN
+        for (const item of order.items) {
+          this.logger.log(
+            `📦 Releasing reserved stock: ${item.productName} - ${item.color} x${item.quantity}`,
+          );
+          await this.productService.releaseReservedStock(
+            item.productId,
+            item.color,
+            item.quantity,
+          );
+        }
+
+        // ✅ RESTORE STOCK THẬT NẾU ĐÃ TRỪ STOCK (đã thanh toán hoặc đã confirm COD)
+        if (shouldRestoreStock) {
+          this.logger.log(`✅ [RESTORING STOCK] for order ${order.orderCode}`);
+
           for (const item of order.items) {
+            this.logger.log(
+              `📈 Restoring stock: ${item.productName} - ${item.color} x${item.quantity}`,
+            );
+
             await this.productService.updateVariantStock(
               item.productId,
               item.color,
-              item.quantity,
+              item.quantity, // Cộng lại số lượng
             );
           }
+
+          this.logger.log(
+            `✅ Stock restored successfully for order ${order.orderCode}`,
+          );
+        } else {
+          this.logger.log(
+            `⏭️  [SKIP RESTORE] Order ${order.orderCode} - Stock was not deducted yet (only reserved)`,
+          );
         }
 
         // Send cancellation email
@@ -830,7 +935,7 @@ export class OrderService {
               cancelReason: order.cancelReason,
               totalAmount: Number(order.totalAmount),
               cancelledAt: order.cancelledAt,
-              isPaid: order.paymentStatus === PaymentStatus.PAID,
+              isPaid: oldPaymentStatus === PaymentStatus.PAID,
               isAutoCancel: false,
             })
             .catch((error) => {
