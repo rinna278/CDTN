@@ -22,9 +22,6 @@ export class OrderItemResponseDto {
   productImage: string;
 
   @Expose()
-  sku: string;
-
-  @Expose()
   price: number;
 
   @Expose()

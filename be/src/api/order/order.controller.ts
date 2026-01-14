@@ -173,37 +173,61 @@ export class OrderController {
   }
 
   /**
-   * VNPay callback endpoint - GET method
-  //  * VNPay sẽ redirect user về URL này sau khi thanh toán
-  //  */
-  // @Get('vnpay-callback')
-  // @Redirect()
-  // async handleVNPayCallbackGet(@Query() query: any) {
-  //   console.log('📞 VNPay callback received (GET)');
-  //   console.debug('Query params:', JSON.stringify(query, null, 2));
+   * ✅ Check if order can retry payment
+   */
+  @ApiOperation({
+    summary: 'Kiểm tra đơn hàng có thể thanh toán lại không',
+    description:
+      'Trả về thông tin order có thể retry payment và thời gian còn lại',
+  })
+  @Get(':id/can-retry-payment')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async canRetryPayment(
+    @Param() param: ParamIdBaseDto,
+    @GetUser() user: UserEntity,
+  ) {
+    const order = await this.orderService.findOne(param.id);
 
-  //   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    // Validate ownership
+    if (order.userId !== user.id) {
+      throw new ForbiddenException('You do not have access to this order');
+    }
 
-  //   try {
-  //     const result = await this.orderService.handleVNPayCallback(query);
+    const canRetry = this.orderService.canRetryPayment(order);
+    const expirationTime = this.orderService['calculateExpirationTime'](order);
 
-  //     console.log(`✅ Payment successful for order ${result.orderCode}`);
+    return {
+      canRetry: canRetry.allowed,
+      reason: canRetry.reason,
+      orderCode: order.orderCode,
+      totalAmount: order.totalAmount,
+      paymentMethod: order.paymentMethod,
+      orderStatus: order.orderStatus,
+      paymentStatus: order.paymentStatus,
+      expirationTime,
+    };
+  }
 
-  //     // Redirect về frontend với order ID và status success
-  //     return {
-  //       url: `${frontendUrl}/orders/${result.id}?status=success&paymentStatus=paid`,
-  //       statusCode: 302,
-  //     };
-  //   } catch (error) {
-  //     console.error('❌ Payment callback error:', error.message);
-
-  //     // Redirect về frontend với error
-  //     return {
-  //       url: `${frontendUrl}/orders?status=failed&error=${encodeURIComponent(error.message)}`,
-  //       statusCode: 302,
-  //     };
-  //   }
-  // }
+  /**
+   * ✅ Retry payment for pending order
+   */
+  @ApiOperation({
+    summary: 'Tạo link thanh toán mới cho đơn hàng',
+    description:
+      'User có thể tạo payment URL mới nếu đóng tab thanh toán hoặc thanh toán thất bại',
+  })
+  @Post(':id/retry-payment')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async retryPayment(
+    @Param() param: ParamIdBaseDto,
+    @GetUser() user: UserEntity,
+  ): Promise<{ paymentUrl: string; orderId: string }> {
+    return this.orderService.retryPayment(param.id, user.id);
+  }
 
   // ========== ADMIN ENDPOINTS ==========
 

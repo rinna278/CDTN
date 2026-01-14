@@ -4,7 +4,7 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
-![Alt text](database.png "database design")
+![Alt text](database.png 'database design')
 
 ## Requirements
 
@@ -62,8 +62,8 @@ Config [Unit Test Report](https://stackoverflow.com/questions/24825860/how-to-ge
 }
 ```
 
-
 ## Data test VNPay:
+
 Ngân hàng: NCB
 Số thẻ: 9704198526191432198
 Tên chủ thẻ:NGUYEN VAN A
@@ -71,12 +71,9 @@ Ngày phát hành:07/15
 Mật khẩu OTP:123456
 -> Thành công
 
-
 ## License
 
 Nest is [MIT licensed](LICENSE).
 
-
 // cancel chưa trừ stock
-// popup confirm logout
 // ban user (có xử lý order như nào)

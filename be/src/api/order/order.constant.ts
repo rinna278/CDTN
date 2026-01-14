@@ -65,4 +65,16 @@ export const ERROR_ORDER = {
     CODE: 'od00005',
     MESSAGE: 'Cannot cancel order in this status',
   },
+  CANNOT_RETRY_PAYMENT: {
+    CODE: 'od00006',
+    MESSAGE: 'Cannot retry payment for this order',
+  },
+  PAYMENT_EXPIRED: {
+    CODE: 'od00007',
+    MESSAGE: 'Order payment has expired',
+  },
+  ALREADY_PAID: {
+    CODE: 'od00008',
+    MESSAGE: 'Order is already paid',
+  },
 };
