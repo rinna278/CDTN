@@ -1,6 +1,6 @@
 import "./manage-product.css";
 import { getAllProduct, deleteProduct } from "../../services/apiService";
-import { useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import ModalCreateProduct from "./modal-create-product";
 import ModalEditProduct from "./modal-edit-product";
 import ModalConfirmDelete from "./modal-confirm-delete";
@@ -21,7 +21,6 @@ const ManageProduct = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   //load khi tạo hoặc sửa
   const [reloadKey, setReloadKey] = useState(0);
-
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -151,9 +150,30 @@ const ManageProduct = () => {
     }
   };
 
+  // ✅ Tính số màu khả dụng (stock thực tế - reserved > 0)
   const getAvailableColorsCount = (product: Product): number => {
     if (!product.variants || product.variants.length === 0) return 0;
-    return product.variants.filter((v) => v.stock > 0).length;
+    return product.variants.filter((v) => {
+      const availableStock = v.stock - (v.reservedStock || 0);
+      return availableStock > 0;
+    }).length;
+  };
+
+  // ✅ Tính tổng kho khả dụng (tổng stock - tổng reserved)
+  const getTotalAvailableStock = (product: Product): number => {
+    if (!product.variants || product.variants.length === 0) return 0;
+    return product.variants.reduce((total, v) => {
+      const availableStock = v.stock - (v.reservedStock || 0);
+      return total + Math.max(0, availableStock); // Không để số âm
+    }, 0);
+  };
+
+  // ✅ Tính tổng reserved stock
+  const getTotalReservedStock = (product: Product): number => {
+    if (!product.variants || product.variants.length === 0) return 0;
+    return product.variants.reduce((total, v) => {
+      return total + (v.reservedStock || 0);
+    }, 0);
   };
 
   return (
@@ -201,7 +221,8 @@ const ManageProduct = () => {
                 <th>Tên Sản phẩm</th>
                 <th>Danh mục</th>
                 <th>Giá</th>
-                <th>Tổng kho</th>
+                <th>Kho khả dụng</th>
+                <th>Đang giữ chỗ</th>
                 <th>Màu khả dụng</th>
                 <th>Hành động</th>
               </tr>
@@ -210,7 +231,7 @@ const ManageProduct = () => {
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     style={{ textAlign: "center", padding: "20px" }}
                   >
                     Đang tải dữ liệu...
@@ -220,6 +241,9 @@ const ManageProduct = () => {
                 products.map((product, index) => {
                   console.log(`Rendering product ${index}:`, product);
                   const availableColors = getAvailableColorsCount(product);
+                  const totalAvailableStock = getTotalAvailableStock(product);
+                  const totalReservedStock = getTotalReservedStock(product);
+
                   return (
                     <tr key={product.id || index}>
                       <td>
@@ -248,14 +272,41 @@ const ManageProduct = () => {
                       <td>{product.category || "N/A"}</td>
                       <td>{formatCurrency(Number(product.price))}</td>
                       <td>
-                        <span
+                        <div
                           style={{
-                            fontWeight: "bold",
-                            color:
-                              product.totalStock > 0 ? "#28a745" : "#dc3545",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "2px",
                           }}
                         >
-                          {product.totalStock}
+                          <span
+                            style={{
+                              fontWeight: "bold",
+                              color:
+                                totalAvailableStock > 0 ? "#28a745" : "#dc3545",
+                            }}
+                          >
+                            {totalAvailableStock}
+                          </span>
+                          <span style={{ fontSize: "11px", color: "#666" }}>
+                            (Tổng: {product.totalStock})
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <span
+                          style={{
+                            padding: "4px 8px",
+                            background:
+                              totalReservedStock > 0 ? "#fff3cd" : "#e9ecef",
+                            color:
+                              totalReservedStock > 0 ? "#856404" : "#6c757d",
+                            borderRadius: "4px",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                          }}
+                        >
+                          {totalReservedStock}
                         </span>
                       </td>
                       <td>
@@ -316,7 +367,7 @@ const ManageProduct = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: "center" }}>
+                  <td colSpan={7} style={{ textAlign: "center" }}>
                     {searchTerm
                       ? "Không tìm thấy sản phẩm nào"
                       : "Không có sản phẩm nào"}

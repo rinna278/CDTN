@@ -222,7 +222,7 @@ const overlayStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  zIndex: 1000,
+  zIndex: 1500,
 };
 
 const modalStyle: React.CSSProperties = {
@@ -230,10 +230,11 @@ const modalStyle: React.CSSProperties = {
   borderRadius: "12px",
   width: "90%",
   maxWidth: "700px",
-  maxHeight: "95vh",
+  maxHeight: "78vh",
   display: "flex",
   flexDirection: "column",
   boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+  zIndex: 1111
 };
 
 const headerStyle: React.CSSProperties = {
@@ -242,6 +243,7 @@ const headerStyle: React.CSSProperties = {
   alignItems: "center",
   padding: "20px 24px",
   borderBottom: "1px solid #e5e7eb",
+  marginTop: "4px"
 };
 
 const closeButtonStyle: React.CSSProperties = {

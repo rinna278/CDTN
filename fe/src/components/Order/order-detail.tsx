@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getOrderById, cancelOrder } from "../../services/apiService";
+import { getOrderById, cancelOrder, postPayAgain } from "../../services/apiService";
 import { toast } from "react-toastify";
 import "./order-detail.css";
 
@@ -192,6 +192,22 @@ const OrderDetail = () => {
 
     fetchOrder();
   }, [orderId, navigate]);
+  
+  const handlePayAgain = async () => {
+    try {
+      const response = await postPayAgain(order.id);
+      console.log("Dữ liệu trả về:", response);
+
+      // Ví dụ: redirect sang cổng thanh toán
+      // if (response?.paymentUrl) {
+      //   window.location.href = response.paymentUrl;
+      // }
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể thanh toán lại");
+    }
+  };
+
 
   const handleCancelOrder = async () => {
     const finalReason =
@@ -344,6 +360,7 @@ const OrderDetail = () => {
             </div>
           </div>
 
+          <button onClick={handlePayAgain}>thanh toán lại</button>
           {btnCancel && (
             <div className="order-actions">
               <button
@@ -363,26 +380,28 @@ const OrderDetail = () => {
           <div className="cancel-modal-order">
             <h3>Lý do hủy đơn</h3>
 
-            <div className="reason-list">
-              {cancelReasons.map((reason) => (
-                <label key={reason} className="reason-item">
-                  <input
-                    type="radio"
-                    name="cancelReason"
-                    value={reason}
-                    checked={selectedReason === reason}
-                    onChange={() => {
-                      setSelectedReason(reason);
-                      if (reason !== "Lý do khác") {
-                        setCancelReason(reason);
-                      } else {
-                        setCancelReason("");
-                      }
-                    }}
-                  />
-                  <span>{reason}</span>
-                </label>
-              ))}
+            <div className="cancel-modal-body">
+              <div className="reason-list">
+                {cancelReasons.map((reason) => (
+                  <label key={reason} className="reason-item">
+                    <input
+                      type="radio"
+                      name="cancelReason"
+                      value={reason}
+                      checked={selectedReason === reason}
+                      onChange={() => {
+                        setSelectedReason(reason);
+                        if (reason !== "Lý do khác") {
+                          setCancelReason(reason);
+                        } else {
+                          setCancelReason("");
+                        }
+                      }}
+                    />
+                    <span>{reason}</span>
+                  </label>
+                ))}
+              </div>
             </div>
 
             {selectedReason === "Lý do khác" && (

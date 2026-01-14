@@ -323,85 +323,84 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
 
   // ✅ THAY THẾ HÀM handleSubmit TRONG modal-edit-product.tsx
 
-  const handleSubmit = async () => {
-    if (!validateForm() || !product) {
-      toast.error("Vui lòng kiểm tra lại thông tin sản phẩm");
-      return;
-    }
+ const handleSubmit = async () => {
+   if (!validateForm() || !product) {
+     toast.error("Vui lòng kiểm tra lại thông tin sản phẩm");
+     return;
+   }
 
-    setIsSubmitting(true);
-    setErrors({});
+   setIsSubmitting(true);
+   setErrors({});
 
-    try {
-      const allImages = [...existingImages, ...imageObjects];
+   try {
+     const allImages = [...existingImages, ...imageObjects];
 
-      // ✅ Lọc và format variants - CHỈ MỘT LẦN
-      const validVariants = variants
-        .filter((v) => v.color.trim() && v.image !== null && v.stock >= 0)
-        .map((v) => ({
-          color: v.color.trim(),
-          image: {
-            url: v.image!.url, // ✅ ! để assert non-null sau khi filter
-            publicId: v.image!.publicId,
-          },
-          stock: Number(v.stock),
-        }));
+     // ✅ Lọc và format variants - PHẢI CÓ reservedStock
+     const validVariants = variants
+       .filter((v) => v.color.trim() && v.image !== null && v.stock >= 0)
+       .map((v) => ({
+         color: v.color.trim(),
+         image: {
+           url: v.image!.url,
+           publicId: v.image!.publicId,
+         },
+         stock: Number(v.stock),
+       }));
 
-      console.log("📦 Valid variants:", validVariants);
+     console.log("📦 Valid variants:", validVariants);
 
-      const payload = {
-        name: formData.name.trim(),
-        price: Number(formData.price),
-        description: formData.description?.trim() || undefined,
-        discount: formData.discount ? Number(formData.discount) : undefined,
-        category: formData.category,
-        images: allImages,
-        occasions: selectedOccasions.length > 0 ? selectedOccasions : undefined,
-        variants: validVariants, // ✅ Dùng trực tiếp, không map lại
-        status: Number(formData.status),
-      };
+     const payload = {
+       name: formData.name.trim(),
+       price: Number(formData.price),
+       description: formData.description?.trim() || undefined,
+       discount: formData.discount ? Number(formData.discount) : undefined,
+       category: formData.category,
+       images: allImages,
+       occasions: selectedOccasions.length > 0 ? selectedOccasions : undefined,
+       variants: validVariants, // ✅ Sử dụng validVariants đã có reservedStock
+       status: Number(formData.status),
+     };
 
-      console.log("📦 Update payload:", JSON.stringify(payload, null, 2));
+     console.log("📦 Update payload:", JSON.stringify(payload, null, 2));
 
-      await updateProduct(product.id, payload);
+     await updateProduct(product.id, payload);
 
-      toast.success("Cập nhật sản phẩm thành công!", {
-        position: "top-right",
-        autoClose: 2000,
-      });
+     toast.success("Cập nhật sản phẩm thành công!", {
+       position: "top-right",
+       autoClose: 2000,
+     });
 
-      setTimeout(() => {
-        onSuccess();
-        handleClose();
-      }, 1500);
-    } catch (error: any) {
-      console.error("Lỗi:", error);
-      console.error("Error response: ", error.response);
-      const statusCode = error.response?.status;
-      const serverMessage = error.response?.data?.message;
+     setTimeout(() => {
+       onSuccess();
+       handleClose();
+     }, 1500);
+   } catch (error: any) {
+     console.error("Lỗi:", error);
+     console.error("Error response: ", error.response);
+     const statusCode = error.response?.status;
+     const serverMessage = error.response?.data?.message;
 
-      let displayError = "Có lỗi xảy ra, vui lòng thử lại";
+     let displayError = "Có lỗi xảy ra, vui lòng thử lại";
 
-      if (serverMessage) {
-        if (Array.isArray(serverMessage)) {
-          displayError = serverMessage.join(", ");
-        } else {
-          displayError = serverMessage;
-        }
-      }
+     if (serverMessage) {
+       if (Array.isArray(serverMessage)) {
+         displayError = serverMessage.join(", ");
+       } else {
+         displayError = serverMessage;
+       }
+     }
 
-      // ✅ Log status code để debug
-      if (statusCode) {
-        console.error(`❌ Status: ${statusCode}`);
-        displayError = `[${statusCode}] ${displayError}`;
-      }
+     if (statusCode) {
+       console.error(`❌ Status: ${statusCode}`);
+       displayError = `[${statusCode}] ${displayError}`;
+     }
 
-      setErrors({ submit: displayError });
-      toast.error(displayError);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+     setErrors({ submit: displayError });
+     toast.error(displayError);
+   } finally {
+     setIsSubmitting(false);
+   }
+ };
 
   if (!isOpen || !product) return null;
 
@@ -684,6 +683,7 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
                           type="text"
                           placeholder="Tên màu (VD: Đỏ, Xanh)"
                           value={variant.color}
+                          className="name-color"
                           onChange={(e) =>
                             handleVariantChange(index, "color", e.target.value)
                           }
@@ -691,6 +691,7 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
                         <input
                           type="number"
                           placeholder="Tồn kho"
+                          className="stock-color"
                           value={variant.stock}
                           onChange={(e) =>
                             handleVariantChange(

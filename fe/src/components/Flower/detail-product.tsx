@@ -19,6 +19,7 @@ interface ProductVariant {
     publicId: string;
   };
   stock: number;
+  reservedStock: number;
 }
 
 interface DetailProductProps {
@@ -79,6 +80,13 @@ const DetailProduct: React.FC<DetailProductProps> = ({
     null
   );
 
+  // 2. Thêm hàm tính available stock
+  const getAvailableStock = (variant: ProductVariant | null): number => {
+    if (!variant) return 0;
+    const reserved = variant.reservedStock || 0;
+    return Math.max(0, variant.stock - reserved);
+  };
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -117,10 +125,15 @@ const DetailProduct: React.FC<DetailProductProps> = ({
     fetchProduct();
   }, [productID, location.state]);
 
+  // 3. Trong hàm initializeVariants, lọc variants theo available stock
   const initializeVariants = (prod: Product) => {
     if (prod.variants && prod.variants.length > 0) {
+      // ✅ Lọc theo available stock thay vì chỉ stock
       const colors = prod.variants
-        .filter((v) => v.stock > 0)
+        .filter((v) => {
+          const available = v.stock - (v.reservedStock || 0);
+          return available > 0;
+        })
         .map((v) => v.color);
       setAvailableColors(colors);
 
@@ -217,6 +230,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
       ? displayImages.map((img) => getImageUrl([img]))
       : [getImageUrl()];
 
+  // 4. Cập nhật hàm handleAddToCart
   const handleAddToCart = async () => {
     if (!product?.id) {
       toast.error("Sản phẩm không tồn tại");
@@ -228,7 +242,9 @@ const DetailProduct: React.FC<DetailProductProps> = ({
       return;
     }
 
-    if (!currentVariant || currentVariant.stock < quantity) {
+    // ✅ Kiểm tra available stock
+    const availableStock = getAvailableStock(currentVariant);
+    if (!currentVariant || availableStock < quantity) {
       toast.error("Không đủ hàng trong kho");
       return;
     }
@@ -247,18 +263,20 @@ const DetailProduct: React.FC<DetailProductProps> = ({
     }
   };
 
+  // 5. Cập nhật hàm handleBuyNow
   const handleBuyNow = () => {
     if (!selectedColor) {
       toast.error("Vui lòng chọn màu sắc");
       return;
     }
 
-    if (!currentVariant || currentVariant.stock < quantity) {
+    // ✅ Kiểm tra available stock
+    const availableStock = getAvailableStock(currentVariant);
+    if (!currentVariant || availableStock < quantity) {
       toast.error("Không đủ hàng trong kho");
       return;
     }
 
-    // Chuẩn bị dữ liệu cho CheckoutModal
     setCheckoutItem({
       id: product.id,
       quantity: quantity,
@@ -275,7 +293,6 @@ const DetailProduct: React.FC<DetailProductProps> = ({
       replace: false,
     });
   };
-
 
   return (
     <div className="detail-product-page">
@@ -318,18 +335,18 @@ const DetailProduct: React.FC<DetailProductProps> = ({
 
           <div className="product-price-section">
             {product.discount && product.discount > 0 ? (
-              <span className="discount-badge">-{product.discount}%</span>)
-              :
+              <span className="discount-badge">-{product.discount}%</span>
+            ) : (
               <></>
-            }
+            )}
             <div
               className={`prices ${!product.discount ? "single-price" : ""}`}
             >
               {product.discount && product.discount > 0 ? (
-                <span className="old-price">{formatPrice(product.price)}</span>)
-              :
-              <></>
-              }
+                <span className="old-price">{formatPrice(product.price)}</span>
+              ) : (
+                <></>
+              )}
               <span className="current-price">
                 {formatPrice(discountedPrice)}
               </span>

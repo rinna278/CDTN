@@ -212,6 +212,14 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
         0
       );
 
+      // ✅ Cập nhật Redux state ngay lập tức để header hiển thị đúng
+      dispatch(
+        setCartInfo({
+          totalItems: newTotalItems,
+          distinctItems: updatedItems.length,
+        })
+      );
+
       return {
         ...prevCart,
         items: updatedItems,
@@ -235,6 +243,7 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
     }, 500);
   };
 
+
   // ✅ Handler riêng cho nút tăng số lượng
   const handleIncrease = (
     itemId: string,
@@ -246,7 +255,6 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
       return;
     }
     handleQuantityChange(itemId, currentQuantity + 1);
-    dispatch(fetchCartFromServer() as any);
   };
 
   // ✅ Handler riêng cho nút giảm số lượng
@@ -255,7 +263,6 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
       return;
     }
     handleQuantityChange(itemId, currentQuantity - 1);
-    dispatch(fetchCartFromServer() as any);
   };
 
   const handleDeleteItem = async (itemId: string) => {

@@ -284,9 +284,13 @@
 
 .cancel-modal-order {
   background: white;
-  padding: 32px;
+  padding: 32px 32px 40px 32px;
   border-radius: 16px;
+  max-height: 70vh;
   max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  
   width: 100%;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: modalSlideIn 0.3s ease;
@@ -304,11 +308,13 @@
 }
 
 .cancel-modal-order h3 {
+  margin-top: 0;
   font-size: 22px;
   font-weight: 700;
+  flex-shrink: 0;
   color: #1f2937;
-  margin-bottom: 24px;
-  padding-bottom: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
   border-bottom: 2px solid #f3f4f6;
 }
 
@@ -323,7 +329,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px;
+  padding: 12px;
   border: 2px solid #e5e7eb;
   border-radius: 8px;
   cursor: pointer;
@@ -354,9 +360,15 @@
   flex: 1;
 }
 
+.cancel-modal-body{
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
 .cancel-modal-order textarea {
-  width: 100%;
-  min-height: 100px;
+  width: 94%;
+  min-height: 60px;
   padding: 12px;
   border: 2px solid #e5e7eb;
   border-radius: 8px;
@@ -377,6 +389,9 @@
   display: flex;
   gap: 12px;
   margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #fff;
 }
 
 .modal-confirm-order,

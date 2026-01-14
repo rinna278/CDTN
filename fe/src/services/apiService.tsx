@@ -396,6 +396,11 @@ const getvnpayCallback = async(queryString: string) => {
   return response;
 }
 
+const postPayAgain = async(orderId: string) => {
+  const response = await instance.post(`api/v1/orders/${orderId}/retry-payment`)
+  return response;
+}
+
 export {
   postLogin,
   postSendOTP,
@@ -441,5 +446,6 @@ export {
   getOrderByIdAdmin,
   updateOrderStatus,
   updateShipping,
-  getvnpayCallback
+  getvnpayCallback, 
+  postPayAgain
 };
