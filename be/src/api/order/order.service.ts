@@ -470,6 +470,142 @@ export class OrderService {
   }
 
   /**
+   * ✅ Check if order can retry payment
+   */
+  canRetryPayment(order: OrderEntity): { allowed: boolean; reason?: string } {
+    // 1. Check payment status
+    if (order.paymentStatus === PaymentStatus.PAID) {
+      return {
+        allowed: false,
+        reason: ERROR_ORDER.ALREADY_PAID.MESSAGE,
+      };
+    }
+
+    if (order.paymentStatus === PaymentStatus.REFUNDED) {
+      return {
+        allowed: false,
+        reason: 'Đơn hàng đã được hoàn tiền',
+      };
+    }
+
+    // 2. Check order status
+    if (order.orderStatus === OrderStatus.CANCELLED) {
+      return {
+        allowed: false,
+        reason: 'Đơn hàng đã bị hủy',
+      };
+    }
+
+    if (order.orderStatus !== OrderStatus.PENDING) {
+      return {
+        allowed: false,
+        reason: 'Đơn hàng không ở trạng thái chờ thanh toán',
+      };
+    }
+
+    // 3. Check payment method
+    if (order.paymentMethod === PaymentMethod.COD) {
+      return {
+        allowed: false,
+        reason: 'Đơn hàng COD không cần thanh toán online',
+      };
+    }
+
+    // 4. Check expiration (24h window)
+    const now = new Date();
+    const expiresAt = new Date(
+      order.createdAt.getTime() + ORDER_CONST.EXPIRATION_TIME,
+    );
+
+    if (now >= expiresAt) {
+      return {
+        allowed: false,
+        reason: ERROR_ORDER.PAYMENT_EXPIRED.MESSAGE,
+      };
+    }
+
+    // ✅ All checks passed
+    return { allowed: true };
+  }
+
+  /**
+   * ✅ Retry payment - Generate new payment URL
+   */
+  async retryPayment(
+    orderId: string,
+    userId: string,
+  ): Promise<{ paymentUrl: string; orderId: string }> {
+    // 1. Load order with items
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['items'],
+    });
+
+    if (!order) {
+      throw new NotFoundException(ERROR_ORDER.ORDER_NOT_FOUND.MESSAGE);
+    }
+
+    // 2. Validate ownership
+    if (order.userId !== userId) {
+      throw new BadRequestException(
+        'Bạn chỉ có thể thanh toán đơn hàng của mình',
+      );
+    }
+
+    // 3. Validate if can retry
+    const canRetry = this.canRetryPayment(order);
+    if (!canRetry.allowed) {
+      throw new BadRequestException(
+        canRetry.reason || ERROR_ORDER.CANNOT_RETRY_PAYMENT.MESSAGE,
+      );
+    }
+
+    // 4. Reset payment status if FAILED → PENDING
+    if (order.paymentStatus === PaymentStatus.FAILED) {
+      order.paymentStatus = PaymentStatus.PENDING;
+      await this.orderRepository.save(order);
+
+      this.logger.log(
+        `🔄 Reset payment status: ${order.orderCode} FAILED → PENDING`,
+      );
+    }
+
+    // 5. Generate new payment URL
+    let paymentUrl: string;
+
+    switch (order.paymentMethod) {
+      case PaymentMethod.VNPAY:
+        paymentUrl = await this.createVNPayPaymentUrl(order);
+        break;
+
+      case PaymentMethod.MOMO:
+        // TODO: Implement MoMo payment URL generation
+        throw new BadRequestException('MoMo payment not implemented yet');
+
+      case PaymentMethod.ZALOPAY:
+        // TODO: Implement ZaloPay payment URL generation
+        throw new BadRequestException('ZaloPay payment not implemented yet');
+
+      default:
+        throw new BadRequestException(
+          `Payment method ${order.paymentMethod} not supported for retry`,
+        );
+    }
+
+    this.logger.log(
+      `✅ Generated new payment URL for order ${order.orderCode} (retry)`,
+    );
+
+    // 6. Optional: Log retry attempt for analytics
+    // You can add a retry counter field to OrderEntity if needed
+
+    return {
+      paymentUrl,
+      orderId: order.id,
+    };
+  }
+
+  /**
    * ✅ Handle VNPay callback - FIXED VERSION
    */
   async handleVNPayCallback(query: any): Promise<OrderResponseDto> {
