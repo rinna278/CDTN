@@ -52,6 +52,7 @@ export interface Product {
       publicId: string;
     };
     stock: number;
+    reservedStock: number;
   }>;
 
   status: number;

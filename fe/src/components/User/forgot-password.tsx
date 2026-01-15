@@ -19,6 +19,8 @@ const ForgotPassword = ({ selected, setSelected }: HeaderProps) => {
   const emailRef = useRef<HTMLInputElement>(null);
   const otpRef = useRef<HTMLInputElement>(null);
   const newPasswordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
+
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -51,27 +53,37 @@ const ForgotPassword = ({ selected, setSelected }: HeaderProps) => {
     setLoading(true);
     setErrorMsg("");
 
-    // Lấy giá trị từ ref
     const email = emailRef.current?.value.trim() || "";
     const otp = otpRef.current?.value.trim() || "";
     const newPassword = newPasswordRef.current?.value || "";
+    const confirmPassword = confirmPasswordRef.current?.value || "";
 
-    // Validate email
     if (!validateEmail(email)) {
       toast.error("Email không hợp lệ");
       setLoading(false);
       return;
     }
 
-    // Validate OTP
     if (!otp) {
       toast.error("Vui lòng nhập OTP");
       setLoading(false);
       return;
     }
 
-    // Validate password
     if (!validatePassword(newPassword)) {
+      setLoading(false);
+      return;
+    }
+
+    if (!confirmPassword) {
+      toast.error("Vui lòng nhập xác nhận mật khẩu");
+      setLoading(false);
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("Mật khẩu xác nhận không khớp");
+      setErrorMsg("Mật khẩu xác nhận không khớp");
       setLoading(false);
       return;
     }
@@ -79,43 +91,32 @@ const ForgotPassword = ({ selected, setSelected }: HeaderProps) => {
     try {
       const response = await postSubmitChangePassword(email, otp, newPassword);
 
-      // Kiểm tra HTTP status code 200
       if (response.status === 200) {
-        const successMessage =
-          response.data.message || "Đổi mật khẩu thành công";
+        toast.success(response.data.message || "Đổi mật khẩu thành công");
 
-        // Hiển thị thông báo thành công
-        toast.success(successMessage);
+        emailRef.current!.value = "";
+        otpRef.current!.value = "";
+        newPasswordRef.current!.value = "";
+        confirmPasswordRef.current!.value = "";
 
-        // Clear input
-        if (emailRef.current) emailRef.current.value = "";
-        if (otpRef.current) otpRef.current.value = "";
-        if (newPasswordRef.current) newPasswordRef.current.value = "";
-
-        // Tự động redirect về login sau 2 giây
         setTimeout(() => {
           navigate("/login", { replace: true });
           setSelected("login");
         }, 2000);
       } else {
-        // Trường hợp response không phải 200
-        const errorMessage = response.data?.message || "Có lỗi xảy ra";
-        toast.error(errorMessage);
-        setErrorMsg(errorMessage);
+        toast.error(response.data?.message || "Có lỗi xảy ra");
       }
     } catch (error: any) {
-      // Xử lý lỗi từ API
       const msg =
         error.response?.data?.message || "OTP không hợp lệ hoặc đã hết hạn";
-      setErrorMsg(msg);
       toast.error(msg);
-
-      // Clear OTP khi có lỗi
-      if (otpRef.current) otpRef.current.value = "";
+      setErrorMsg(msg);
+      otpRef.current!.value = "";
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="login-container">
@@ -161,6 +162,18 @@ const ForgotPassword = ({ selected, setSelected }: HeaderProps) => {
               id="password"
               placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
               ref={newPasswordRef}
+              disabled={loading}
+              required
+            />
+          </div>
+          <div className="input-group">
+            <label htmlFor="confirmPassword">Xác nhận mật khẩu</label>
+            <input
+              type="password"
+              name="confirmPassword"
+              id="confirmPassword"
+              placeholder="Nhập lại mật khẩu mới"
+              ref={confirmPasswordRef}
               disabled={loading}
               required
             />

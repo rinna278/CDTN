@@ -310,3 +310,52 @@ td:last-child {
   color: white;
   cursor: pointer;
 }
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+.pagination-controls span {
+  color: #555;
+  font-weight: 500;
+}
+
+/* Nút Previous & Next */
+.pagination-controls button {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #d0d5dd;
+  background-color: #ffffff;
+  color: #344054;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+/* Hover */
+.pagination-controls button:hover:not(:disabled) {
+  background-color: #f2f4f7;
+  border-color: #98a2b3;
+}
+
+/* Disabled */
+.pagination-controls button:disabled {
+  background-color: #f9fafb;
+  color: #98a2b3;
+  border-color: #e4e7ec;
+  cursor: not-allowed;
+}
+
+/* Responsive (mobile) */
+@media (max-width: 768px) {
+  .pagination-controls {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}

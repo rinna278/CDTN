@@ -224,7 +224,7 @@
   gap: 12px;
 }
 
-.btn-cancel {
+.btn-cancel-checkout {
   padding: 10px 18px;
   border-radius: 10px;
   border: 1px solid #ddd;
@@ -267,7 +267,7 @@
 .sub-modal-content {
   background: #fff;
   padding: 20px;
-  width: 90%;
+  width: 95%;
   max-width: 420px;
   border-radius: 16px;
 }
@@ -284,6 +284,9 @@
   margin-bottom: 10px;
   border-radius: 10px;
   border: 1px solid #ddd;
+}
+.sub-modal-content input{
+  width: 95%;
 }
 
 .sub-modal-actions {
