@@ -12,6 +12,8 @@ import { postCreateProduct, uploadImage } from "../../services/apiService";
 import { toast } from "react-toastify";
 import ImageCropModal from "./image-crop-modal";
 import { useCategories } from "./useCategories";
+import { COLOR_OPTIONS } from "../../constant/color";
+
 
 interface ModalCreateProductProps {
   isOpen: boolean;
@@ -235,7 +237,7 @@ const ModalCreateProduct = ({
   const addVariant = () => {
     setVariants((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), color: "", image: null, stock: 0 },
+      { id: crypto.randomUUID(), color: "", image: null, stock: "" },
     ]);
   };
 
@@ -303,7 +305,7 @@ const ModalCreateProduct = ({
     setImagePreview([]);
     // Reset variants về trạng thái mặc định
     setVariants([
-      { id: crypto.randomUUID(), color: "", image: null, stock: 0 },
+      { id: crypto.randomUUID(), color: "", image: null, stock: "" },
     ]);
     setErrors({});
     onClose();
@@ -320,7 +322,6 @@ const ModalCreateProduct = ({
     setErrors({});
 
     try {
-      // ✅ Lọc và format variants - CHỈ MAP MỘT LẦN
       const validVariants = variants
         .filter((v) => v.color.trim() && v.image && v.image.url)
         .map((v) => ({
@@ -645,27 +646,41 @@ const ModalCreateProduct = ({
                       </div>
 
                       <div className="variant-fields">
-                        <input
-                          type="text"
-                          placeholder="Tên màu (VD: Đỏ, Xanh)"
+                        <select
                           value={variant.color}
                           className="name-color"
                           onChange={(e) =>
                             handleVariantChange(index, "color", e.target.value)
                           }
-                        />
+                        >
+                          <option value="">-- Chọn màu --</option>
+
+                          {COLOR_OPTIONS.map((color) => (
+                            <option
+                              key={color.value}
+                              value={color.label}
+                              disabled={variants.some(
+                                (v, i) => i !== index && v.color === color.label
+                              )}
+                            >
+                              {color.label}
+                            </option>
+                          ))}
+                        </select>
+
                         <input
                           type="number"
                           placeholder="Tồn kho"
                           className="stock-color"
                           value={variant.stock}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const value = e.target.value;
                             handleVariantChange(
                               index,
                               "stock",
-                              Number(e.target.value)
-                            )
-                          }
+                              value === "" ? "" : Number(value)
+                            );
+                          }}
                           min="0"
                         />
                       </div>

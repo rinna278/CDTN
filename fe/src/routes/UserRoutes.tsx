@@ -14,7 +14,6 @@ import Cart from "../components/Cart/cart";
 import ForgotPassword from "../components/User/forgot-password";
 import DetailProduct from "../components/Flower/detail-product";
 import Orders from "../components/Order/orders";
-import CheckoutModal from "../components/Checkout/checkout-modal";
 import OrderDetail from "../components/Order/order-detail";
 import VNPAY_CALLBACK from "../components/Order/vnpay_callback";
 interface UserRoutesProps {
@@ -46,7 +45,7 @@ const UserRoutes = ({ selected, setSelected }: UserRoutesProps) => {
       />
       <Route
         path="/cart"
-        element={<Cart selected={selected} setSelected={setSelected} />}
+        element={<Cart/>}
       />
       <Route
         path="/forgot-password"

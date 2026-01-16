@@ -196,7 +196,7 @@ const getAllProduct = async (params: GetProductsParams) => {
 
 const getProductByID = async (productID: string) => {
   const response = await instance.get(`api/v1/products/${productID}`);
-  return response.data as SingleProductResponse;
+  return response.data as Product;
 };
 
 const postCreateProduct = async (payload: CreateProductPayload) => {

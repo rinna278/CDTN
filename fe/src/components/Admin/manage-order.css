@@ -359,3 +359,116 @@ td:last-child {
     gap: 8px;
   }
 }
+
+/* CSS lọc nổi bong bóng */
+/* =========================
+   Hiệu ứng bong bóng cho status-order
+========================= */
+
+/* gom chung cho tất cả status-order */
+.item-order [class^="status-order"] {
+  cursor: pointer;
+  transition: 
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    background-color 0.25s ease;
+  position: relative;
+}
+
+/* Hover: nổi lên */
+.item-order [class^="status-order"]:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+/* Active (đang được chọn lọc) */
+.item-order [class^="status-order"].active {
+  transform: translateY(-10px) scale(1.05);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+  border: 2px solid #2563eb;
+}
+
+/* Bong bóng nhẹ phía sau */
+.item-order [class^="status-order"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: radial-gradient(
+    circle at top left,
+    rgba(37, 99, 235, 0.15),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+/* Hiện bong bóng khi hover */
+.item-order [class^="status-order"]:hover::after,
+.item-order [class^="status-order"].active::after {
+  opacity: 1;
+}
+
+/* Nút xóa bộ lọc */
+/* =========================
+   Clear filter button
+========================= */
+.clear-filter-btn {
+  margin-top: 12px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1.5px solid #2563eb;
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    background 0.25s ease,
+    opacity 0.2s ease;
+
+  animation: fadeSlideIn 0.3s ease-out;
+}
+
+/* Hover: nổi lên */
+.clear-filter-btn:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 14px 32px rgba(37, 99, 235, 0.45);
+  background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
+}
+
+/* Active: nhấn xuống */
+.clear-filter-btn:active {
+  transform: translateY(0) scale(0.96);
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.3);
+}
+
+/* Focus đẹp (accessibility) */
+.clear-filter-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.35),
+    0 10px 25px rgba(37, 99, 235, 0.4);
+}
+
+/* Animation xuất hiện */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

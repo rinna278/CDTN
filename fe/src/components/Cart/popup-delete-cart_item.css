@@ -1,0 +1,249 @@
+/* File: components/DeleteConfirmModal/delete-confirm-modal.css */
+
+.delete-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease-out;
+  backdrop-filter: blur(4px);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.delete-confirm-modal {
+  background: white;
+  border-radius: 20px;
+  padding: 0;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 20px 60px rgba(252, 43, 118, 0.3);
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.delete-confirm-header {
+  background: linear-gradient(135deg, #ff6b9d 0%, #fc2b76 100%);
+  padding: 30px 30px 25px;
+  text-align: center;
+  position: relative;
+}
+
+.delete-icon-wrapper {
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 15px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  animation: bounce 0.6s ease-out;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.delete-icon {
+  width: 35px;
+  height: 35px;
+}
+
+.delete-confirm-header h2 {
+  color: white;
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.delete-confirm-body {
+  padding: 30px;
+  text-align: center;
+}
+
+.product-preview {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.product-preview img {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 3px solid #f0f0f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.product-preview img:hover {
+  transform: scale(1.05);
+}
+
+.delete-message {
+  font-size: 16px;
+  color: #333;
+  line-height: 1.6;
+  margin: 0 0 15px 0;
+}
+
+.product-name {
+  font-weight: 700;
+  color: #fc2b76;
+  display: inline-block;
+}
+
+.delete-warning {
+  font-size: 13px;
+  color: #ff6b6b;
+  font-weight: 500;
+  margin: 0;
+  padding: 10px 15px;
+  background: #fff5f5;
+  border-radius: 8px;
+  border-left: 3px solid #ff6b6b;
+}
+
+.delete-confirm-actions {
+  display: flex;
+  gap: 12px;
+  padding: 0 30px 30px;
+}
+
+.delete-confirm-actions button {
+  flex: 1;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-cancel-delete {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.btn-cancel-delete:hover:not(:disabled) {
+  background: #e8e8e8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-confirm-delete {
+  background: linear-gradient(135deg, #ff6b9d 0%, #fc2b76 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(252, 43, 118, 0.3);
+}
+
+.btn-confirm-delete:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(252, 43, 118, 0.4);
+}
+
+.btn-confirm-delete:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.delete-confirm-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Spinner animation */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 500px) {
+  .delete-confirm-modal {
+    width: 95%;
+    max-width: none;
+  }
+
+  .delete-confirm-header {
+    padding: 25px 20px 20px;
+  }
+
+  .delete-icon-wrapper {
+    width: 60px;
+    height: 60px;
+  }
+
+  .delete-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .delete-confirm-header h2 {
+    font-size: 20px;
+  }
+
+  .delete-confirm-body {
+    padding: 25px 20px;
+  }
+
+  .delete-message {
+    font-size: 15px;
+  }
+
+  .delete-confirm-actions {
+    padding: 0 20px 25px;
+    flex-direction: column;
+  }
+
+  .delete-confirm-actions button {
+    width: 100%;
+  }
+}

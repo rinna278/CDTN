@@ -17,6 +17,7 @@ const TABS = [
   { label: "Shipping", value: OrderStatus.SHIPPING },
   { label: "Delivered", value: OrderStatus.DELIVERED },
   { label: "Cancelled", value: OrderStatus.CANCELLED },
+  { label: "Refund_Requested", value: OrderStatus.REFUND_REQUESTED },
   { label: "Refunded", value: OrderStatus.REFUNDED },
 ];
 
@@ -52,8 +53,8 @@ const Orders: React.FC<OrdersProps> = ({ selected, setSelected }) => {
         });
 
         console.log(response);
-        console.log('first oder createdAt: ', response.data[0]?.createdAt);
-        console.log('Type of createdAt:', typeof response.data[0]?.createdAt);
+        console.log("first oder createdAt: ", response.data[0]?.createdAt);
+        console.log("Type of createdAt:", typeof response.data[0]?.createdAt);
         // Cập nhật danh sách đơn hàng
         setOrders(response.data || []);
 
@@ -84,37 +85,35 @@ const Orders: React.FC<OrdersProps> = ({ selected, setSelected }) => {
     navigate(`/orders/${orderId}`);
   };
 
-
-const formatDateVN = (value: string | Date) => {
-  if (!value) return "--";
-
-  let date: Date;
-
-  // Nếu backend trả string kiểu "2026-01-11 00:41:42"
-  if (typeof value === "string" && !value.includes("T")) {
-    // ép thành ISO + UTC
-    date = new Date(value.replace(" ", "T") + "+07:00");
-  } else {
-    date = new Date(value);
+  const handleViewDetailProduct = (productId: string) => {
+    navigate(`/detail-product/${productId}`)
   }
 
-  if (isNaN(date.getTime())) return "--";
+  const formatDateVN = (value: string | Date) => {
+    if (!value) return "--";
 
-  return new Intl.DateTimeFormat("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Asia/Ho_Chi_Minh",
-  }).format(date);
-};
+    let date: Date;
 
+    // Nếu backend trả string kiểu "2026-01-11 00:41:42"
+    if (typeof value === "string" && !value.includes("T")) {
+      // ép thành ISO + UTC
+      date = new Date(value.replace(" ", "T") + "+07:00");
+    } else {
+      date = new Date(value);
+    }
 
+    if (isNaN(date.getTime())) return "--";
 
-
-
+    return new Intl.DateTimeFormat("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "Asia/Ho_Chi_Minh",
+    }).format(date);
+  };
 
   const formatPaymentMethod = (method: string) => {
     const methodMap: { [key: string]: string } = {
@@ -127,7 +126,6 @@ const formatDateVN = (value: string | Date) => {
     return methodMap[method] || method.toUpperCase();
   };
 
-  
   return (
     <div className="orders-container">
       {/* --- RENDER TABS --- */}
@@ -171,7 +169,7 @@ const formatDateVN = (value: string | Date) => {
 
                 {/* Danh sách sản phẩm trong đơn */}
                 {order.items.map((item) => (
-                  <div key={item.id} className="order-product">
+                  <div key={item.id} className="order-product" onClick={() =>handleViewDetailProduct(item.productId)}>
                     <div className="product-left">
                       <img src={item.productImage} alt={item.productName} />
                       <h4>{item.productName}</h4>
@@ -223,12 +221,12 @@ const formatDateVN = (value: string | Date) => {
                 >
                   Previous
                 </button>
-
+  
                 <span className="page-info">
                   Page <strong>{pagination.page}</strong> /{" "}
                   {pagination.totalPages}
                 </span>
-
+  
                 <button
                   className="page-btn"
                   disabled={pagination.page === pagination.totalPages}

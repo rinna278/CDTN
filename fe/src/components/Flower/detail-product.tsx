@@ -34,10 +34,9 @@ const formatPrice = (price: number): string => {
 const getImageUrl = (images?: any[]): string => {
   const defaultImage =
     "https://flowercorner.b-cdn.net/image/cache/catalog/products/B%C3%B3%20Hoa/bo-hoa-hong-mat-nau.jpg.webp";
-
   if (!images || images.length === 0) return defaultImage;
-  const firstImage = images[0];
 
+  const firstImage = images[0];
   if (firstImage && typeof firstImage === "object" && firstImage.url) {
     return firstImage.url;
   }
@@ -53,9 +52,8 @@ const DetailProduct: React.FC<DetailProductProps> = ({
 }) => {
   const dispatch = useDispatch();
   const { productID } = useParams<{ productID: string }>();
-  const location = useLocation();
   const navigate = useNavigate();
-  //đóng mở checkout khi ấn mua ngay
+
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutItem, setCheckoutItem] = useState<{
     id: string;
@@ -64,23 +62,19 @@ const DetailProduct: React.FC<DetailProductProps> = ({
     price: number;
   } | null>(null);
 
-  const [product, setProduct] = useState<Product | null>(
-    location.state?.product || null
-  );
+  const [product, setProduct] = useState<Product | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(!location.state?.product);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const [selectedColor, setSelectedColor] = useState<string>("");
+  const [selectedColor, setSelectedColor] = useState("");
   const [availableColors, setAvailableColors] = useState<string[]>([]);
   const [currentVariant, setCurrentVariant] = useState<ProductVariant | null>(
     null
   );
 
-  // 2. Thêm hàm tính available stock
   const getAvailableStock = (variant: ProductVariant | null): number => {
     if (!variant) return 0;
     const reserved = variant.reservedStock || 0;
@@ -89,14 +83,6 @@ const DetailProduct: React.FC<DetailProductProps> = ({
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-
-    if (location.state?.product && location.state.product.id === productID) {
-      const prod = location.state.product;
-      setProduct(prod);
-      initializeVariants(prod);
-      setLoading(false);
-      return;
-    }
 
     if (!productID) {
       setError("Không tìm thấy ID sản phẩm");
@@ -108,33 +94,44 @@ const DetailProduct: React.FC<DetailProductProps> = ({
       try {
         setLoading(true);
         setError(null);
+
         const response = await getProductByID(productID);
-        if (response && response.data) {
-          setProduct(response.data);
-          initializeVariants(response.data);
+
+        if (response) {
+          setProduct(response);
+          initializeVariants(response);
         } else {
           throw new Error("Không tìm thấy sản phẩm");
         }
       } catch (err: any) {
-        setError(err.message || "Không thể tải thông tin sản phẩm");
+        console.error("Error fetching product:", err);
+        if (err.response?.status === 404) {
+          setError("PRODUCT_NOT_FOUND");
+        } else if (err.message?.includes("hết hàng")) {
+          setError("OUT_OF_STOCK");
+        } else {
+          setError("GENERAL_ERROR");
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchProduct();
-  }, [productID, location.state]);
+    setSelectedImage(0);
+    setQuantity(1);
+    setActiveTab("description");
+  }, [productID]);
 
-  // 3. Trong hàm initializeVariants, lọc variants theo available stock
   const initializeVariants = (prod: Product) => {
     if (prod.variants && prod.variants.length > 0) {
-      // ✅ Lọc theo available stock thay vì chỉ stock
       const colors = prod.variants
         .filter((v) => {
           const available = v.stock - (v.reservedStock || 0);
           return available > 0;
         })
         .map((v) => v.color);
+
       setAvailableColors(colors);
 
       if (colors.length > 0) {
@@ -157,6 +154,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
 
   useEffect(() => {
     if (!product) return;
+
     const fetchSimilarProducts = async () => {
       try {
         const response = await getAllProduct({
@@ -165,6 +163,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
           occasions: product.occasions,
           status: 1,
         });
+
         const filtered = (response.data || []).filter(
           (p) => p.id !== product.id
         );
@@ -173,19 +172,14 @@ const DetailProduct: React.FC<DetailProductProps> = ({
         console.error("Error fetching similar products:", err);
       }
     };
+
     fetchSimilarProducts();
   }, [product]);
-
-  useEffect(() => {
-    setSelectedImage(0);
-    setQuantity(1);
-    setActiveTab("description");
-  }, [productID]);
 
   if (loading) {
     return (
       <div className="loading-container">
-        <div className="spinner"></div>
+        <div className="loading-spinner"></div>
         <p>Đang tải thông tin sản phẩm...</p>
       </div>
     );
@@ -193,12 +187,103 @@ const DetailProduct: React.FC<DetailProductProps> = ({
 
   if (error) {
     return (
-      <div className="error-container">
-        <h2>Có lỗi xảy ra</h2>
-        <p>{error}</p>
-        <button className="btn-back" onClick={() => navigate(-1)}>
-          Quay lại
-        </button>
+      <div
+        className="error-container"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "60vh",
+          padding: "40px 20px",
+          textAlign: "center",
+        }}
+      >
+        {error === "PRODUCT_NOT_FOUND" ? (
+          <>
+            <div style={{ fontSize: "72px", marginBottom: "20px" }}>🚫</div>
+            <h2
+              style={{
+                fontSize: "28px",
+                color: "#d32f2f",
+                marginBottom: "10px",
+              }}
+            >
+              Không tìm thấy sản phẩm
+            </h2>
+            <p
+              style={{ fontSize: "16px", color: "#666", marginBottom: "30px" }}
+            >
+              Sản phẩm này đã ngừng bán hoặc hết hàng trong kho.
+            </p>
+          </>
+        ) : error === "OUT_OF_STOCK" ? (
+          <>
+            <div style={{ fontSize: "72px", marginBottom: "20px" }}>📦</div>
+            <h2
+              style={{
+                fontSize: "28px",
+                color: "#f57c00",
+                marginBottom: "10px",
+              }}
+            >
+              Sản phẩm đã hết hàng
+            </h2>
+            <p
+              style={{ fontSize: "16px", color: "#666", marginBottom: "30px" }}
+            >
+              Rất tiếc, sản phẩm này hiện đã hết hàng. Vui lòng quay lại sau.
+            </p>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: "72px", marginBottom: "20px" }}>⚠️</div>
+            <h2
+              style={{
+                fontSize: "28px",
+                color: "#d32f2f",
+                marginBottom: "10px",
+              }}
+            >
+              Có lỗi xảy ra
+            </h2>
+            <p
+              style={{ fontSize: "16px", color: "#666", marginBottom: "30px" }}
+            >
+              Không thể tải thông tin sản phẩm. Vui lòng thử lại sau.
+            </p>
+          </>
+        )}
+        <div style={{ display: "flex", gap: "15px" }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              padding: "12px 30px",
+              fontSize: "16px",
+              backgroundColor: "#666",
+              color: "white",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+            }}
+          >
+            Quay lại
+          </button>
+          <button
+            onClick={() => navigate("/")}
+            style={{
+              padding: "12px 30px",
+              fontSize: "16px",
+              backgroundColor: "#4CAF50",
+              color: "white",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+            }}
+          >
+            Về trang chủ
+          </button>
+        </div>
       </div>
     );
   }
@@ -207,9 +292,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
     return (
       <div className="error-container">
         <h2>Không tìm thấy sản phẩm</h2>
-        <button className="btn-back" onClick={() => navigate(-1)}>
-          Quay lại
-        </button>
+        <button onClick={() => navigate(-1)}>Quay lại</button>
       </div>
     );
   }
@@ -230,7 +313,6 @@ const DetailProduct: React.FC<DetailProductProps> = ({
       ? displayImages.map((img) => getImageUrl([img]))
       : [getImageUrl()];
 
-  // 4. Cập nhật hàm handleAddToCart
   const handleAddToCart = async () => {
     if (!product?.id) {
       toast.error("Sản phẩm không tồn tại");
@@ -242,7 +324,6 @@ const DetailProduct: React.FC<DetailProductProps> = ({
       return;
     }
 
-    // ✅ Kiểm tra available stock
     const availableStock = getAvailableStock(currentVariant);
     if (!currentVariant || availableStock < quantity) {
       toast.error("Không đủ hàng trong kho");
@@ -263,14 +344,12 @@ const DetailProduct: React.FC<DetailProductProps> = ({
     }
   };
 
-  // 5. Cập nhật hàm handleBuyNow
   const handleBuyNow = () => {
     if (!selectedColor) {
       toast.error("Vui lòng chọn màu sắc");
       return;
     }
 
-    // ✅ Kiểm tra available stock
     const availableStock = getAvailableStock(currentVariant);
     if (!currentVariant || availableStock < quantity) {
       toast.error("Không đủ hàng trong kho");
@@ -283,17 +362,13 @@ const DetailProduct: React.FC<DetailProductProps> = ({
       color: selectedColor,
       price: discountedPrice,
     });
-
     setIsCheckoutOpen(true);
   };
 
   const handleSimilarProductClick = (similarProduct: Product) => {
-    navigate(`/detail-product/${similarProduct.id}`, {
-      state: { product: similarProduct },
-      replace: false,
-    });
+    // ✅ Chỉ cần navigate, không cần truyền state
+    navigate(`/detail-product/${similarProduct.id}`);
   };
-
   return (
     <div className="detail-product-page">
       <div className="breadcrumb">
@@ -316,6 +391,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
                 <img src={url} alt={`${product.name} ${index + 1}`} />
               </div>
             ))}
+            {}
           </div>
           <div className="main-image">
             <img src={imageUrls[selectedImage]} alt={product.name} />
@@ -351,6 +427,22 @@ const DetailProduct: React.FC<DetailProductProps> = ({
                 {formatPrice(discountedPrice)}
               </span>
             </div>
+          </div>
+
+          <div className="stock-info">
+            {currentVariant ? (
+              currentVariant.stock > 0 ? (
+                <span className="in-stock">
+                  Còn {currentVariant.stock} sản phẩm (Màu {selectedColor})
+                </span>
+              ) : (
+                <span className="out-of-stock">
+                  Màu {selectedColor} đã hết hàng
+                </span>
+              )
+            ) : (
+              <span className="out-of-stock">Vui lòng chọn màu sắc</span>
+            )}
           </div>
 
           <div className="color-selector">
@@ -440,36 +532,6 @@ const DetailProduct: React.FC<DetailProductProps> = ({
             >
               Mua ngay
             </button>
-          </div>
-
-          <div className="product-features">
-            <div className="feature-item">
-              <span className="icon">🔒</span> Thanh toán an toàn
-            </div>
-            <div className="feature-item">
-              <span className="icon">📏</span> Đổi trả miễn phí
-            </div>
-            <div className="feature-item">
-              <span className="icon">🚚</span> Miễn phí vận chuyển
-            </div>
-            <div className="feature-item">
-              <span className="icon">✓</span> Hàng chính hãng
-            </div>
-          </div>
-          <div className="stock-info">
-            {currentVariant ? (
-              currentVariant.stock > 0 ? (
-                <span className="in-stock">
-                  Còn {currentVariant.stock} sản phẩm (Màu {selectedColor})
-                </span>
-              ) : (
-                <span className="out-of-stock">
-                  Màu {selectedColor} đã hết hàng
-                </span>
-              )
-            ) : (
-              <span className="out-of-stock">Vui lòng chọn màu sắc</span>
-            )}
           </div>
         </div>
       </div>

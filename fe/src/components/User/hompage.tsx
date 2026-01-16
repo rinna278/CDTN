@@ -42,21 +42,16 @@ const HomePage = () => {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      // Cập nhật currentIndex để chuyển sang ảnh tiếp theo
-      // Dùng toán tử % để lặp lại từ đầu khi đến ảnh cuối cùng
       setCurrentIndex(prevIndex => (prevIndex + 1) % sliderImages.length);
     }, 2000); 
-    // Nó sẽ được gọi khi component bị unmount (rời khỏi màn hình)
-    // để tránh rò rỉ bộ nhớ (memory leak)
     return () => {
       clearInterval(timer);
     };
-  }, []); // Mảng rỗng [] đảm bảo useEffect chỉ chạy một lần khi component được render lần đầu
+  }, []); 
 
   return (
     <div className="homepage-container">
         <div className="slider" data-aos='fade-down'>
-            {/* Dùng map để render tất cả các ảnh */}
             {sliderImages.map((image, index) => (
             <img
                 key={index}

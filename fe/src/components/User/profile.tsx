@@ -62,19 +62,15 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   const location = useLocation();
   const [showConfirmPopUp, setShowConfirmPopUp] = useState(false);
 
-  // State quản lý hiển thị Modal đổi mật khẩu
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
-  // State quản lý địa chỉ
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
 
-  // State cho modal xóa địa chỉ
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingAddress, setDeletingAddress] = useState<Address | null>(null);
 
-  // State cho cascade selection
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
@@ -83,8 +79,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
 
-
-  // State form địa chỉ
   const [addressForm, setAddressForm] = useState({
     recipientName: "",
     phoneNumber: "",
@@ -171,18 +165,12 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
     setIsEditing(true);
   };
 
-  // Hủy chế độ chỉnh sửa
-  const handleCancelEdit = () => {
-    setShowConfirmPopUp(false);
-    setIsEditing(false);
-
-    // reset lại giá trị ban đầu
-    setForceUpdate((prev) => prev + 1);
-  };
-
   const handleCancel = () => {
     setIsEditing(false);
     setShowConfirmPopUp(false);
+
+    setEditName(fullNameRef.current);
+    setEditPhone(phoneRef.current);
   };
 
   const handleCancelPopup = () => {
@@ -190,8 +178,8 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   };
 
   const handleShowPopup = () => {
-    const name = fullNameRef.current?.trim();
-    const phone = phoneRef.current?.trim();
+    const name = editName.trim();
+    const phone = editPhone.trim();
 
     if (!name || !phone) {
       toast.warning("Vui lòng điền đầy đủ thông tin");
@@ -212,16 +200,23 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   };
 
   const handleSaveInfo = async () => {
-    setIsUpdating(true);
-    await PatchUpdateUser(idRef.current, editName, editPhone);
+    try {
+      setIsUpdating(true);
+      await PatchUpdateUser(idRef.current, editName, editPhone);
 
-    fullNameRef.current = editName;
-    phoneRef.current = editPhone;
+      toast.success("Cập nhật thành công");
 
-    setIsEditing(false);
-    setShowConfirmPopUp(false);
+      fullNameRef.current = editName;
+      phoneRef.current = editPhone;
+
+      setIsEditing(false);
+      setShowConfirmPopUp(false);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Cập nhật thất bại");
+    } finally {
+      setIsUpdating(false); 
+    }
   };
-
 
   const handleSavePassword = async () => {
     try {
@@ -262,14 +257,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
     }
   };
 
-  const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    fullNameRef.current = e.target.value;
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    phoneRef.current = e.target.value;
-  };
-
   const handleOldPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     oldpasswordRef.current = e.target.value;
   };
@@ -283,8 +270,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   ) => {
     confirmpasswordRef.current = e.target.value;
   };
-
-  // === QUẢN LÝ ĐỊA CHỈ ===
 
   const openAddressModal = (address?: Address) => {
     if (address) {
@@ -467,19 +452,16 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
     }
   };
 
-  // Mở modal xác nhận xóa
   const openDeleteModal = (address: Address) => {
     setDeletingAddress(address);
     setShowDeleteModal(true);
   };
 
-  // Đóng modal xác nhận xóa
   const closeDeleteModal = () => {
     setShowDeleteModal(false);
     setDeletingAddress(null);
   };
 
-  // Xác nhận xóa địa chỉ
   const confirmDeleteAddress = async () => {
     if (!deletingAddress) return;
 
@@ -688,7 +670,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
         <Orders selected={selected} setSelected={setSelected} />
       )}
 
-      {/* MODAL ĐỔI MẬT KHẨU */}
       {showPasswordModal && (
         <div className="modal-overlay">
           <div className="modal-content-profile">
@@ -732,7 +713,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
         </div>
       )}
 
-      {/* MODAL THÊM/SỬA ĐỊA CHỈ */}
       {showAddressModal && (
         <div className="modal-overlay">
           <div className="modal-content-address address-modal">
@@ -895,7 +875,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
         </div>
       )}
 
-      {/* MODAL XÁC NHẬN XÓA ĐỊA CHỈ */}
       {showDeleteModal && deletingAddress && (
         <div className="modal-overlay">
           <div className="modal-content-delete-address">
@@ -949,20 +928,15 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
         </div>
       )}
 
-      {/* popup xác nhận sửa name+sđt */}
       {showConfirmPopUp && (
         <div className="modal-overlay">
           <div
             className="modal-container-confirm-delete-product"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Content */}
             <div className="modal-content">
               <h2 className="modal-title">Xác nhận cập nhật</h2>
-
               <p className="modal-message">Bạn có chắc chắn muốn cập nhật?</p>
-
-              {/* Action Buttons */}
               <div className="modal-actions">
                 <button
                   onClick={handleCancelPopup}

@@ -7,6 +7,8 @@
   padding: 24px 16px;
   font-family: "Segoe UI", sans-serif;
   color: #333;
+  text-align: center;
+  padding: 50px;
 }
 
 /* =========================
@@ -20,7 +22,7 @@
 .title-cart h1 {
   font-size: 28px;
   font-weight: 700;
-  color: #FC2B76;
+  color: #fc2b76;
 }
 
 /* =========================
@@ -65,7 +67,15 @@
 ========================= */
 .item-cart {
   border-bottom: 1px solid #eee;
-  padding: 16px 0;
+  padding: 10px 5px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.item-cart:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.06);
 }
 
 .item-cart:last-child {
@@ -112,10 +122,26 @@
   margin: 2px 0;
 }
 
+.infor-item-cart-product p:nth-child(1) {
+  text-decoration: line-through;
+  color: #999;
+}
+.infor-item-cart-product p:nth-child(2) {
+  color: #fc2b76;
+  font-weight: bold;
+}
+
 .infor-item-cart-product h3 {
   margin-top: 8px;
   font-size: 15px;
   font-weight: 700;
+}
+
+.saving-process {
+  font-size: 12px;
+  color: #fc2b76;
+  margin-left: 8px;
+  font-weight: normal;
 }
 
 /* =========================
@@ -139,9 +165,9 @@
 }
 
 .action-item-cart-product button:hover {
-  background: #FC2B76;
+  background: #fc2b76;
   color: #fff;
-  border-color: #FC2B76;
+  border-color: #fc2b76;
 }
 
 .action-item-cart-product h4 {
@@ -181,7 +207,7 @@
 }
 
 .total-price h3 {
-  color: #FC2B76;
+  color: #fc2b76;
   font-size: 20px;
 }
 
@@ -191,7 +217,7 @@
 .payment button {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(135deg, #FC2B76, #ff6fa1);
+  background: linear-gradient(135deg, #fc2b76, #ff6fa1);
   border: none;
   border-radius: 12px;
   color: #fff;
@@ -245,5 +271,24 @@
   .img-item-cart-product img {
     width: 100%;
     height: 160px;
+  }
+}
+
+.loading-spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #fc2b76;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }

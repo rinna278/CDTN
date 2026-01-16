@@ -1,16 +1,10 @@
-import React, {
-  Dispatch,
-  SetStateAction,
-  useEffect,
-  useState,
-  useRef,
-  useCallback,
-} from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import "./cart.css";
 import {
   deleteItemInCart,
   getAllItemInCart,
   updateCart,
+  getProductByID,
 } from "../../services/apiService";
 import {
   Cart as CartType,
@@ -26,13 +20,10 @@ import {
   fetchCartFromServer,
   setCartInfo,
 } from "../../redux/reducer+action/cartSlice";
+import PopUpDeleteCartItem from "./popup-delete-cart_item";
+import { formatCurrency } from "../../utils/formatData";
 
-interface HeaderProps {
-  selected: string;
-  setSelected: Dispatch<SetStateAction<string>>;
-}
-
-const Cart = ({ selected, setSelected }: HeaderProps) => {
+const Cart = () => {
   const [cart, setCart] = useState<CartType | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -44,6 +35,23 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  //mở modal xác nhận xóa
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    itemId: string | null;
+    productName: string;
+    productImage: string;
+  }>({
+    isOpen: false,
+    itemId: null,
+    productName: "",
+    productImage: "",
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [checkingProducts, setCheckingProducts] = useState<Set<string>>(
+    new Set()
+  );
 
   const dispatch = useDispatch();
   const handleConfirmOrder = async (orderData: CreateOrderPayload) => {
@@ -70,12 +78,6 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(price);
-  };
 
   const getImageUrl = (imageUrl?: string): string => {
     return imageUrl || "https://via.placeholder.com/100";
@@ -106,7 +108,6 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
     fetchCart();
   }, []);
 
-  // ✅ Cleanup timers khi unmount
   useEffect(() => {
     return () => {
       Object.values(updateTimers.current).forEach(clearTimeout);
@@ -132,14 +133,11 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
     }
   };
 
-  // ✅ Function gửi request thực sự
   const sendUpdateRequest = useCallback(
     async (itemId: string, quantity: number) => {
       try {
         await updateCart(itemId, quantity);
-        // Xóa khỏi pending
         delete pendingQuantities.current[itemId];
-        // Xóa visual feedback
         setUpdatingItems((prev) => {
           const newSet = new Set(prev);
           newSet.delete(itemId);
@@ -148,8 +146,6 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
       } catch (error: any) {
         console.error("❌ Lỗi:", error);
         toast.error("Không thể cập nhật số lượng");
-
-        // Rollback: Fetch lại cart khi có lỗi
         try {
           const response = await getAllItemInCart();
           setCart(response);
@@ -160,33 +156,23 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
             return newSet;
           });
         } catch (fetchError) {
-          console.error("❌ Không thể fetch lại giỏ hàng:", fetchError);
+          console.error("Không thể fetch lại giỏ hàng:", fetchError);
         }
       }
     },
     []
   );
-
-  // ✅ Debounced update - chỉ gửi request sau 500ms không có thay đổi
   const handleQuantityChange = (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
-
     const item = cart?.items.find((i) => i.id === itemId);
     if (!item) return;
-
-    // Kiểm tra stock
     if (newQuantity > item.stock) {
       toast.error(`Chỉ còn ${item.stock} sản phẩm trong kho`);
       return;
     }
-
-    // ✅ Lưu pending quantity
     pendingQuantities.current[itemId] = newQuantity;
-
-    // ✅ Update UI ngay lập tức
     setCart((prevCart) => {
       if (!prevCart) return prevCart;
-
       const updatedItems = prevCart.items.map((i) => {
         if (i.id === itemId) {
           const discountedPrice = i.discount
@@ -202,7 +188,6 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
         }
         return i;
       });
-
       const newTotalItems = updatedItems.reduce(
         (sum, i) => sum + i.quantity,
         0
@@ -211,15 +196,12 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
         (sum, i) => sum + i.subtotal,
         0
       );
-
-      // ✅ Cập nhật Redux state ngay lập tức để header hiển thị đúng
       dispatch(
         setCartInfo({
           totalItems: newTotalItems,
           distinctItems: updatedItems.length,
         })
       );
-
       return {
         ...prevCart,
         items: updatedItems,
@@ -227,24 +209,16 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
         totalPrice: newTotalPrice,
       };
     });
-
-    // ✅ Hiển thị visual feedback (không disable button)
     setUpdatingItems((prev) => new Set(prev).add(itemId));
-
-    // ✅ Clear timer cũ nếu có
     if (updateTimers.current[itemId]) {
       clearTimeout(updateTimers.current[itemId]);
     }
-
-    // ✅ Set timer mới - chỉ gửi request sau 500ms
     updateTimers.current[itemId] = setTimeout(() => {
       const finalQuantity = pendingQuantities.current[itemId] || newQuantity;
       sendUpdateRequest(itemId, finalQuantity);
     }, 500);
   };
 
-
-  // ✅ Handler riêng cho nút tăng số lượng
   const handleIncrease = (
     itemId: string,
     currentQuantity: number,
@@ -257,7 +231,6 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
     handleQuantityChange(itemId, currentQuantity + 1);
   };
 
-  // ✅ Handler riêng cho nút giảm số lượng
   const handleDecrease = (itemId: string, currentQuantity: number) => {
     if (currentQuantity <= 1) {
       return;
@@ -265,24 +238,47 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
     handleQuantityChange(itemId, currentQuantity - 1);
   };
 
-  const handleDeleteItem = async (itemId: string) => {
+  const openDeleteModal = (item: CartItem) => {
+    setDeleteModal({
+      isOpen: true,
+      itemId: item.id,
+      productName: item.productName,
+      productImage: item.productImage || "",
+    });
+  };
+
+  const closeDeleteModal = () => {
+    if (isDeleting) return; // Không cho đóng khi đang xóa
+    setDeleteModal({
+      isOpen: false,
+      itemId: null,
+      productName: "",
+      productImage: "",
+    });
+  };
+
+  // ✅ Xác nhận xóa
+  const confirmDelete = async () => {
+    if (!deleteModal.itemId || isDeleting) return;
+
     try {
-      const response = await deleteItemInCart(itemId);
+      setIsDeleting(true);
+
+      const response = await deleteItemInCart(deleteModal.itemId);
       console.log("Sản phẩm đã xóa", response);
       dispatch(fetchCartFromServer() as any);
 
-      // ✅ Cập nhật UI ngay lập tức
       setCart((prevCart) => {
         if (!prevCart) return prevCart;
 
-        const updatedItems = prevCart.items.filter((i) => i.id !== itemId);
+        const updatedItems = prevCart.items.filter(
+          (i) => i.id !== deleteModal.itemId
+        );
 
-        // Nếu không còn item nào
         if (updatedItems.length === 0) {
           return null;
         }
 
-        // Tính lại tổng
         const newTotalItems = updatedItems.reduce(
           (sum, i) => sum + i.quantity,
           0
@@ -300,29 +296,30 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
         };
       });
 
-      // ✅ Xóa khỏi selected items nếu đang được chọn
       setSelectedItems((prev) => {
         const newSet = new Set(prev);
-        newSet.delete(itemId);
+        newSet.delete(deleteModal.itemId!);
         return newSet;
       });
 
-      // ✅ Xóa khỏi pending updates nếu có
-      if (updateTimers.current[itemId]) {
-        clearTimeout(updateTimers.current[itemId]);
-        delete updateTimers.current[itemId];
+      if (updateTimers.current[deleteModal.itemId]) {
+        clearTimeout(updateTimers.current[deleteModal.itemId]);
+        delete updateTimers.current[deleteModal.itemId];
       }
-      delete pendingQuantities.current[itemId];
+      delete pendingQuantities.current[deleteModal.itemId];
       setUpdatingItems((prev) => {
         const newSet = new Set(prev);
-        newSet.delete(itemId);
+        newSet.delete(deleteModal.itemId!);
         return newSet;
       });
 
       toast.success("Đã xóa sản phẩm thành công");
+      closeDeleteModal();
     } catch (err) {
       console.log(err);
       toast.error("Lỗi khi xóa sản phẩm");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -345,11 +342,99 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
       .reduce((sum: number, item: CartItem) => sum + item.quantity, 0);
   };
 
+  const ViewDetailProduct = async (
+    productId: string,
+    itemId: string,
+    e: React.MouseEvent
+  ) => {
+    const target = e.target as HTMLElement;
+
+    // Không làm gì nếu click vào button hoặc input
+    if (
+      target.tagName === "BUTTON" ||
+      target.tagName === "INPUT" ||
+      target.closest("button") ||
+      target.closest("input")
+    ) {
+      return;
+    }
+
+    // Đánh dấu đang kiểm tra sản phẩm này
+    setCheckingProducts((prev) => new Set(prev).add(itemId));
+
+    try {
+      // Kiểm tra sản phẩm có tồn tại không
+      await getProductByID(productId);
+
+      // Nếu tồn tại, navigate đến trang chi tiết
+      navigate(`/detail-product/${productId}`);
+    } catch (error: any) {
+      // Nếu không tồn tại (404), tự động xóa khỏi giỏ hàng
+      if (error.response?.status === 404) {
+        toast.warning(
+          "Sản phẩm này không còn tồn tại. Đang xóa khỏi giỏ hàng..."
+        );
+
+        try {
+          await deleteItemInCart(itemId);
+          dispatch(fetchCartFromServer() as any);
+
+          // Cập nhật state local
+          setCart((prevCart) => {
+            if (!prevCart) return prevCart;
+
+            const updatedItems = prevCart.items.filter((i) => i.id !== itemId);
+
+            if (updatedItems.length === 0) {
+              return null;
+            }
+
+            const newTotalItems = updatedItems.reduce(
+              (sum, i) => sum + i.quantity,
+              0
+            );
+            const newTotalPrice = updatedItems.reduce(
+              (sum, i) => sum + i.subtotal,
+              0
+            );
+
+            return {
+              ...prevCart,
+              items: updatedItems,
+              totalItems: newTotalItems,
+              totalPrice: newTotalPrice,
+            };
+          });
+
+          // Xóa khỏi danh sách đã chọn
+          setSelectedItems((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(itemId);
+            return newSet;
+          });
+
+          toast.success("Đã xóa sản phẩm không tồn tại khỏi giỏ hàng");
+        } catch (deleteError) {
+          console.error("Lỗi khi xóa:", deleteError);
+          toast.error("Không thể xóa sản phẩm");
+        }
+      } else {
+        toast.error("Không thể kiểm tra sản phẩm. Vui lòng thử lại");
+      }
+    } finally {
+      // Bỏ đánh dấu kiểm tra
+      setCheckingProducts((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(itemId);
+        return newSet;
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div
         className="cart-container"
-        style={{ textAlign: "center", padding: "50px" }}
       >
         <h2>Đang tải giỏ hàng...</h2>
       </div>
@@ -360,7 +445,6 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
     return (
       <div
         className="cart-container"
-        style={{ textAlign: "center", padding: "50px" }}
       >
         <h2>🛒 Giỏ hàng trống</h2>
         <p>Hãy thêm sản phẩm vào giỏ hàng của bạn!</p>
@@ -395,7 +479,32 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
             const isUpdating = updatingItems.has(item.id);
 
             return (
-              <div className="item-cart" key={item.id}>
+              <div
+                className="item-cart"
+                key={item.id}
+                onClick={(e) => ViewDetailProduct(item.productId, item.id, e)}
+                style={{
+                  position: "relative",
+                  ...(checkingProducts.has(item.id)
+                    ? {
+                        opacity: 0.6,
+                        pointerEvents: "none",
+                        cursor: "wait",
+                      }
+                    : {}),
+                }}
+              >
+                {checkingProducts.has(item.id) && (
+                  <div
+                    className="loading-container"
+                  >
+                    <div className="loading-spinner"></div>
+                    <p
+                    >
+                      Đang kiểm tra...
+                    </p>
+                  </div>
+                )}
                 <div className="item-cart-product">
                   <div className="img-item-cart-product">
                     <input
@@ -415,30 +524,20 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
                       {item.discount && item.discount > 0 ? (
                         <>
                           <p
-                            style={{
-                              textDecoration: "line-through",
-                              color: "#999",
-                            }}
                           >
-                            {formatPrice(item.price)}
+                            {formatCurrency(item.price)}
                           </p>
-                          <p style={{ color: "#FC2B76", fontWeight: "bold" }}>
-                            {formatPrice(discountedPrice)} (-{item.discount}%)
+                          <p>
+                            {formatCurrency(discountedPrice)} (-{item.discount}%)
                           </p>
                         </>
                       ) : (
-                        <p>{formatPrice(item.price)}</p>
+                        <p>{formatCurrency(item.price)}</p>
                       )}
                       <h3>
-                        Tổng: {formatPrice(itemTotal)}
+                        Tổng: {formatCurrency(itemTotal)}
                         {isUpdating && (
-                          <span
-                            style={{
-                              fontSize: "12px",
-                              color: "#FC2B76",
-                              marginLeft: "8px",
-                              fontWeight: "normal",
-                            }}
+                          <span className="saving-process"
                           >
                             • đang lưu...
                           </span>
@@ -479,7 +578,7 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
                       >
                         +
                       </button>
-                      <button onClick={() => handleDeleteItem(item.id)}>
+                      <button onClick={() => openDeleteModal(item)}>
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           style={{ marginRight: 0, width: 27, height: 27 }}
@@ -514,7 +613,7 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
           <hr />
           <div className="total-price">
             <p>Tổng Tiền:</p>
-            <h3>{formatPrice(calculateSelectedTotal())}</h3>
+            <h3>{formatCurrency(calculateSelectedTotal())}</h3>
           </div>
           <div className="payment">
             <button
@@ -534,6 +633,15 @@ const Cart = ({ selected, setSelected }: HeaderProps) => {
           onConfirm={handleConfirmOrder}
           totalAmount={calculateSelectedTotal()}
           selectedItemIds={Array.from(selectedItems)}
+        />
+
+        <PopUpDeleteCartItem
+          isOpen={deleteModal.isOpen}
+          onClose={closeDeleteModal}
+          onConfirm={confirmDelete}
+          productName={deleteModal.productName}
+          productImage={deleteModal.productImage}
+          loading={isDeleting}
         />
       </div>
     </div>

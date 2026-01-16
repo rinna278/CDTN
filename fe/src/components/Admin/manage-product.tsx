@@ -30,6 +30,7 @@ const ManageProduct = () => {
     total: 0,
     totalPages: 0,
   });
+  
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -115,28 +116,22 @@ const ManageProduct = () => {
         autoClose: 2000,
       });
 
+      // ✅ UPDATE UI NGAY
+      setProducts((prev) => prev.filter((p) => p.id !== productToDelete.id));
+
+      // cập nhật tổng
+      setTotalProducts((prev) => prev - 1);
+
       setIsDeleteModalOpen(false);
       setProductToDelete(null);
-      setPagination((p) => ({ ...p, page: p.page }));
     } catch (error: any) {
       console.error("Lỗi khi xóa sản phẩm:", error);
-
-      const statusCode = error.response?.status;
-      const message = error.response?.data?.message;
-
-      if (statusCode === 401) {
-        toast.error("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại");
-      } else if (statusCode === 403) {
-        toast.error("Bạn không có quyền xóa sản phẩm");
-      } else if (statusCode === 404) {
-        toast.error("Không tìm thấy sản phẩm");
-      } else {
-        toast.error(message || "Có lỗi xảy ra khi xóa sản phẩm");
-      }
+      toast.error("Có lỗi xảy ra khi xóa sản phẩm");
     } finally {
       setIsDeleting(false);
     }
   };
+
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);

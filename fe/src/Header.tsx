@@ -11,6 +11,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "./redux/store";
 import { logout } from "./redux/reducer+action/userSlice";
 import { useSearch } from "./components/context/SearchContext";
+import LogoutModal from "./components/User/logout-modal";
 
 interface HeaderProps {
   selected: string;
@@ -25,29 +26,25 @@ const Header = ({ selected, setSelected }: HeaderProps) => {
   const isAdminPage = location.pathname.startsWith("/admin");
   const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-  //query để search theo điều kiện
-  const {searchQuery, setSearchQuery, clearSearch} = useSearch();
-  //query ở page hiện tại
-  const [localQuery, setLocalQuery] = useState('');
-  //lấy số lượng item trong giỏ từ redux
-  const totalCartItems = useSelector((state: RootState) => state.cart.totalItems);
+  const { searchQuery, setSearchQuery, clearSearch } = useSearch();
+  const [localQuery, setLocalQuery] = useState("");
+  const totalCartItems = useSelector(
+    (state: RootState) => state.cart.totalItems
+  );
+  const [showLogoutModal, setShowLogoutModal] = useState(false); // State cho modal
 
-  //hàm xử lí khi ấn enter để search
   const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter'){
+    if (e.key === "Enter") {
       setSearchQuery(localQuery);
       setIsSearching(true);
     }
-  }
+  };
 
-  //hàm xử lí đóng nút search
   const handleSearchClose = () => {
     setIsSearching(false);
-    setLocalQuery('');
+    setLocalQuery("");
     clearSearch();
-  }
-
-
+  };
 
   const roleName = useSelector((state: RootState) => state.user.role);
   const isAdmin = roleName === "Administrator";
@@ -63,9 +60,7 @@ const Header = ({ selected, setSelected }: HeaderProps) => {
     setSelected(id);
 
     if (id === "log-out") {
-      dispatch(logout());
-      setSelected("home");
-      navigate("/");
+      setShowLogoutModal(true);
       return;
     }
     navigate(id === "home" ? "/" : "/" + id);
@@ -74,6 +69,19 @@ const Header = ({ selected, setSelected }: HeaderProps) => {
   const handleBrandClick = () => {
     setSelected("home");
     navigate("/");
+  };
+
+  // Xác nhận logout
+  const confirmLogout = () => {
+    dispatch(logout());
+    setSelected("home");
+    setShowLogoutModal(false);
+    navigate("/login");
+  };
+
+  // Hủy logout
+  const cancelLogout = () => {
+    setShowLogoutModal(false);
   };
 
   const searchButtonRef = useRef<HTMLButtonElement>(null);
@@ -200,7 +208,9 @@ const Header = ({ selected, setSelected }: HeaderProps) => {
                 onKeyDown={handleSearchSubmit}
               />
               <button className="btn-close-search" onClick={handleSearchClose}>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M504.6 148.5C515.9 134.9 514.1 114.7 500.5 103.4C486.9 92.1 466.7 93.9 455.4 107.5L320 270L184.6 107.5C173.3 93.9 153.1 92.1 139.5 103.4C125.9 114.7 124.1 134.9 135.4 148.5L278.3 320L135.4 491.5C124.1 505.1 125.9 525.3 139.5 536.6C153.1 547.9 173.3 546.1 184.6 532.5L320 370L455.4 532.5C466.7 546.1 486.9 547.9 500.5 536.6C514.1 525.3 515.9 505.1 504.6 491.5L361.7 320L504.6 148.5z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+                  <path d="M504.6 148.5C515.9 134.9 514.1 114.7 500.5 103.4C486.9 92.1 466.7 93.9 455.4 107.5L320 270L184.6 107.5C173.3 93.9 153.1 92.1 139.5 103.4C125.9 114.7 124.1 134.9 135.4 148.5L278.3 320L135.4 491.5C124.1 505.1 125.9 525.3 139.5 536.6C153.1 547.9 173.3 546.1 184.6 532.5L320 370L455.4 532.5C466.7 546.1 486.9 547.9 500.5 536.6C514.1 525.3 515.9 505.1 504.6 491.5L361.7 320L504.6 148.5z" />
+                </svg>
               </button>
             </div>
           ) : (
@@ -345,6 +355,12 @@ const Header = ({ selected, setSelected }: HeaderProps) => {
           </div>
         )}
       </div>
+
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onConfirm={confirmLogout}
+        onCancel={cancelLogout}
+      />
     </div>
   );
 };

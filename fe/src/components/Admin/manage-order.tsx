@@ -10,15 +10,18 @@ export const mapStatus = (status: OrderStatus): string => {
   return ORDER_STATUS_LABEL[status] ?? status;
 };
 
-// interface OrderExtended extends ManageOrderItem {
-//   rawStatus: string;
-//   item: OrderItem[];
-//   userId: string;
-// }
+interface OrderExtended extends ManageOrderItem {
+  rawStatus: string;
+  items: OrderItem[];
+  userId: string;
+}
 
 const ManageOrder = () => {
   const [orders, setOrders] = useState<OrderExtended[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<OrderExtended[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+
   const [stats, setStats] = useState({
     pending: 0,
     confirmed: 0,
@@ -27,7 +30,7 @@ const ManageOrder = () => {
     delivered: 0,
     cancelled: 0,
     refunded: 0,
-    refund_requested: 0
+    refund_requested: 0,
   });
 
   const [pagination, setPagination] = useState({
@@ -37,20 +40,17 @@ const ManageOrder = () => {
     totalPages: 0,
   });
 
-  interface OrderExtended extends ManageOrderItem {
-    rawStatus: string;
-    items: OrderItem[];
-    userId: string;
-  }
-
   const [hoveredOrder, setHoveredOrder] = useState<OrderExtended | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
   const fetchDataOrders = async () => {
     try {
       setLoading(true);
-      const res = await getAllOrders({ page: pagination.page, limit: pagination.limit });
-      console.log("API lấy đơn hàng",res);
+      const res = await getAllOrders({
+        page: pagination.page,
+        limit: pagination.limit,
+      });
+      console.log("API lấy đơn hàng", res);
       if (res?.data) {
         const formatted = res.data.map((order: any) => ({
           id: String(order.id),
@@ -61,9 +61,10 @@ const ManageOrder = () => {
           rawStatus: order.orderStatus,
           date: new Date(order.createdAt).toLocaleDateString("vi-VN"),
           items: order.items || [],
-          userId: order.userId
+          userId: order.userId,
         }));
         setOrders(formatted);
+        setFilteredOrders(formatted);
         setPagination((prev) => ({
           ...prev,
           total: res.total,
@@ -79,7 +80,7 @@ const ManageOrder = () => {
           delivered: 0,
           cancelled: 0,
           refunded: 0,
-          refund_requested: 0
+          refund_requested: 0,
         };
         res.data.forEach((o: any) => {
           if (s.hasOwnProperty(o.orderStatus)) (s as any)[o.orderStatus]++;
@@ -97,6 +98,20 @@ const ManageOrder = () => {
     fetchDataOrders();
   }, [pagination.page]);
 
+  // Hàm lọc đơn hàng theo trạng thái
+  const handleStatusFilter = (status: string) => {
+    if (selectedStatus === status) {
+      // Nếu click vào trạng thái đã chọn -> bỏ lọc
+      setSelectedStatus(null);
+      setFilteredOrders(orders);
+    } else {
+      // Lọc theo trạng thái mới
+      setSelectedStatus(status);
+      const filtered = orders.filter((order) => order.rawStatus === status);
+      setFilteredOrders(filtered);
+    }
+  };
+
   if (loading)
     return <div style={{ padding: "20px" }}>Đang tải dữ liệu...</div>;
 
@@ -111,35 +126,75 @@ const ManageOrder = () => {
 
       <div className="content-middle-order">
         <div className="item-order">
-          <div className="status-order-1">
+          <div
+            className={`status-order-1 ${
+              selectedStatus === "pending" ? "active" : ""
+            }`}
+            onClick={() => handleStatusFilter("pending")}
+          >
             <h4>Chờ xác nhận</h4>
             <p>{stats.pending}</p>
           </div>
-          <div className="status-order-2">
+          <div
+            className={`status-order-2 ${
+              selectedStatus === "confirmed" ? "active" : ""
+            }`}
+            onClick={() => handleStatusFilter("confirmed")}
+          >
             <h4>Đã xác nhận</h4>
             <p>{stats.confirmed}</p>
           </div>
-          <div className="status-order-3">
+          <div
+            className={`status-order-3 ${
+              selectedStatus === "processing" ? "active" : ""
+            }`}
+            onClick={() => handleStatusFilter("processing")}
+          >
             <h4>Đang xử lý</h4>
             <p>{stats.processing}</p>
           </div>
-          <div className="status-order-4">
+          <div
+            className={`status-order-4 ${
+              selectedStatus === "shipping" ? "active" : ""
+            }`}
+            onClick={() => handleStatusFilter("shipping")}
+          >
             <h4>Đang giao</h4>
             <p>{stats.shipping}</p>
           </div>
-          <div className="status-order-5">
+          <div
+            className={`status-order-5 ${
+              selectedStatus === "delivered" ? "active" : ""
+            }`}
+            onClick={() => handleStatusFilter("delivered")}
+          >
             <h4>Đã giao</h4>
             <p>{stats.delivered}</p>
           </div>
-          <div className="status-order-6">
+          <div
+            className={`status-order-6 ${
+              selectedStatus === "cancelled" ? "active" : ""
+            }`}
+            onClick={() => handleStatusFilter("cancelled")}
+          >
             <h4>Đã hủy</h4>
             <p>{stats.cancelled}</p>
           </div>
-          <div className="status-order-7">
+          <div
+            className={`status-order-7 ${
+              selectedStatus === "refunded" ? "active" : ""
+            }`}
+            onClick={() => handleStatusFilter("refunded")}
+          >
             <h4>Hoàn tiền</h4>
             <p>{stats.refunded}</p>
           </div>
-          <div className="status-order-8">
+          <div
+            className={`status-order-8 ${
+              selectedStatus === "refund_requested" ? "active" : ""
+            }`}
+            onClick={() => handleStatusFilter("refund_requested")}
+          >
             <h4>Yêu cầu hoàn tiền</h4>
             <p>{stats.refund_requested}</p>
           </div>
@@ -159,7 +214,22 @@ const ManageOrder = () => {
                 </button>
               </div>
             </div>
-            <h5>Tổng cộng có {orders.length} đơn hàng gần đây</h5>
+            <h5>
+              {selectedStatus
+                ? `Hiển thị ${filteredOrders.length} đơn hàng`
+                : `Tổng cộng có ${orders.length} đơn hàng gần đây`}
+            </h5>
+            {selectedStatus && (
+              <button
+                className="clear-filter-btn"
+                onClick={() => {
+                  setSelectedStatus(null);
+                  setFilteredOrders(orders);
+                }}
+              >
+                Xóa bộ lọc
+              </button>
+            )}
           </div>
           <div className="order-data">
             <table>
@@ -174,7 +244,7 @@ const ManageOrder = () => {
                 </tr>
               </thead>
               <tbody>
-                {orders.map((order, index) => (
+                {filteredOrders.map((order, index) => (
                   <tr key={index}>
                     <td>{order.maDon}</td>
                     <td className="name_id">

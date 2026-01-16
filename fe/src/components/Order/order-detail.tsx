@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getOrderById, cancelOrder, postPayAgain } from "../../services/apiService";
+import { getOrderById, cancelOrder, postPayAgain, getVariantByColor, updateVariantStock } from "../../services/apiService";
 import { toast } from "react-toastify";
 import "./order-detail.css";
 
@@ -198,10 +198,9 @@ const OrderDetail = () => {
       const response = await postPayAgain(order.id);
       console.log("Dữ liệu trả về:", response);
 
-      // Ví dụ: redirect sang cổng thanh toán
-      // if (response?.paymentUrl) {
-      //   window.location.href = response.paymentUrl;
-      // }
+      if (response?.data?.paymentUrl) {
+        window.location.href = response?.data?.paymentUrl;
+      }
     } catch (err) {
       console.error(err);
       toast.error("Không thể thanh toán lại");
@@ -238,7 +237,49 @@ const OrderDetail = () => {
     try {
       setLoading(true);
       await cancelOrder(order.id, { reason: finalReason });
-      toast.success("Hủy đơn hàng thành công");
+
+      //lặp từng item trong đơn hàng lấy productId
+      const restoreResults = [];
+      for (const item of order.items){
+        try{
+          const variantResponse = await getVariantByColor(item.productId, item.color);
+          const currentStock = variantResponse?.data?.stock | 0;
+          const newStock = currentStock + item.quantity;
+          console.log('số lượng product sau khi hủy đơn: ', newStock);
+          await updateVariantStock(item.productId, item.color, newStock);
+
+          //lấy kết quả để hiển thị giao diện
+          restoreResults.push({
+            success: true,
+            product: item.productName,
+            color: item.color,
+            restored: item.quantity
+          }); 
+        }
+        catch(error: any){
+          toast.error(`Lỗi khi hoàn trả stock cho ${item.productName}`)
+           restoreResults.push({
+             success: false,
+             product: item.productName,
+             color: item.color,
+             error: error.message,
+           });
+        }
+        //kiểm tra kết quả
+        const failedRestores = restoreResults.filter(r => !r.success);
+        const successRestores = restoreResults.filter(r => r.success);
+        
+        //hiển thị thông báo theo kết quả
+        if (failedRestores.length > 0){
+          toast.warning(`Đơn hàng đã hủy. ${successRestores.length}/ ${restoreResults.length} sản phẩm được hoàn trả.`)
+        }
+        else{
+          toast.success(`Hủy đơn hàng thành công! Đã hoàn ${successRestores.length} sản phẩm vào kho`);
+        }
+      }
+      setShowCancelModal(false);
+      setSelectedReason("");
+      setCancelReason("");
       navigate("/profile?tab=orders");
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Không thể hủy đơn hàng");
@@ -360,7 +401,11 @@ const OrderDetail = () => {
             </div>
           </div>
 
-          <button onClick={handlePayAgain}>thanh toán lại</button>
+          <div className="payment-action-again">
+            <button className="pay-again-btn" onClick={handlePayAgain}>
+              💳 Thanh toán lại
+            </button>
+          </div>
           {btnCancel && (
             <div className="order-actions">
               <button
