@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import "./register.css";
-import { Dispatch, SetStateAction, useState, useRef, useEffect } from "react";
+import { Dispatch, SetStateAction, useState, useEffect } from "react";
 import { postSendOTP, postRegister } from "../../services/apiService";
 import { toast } from "react-toastify";
 
@@ -17,14 +17,16 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
   const [otpExpireTime, setOtpExpireTime] = useState<number | null>(null);
   const [remainingTime, setRemainingTime] = useState<number>(0);
 
-  const OTP_EXPIRE_DURATION = 5 * 60 * 1000; // 5 phút
+  const OTP_EXPIRE_DURATION = 5 * 60 * 1000;
 
-  const userNameRef = useRef<HTMLInputElement>(null);
-  const userEmailRef = useRef<HTMLInputElement>(null);
-  const userPasswordRef = useRef<HTMLInputElement>(null);
-  const otpRef = useRef<HTMLInputElement>(null);
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [userPassword, setUserPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  
 
-  // Timer chạy ngay cả khi modal đóng
+  const trimOnly = (value: string) => value.trim();
+  const removeSpace = (value: string) => value.replace(/\s/g, "");
   useEffect(() => {
     if (!otpExpireTime) return;
 
@@ -50,12 +52,17 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
   const handleSignUpClick = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const userName = userNameRef.current?.value || "";
-    const userEmail = userEmailRef.current?.value || "";
-    const userPassword = userPasswordRef.current?.value || "";
-
     if (!userName || !userEmail || !userPassword) {
       toast.info("Vui lòng nhập đầy đủ thông tin!");
+      return;
+    }
+
+    const userNameRegex = /^(?!\s)(?!.*\s$)(?=(?:.*.){2,})[^~`!@#$%^&*=:;"']+$/;
+
+    if (!userNameRegex.test(userName)) {
+      toast.error(
+        "Tên người dùng có ít nhất 2 kí tự và không chứa kí tự đặc biệt"
+      );
       return;
     }
 
@@ -70,13 +77,7 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
       return;
     }
 
-    // ❗ Không reset OTP khi mở modal
     setShowOtpModal(true);
-  };
-
-  const checkOtpValidity = async (): Promise<boolean> => {
-    if (!otpExpireTime) return false;
-    return Date.now() < otpExpireTime;
   };
 
   const handleSendOtp = async () => {
@@ -87,8 +88,6 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
     }
 
     try {
-      const userEmail = userEmailRef.current?.value || "";
-
       if (!userEmail) {
         toast.error("Vui lòng nhập email!");
         return;
@@ -110,18 +109,15 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
       }
     } catch (err: any) {
       const status = err.response?.status;
-      if (status === 400){
-        toast.error('Email đã tồn tại, thử email khác');
-      }
-      else{
+      if (status === 400) {
+        toast.error("Email đã tồn tại, thử email khác");
+      } else {
         toast.error("Gửi OTP thất bại!");
       }
     }
   };
 
   const handleSubmitOtp = async () => {
-    const otp = otpRef.current?.value || "";
-
     if (!otp) {
       toast.info("Vui lòng nhập OTP!");
       return;
@@ -132,20 +128,14 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
       return;
     }
 
-    const isValid = await checkOtpValidity();
-
-    if (!isValid) {
-      toast.error("OTP đã hết hạn! Vui lòng gửi lại OTP.");
-      if (otpRef.current) otpRef.current.value = '';
+    if (!otpExpireTime || Date.now() >= otpExpireTime) {
+      toast.error("OTP đã hết hạn! Vui lòng gửi lại.");
+      setOtp("");
       setIsOtpValid(false);
       return;
     }
 
     try {
-      const userName = userNameRef.current?.value || "";
-      const userEmail = userEmailRef.current?.value || "";
-      const userPassword = userPasswordRef.current?.value || "";
-
       const response = await postRegister(
         userEmail,
         userPassword,
@@ -157,12 +147,10 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
         toast.success(response.data.message || "Đăng ký thành công!");
       else toast.success("Đăng ký thành công!");
 
-      if (userNameRef.current) userNameRef.current.value = "";
-      if (userEmailRef.current) userEmailRef.current.value = "";
-      if (userPasswordRef.current) userPasswordRef.current.value = "";
-      if (otpRef.current) otpRef.current.value = "";
-
-      // reset toàn bộ OTP sau khi đăng ký thành công
+      setUserName("");
+      setUserEmail("");
+      setUserPassword("");
+      setOtp("");
       setShowOtpModal(false);
       setIsOtpSent(false);
       setIsOtpValid(false);
@@ -173,7 +161,7 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
       navigate("/login");
     } catch (err: any) {
       toast.error("OTP bị sai!");
-      if (otpRef.current) otpRef.current.value = "";
+      setOtp("");
     }
   };
 
@@ -192,17 +180,33 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
           <form className="form" method="POST" onSubmit={handleSignUpClick}>
             <div className="input-group">
               <label htmlFor="username">Username</label>
-              <input type="text" id="username" ref={userNameRef} />
+              <input
+                type="text"
+                id="username"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                onBlur={() => setUserName(trimOnly(userName))}
+              />
             </div>
 
             <div className="input-group">
               <label htmlFor="email">Email</label>
-              <input type="email" id="email" ref={userEmailRef} />
+              <input
+                type="email"
+                id="email"
+                value={userEmail}
+                onChange={(e) => setUserEmail(removeSpace(e.target.value))}
+              />
             </div>
 
             <div className="input-group">
               <label htmlFor="password">Password</label>
-              <input type="password" id="password" ref={userPasswordRef} />
+              <input
+                type="password"
+                id="password"
+                value={userPassword}
+                onChange={(e) => setUserPassword(removeSpace(e.target.value))}
+              />
             </div>
 
             <button className="sign">Sign up</button>
@@ -244,9 +248,9 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
                 type="text"
                 className="otp-input"
                 placeholder="Enter OTP"
-                ref={otpRef}
+                value={otp}
+                onChange={(e) => setOtp(removeSpace(e.target.value))}
               />
-
               <button className="otp-btn" onClick={handleSendOtp}>
                 {isOtpSent && isOtpValid && remainingTime > 0
                   ? "OTP đã gửi ✓"

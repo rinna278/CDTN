@@ -286,7 +286,15 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+   const nameProductRegex =
+     /^(?!\s)(?!.*\s$)(?=(?:.*.){5,})[^~`!@#$%^&*=:;"']+$/;
+
+
+
     if (!formData.name.trim()) newErrors.name = "Vui lòng nhập tên sản phẩm";
+    if (!nameProductRegex.test(formData.name)){
+      newErrors.name = "Tên sản phẩm không hợp lệ"
+    }
     if (!formData.price || Number(formData.price) <= 0)
       newErrors.price = "Giá không hợp lệ";
     if (!formData.category) newErrors.category = "Vui lòng chọn danh mục";

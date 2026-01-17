@@ -1,8 +1,16 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getOrderById, cancelOrder, postPayAgain, getVariantByColor, updateVariantStock } from "../../services/apiService";
+import {
+  getOrderById,
+  cancelOrder,
+  postPayAgain,
+  getVariantByColor,
+  updateVariantStock,
+  patchUserRequestRefund
+} from "../../services/apiService";
 import { toast } from "react-toastify";
 import "./order-detail.css";
+import { printInvoice } from "../../utils/invoice-template";
 
 // Icons SVG
 const CircleIcon = () => (
@@ -160,6 +168,9 @@ const OrderDetail = () => {
   const [cancelReason, setCancelReason] = useState("");
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [selectedReason, setSelectedReason] = useState("");
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundReason, setRefundReason] = useState("");
+  const [refundDescription, setRefundDescription] = useState("");
 
   const cancelReasons = [
     "Đặt nhầm sản phẩm",
@@ -169,8 +180,93 @@ const OrderDetail = () => {
     "Lý do khác",
   ];
 
+  const canPrintInvoice = () => {
+    if (order.orderStatus !== "delivered") return false;
+    if (order.paymentStatus !== "paid") return false;
+
+    // Kiểm tra đã quá 2 ngày (48 giờ) kể từ delivered
+    if (!order.deliveredAt) return false;
+
+    const now = new Date();
+    const deliveredTime = new Date(order.deliveredAt);
+    const hoursSinceDelivered =
+      (now.getTime() - deliveredTime.getTime()) / (1000 * 60 * 60);
+
+    return hoursSinceDelivered >= 48; // 2 ngày = 48 giờ
+  };
+
+  // ✅ Hàm in hóa đơn - GỌN GÀN HƠN
+  const handlePrintInvoice = () => {
+    try {
+      printInvoice(order);
+    } catch (error) {
+      toast.error("Không thể mở cửa sổ in. Vui lòng kiểm tra popup blocker.");
+    }
+  };
+
   const MIN_REASON_LENGTH = 5;
   const MAX_REASON_LENGTH = 200;
+
+  const shouldShowPayAgainButton = () => {
+    if (order.orderStatus !== "pending") return false;
+    if (order.paymentMethod === "cod") return false;
+
+    if (order.expirationTime?.isExpired) return false;
+
+    return true;
+  };
+
+  const canRequestRefund = () => {
+    if (order.orderStatus !== "delivered") return false;
+    if (order.paymentStatus !== "paid") return false;
+    if (order.refundRequestedAt) return false; // Đã yêu cầu rồi
+
+    // Kiểm tra còn trong thời gian 72h
+    if (order.refundWindowRemaining && order.refundWindowRemaining > 0) {
+      return true;
+    }
+
+    return false;
+  };
+
+  const handleRequestRefund = async () => {
+    if (!refundReason.trim()) {
+      toast.warning("Vui lòng nhập lý do hoàn tiền");
+      return;
+    }
+
+    if (refundReason.trim().length < 10) {
+      toast.warning("Lý do hoàn tiền phải có ít nhất 10 ký tự");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // ✅ Gọi hàm từ apiService
+      await patchUserRequestRefund(order.id, {
+        reason: refundReason.trim(),
+        description: refundDescription.trim() || undefined,
+      });
+
+      toast.success(
+        "Yêu cầu hoàn tiền đã được gửi. Admin sẽ xem xét trong 24-48h."
+      );
+      setShowRefundModal(false);
+      setRefundReason("");
+      setRefundDescription("");
+
+      // Reload order
+      const updatedOrder = await getOrderById(order.id);
+      setOrder(updatedOrder.data ?? updatedOrder);
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.message || "Không thể gửi yêu cầu hoàn tiền"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!orderId) return;
@@ -192,7 +288,7 @@ const OrderDetail = () => {
 
     fetchOrder();
   }, [orderId, navigate]);
-  
+
   const handlePayAgain = async () => {
     try {
       const response = await postPayAgain(order.id);
@@ -206,7 +302,6 @@ const OrderDetail = () => {
       toast.error("Không thể thanh toán lại");
     }
   };
-
 
   const handleCancelOrder = async () => {
     const finalReason =
@@ -240,12 +335,15 @@ const OrderDetail = () => {
 
       //lặp từng item trong đơn hàng lấy productId
       const restoreResults = [];
-      for (const item of order.items){
-        try{
-          const variantResponse = await getVariantByColor(item.productId, item.color);
+      for (const item of order.items) {
+        try {
+          const variantResponse = await getVariantByColor(
+            item.productId,
+            item.color
+          );
           const currentStock = variantResponse?.data?.stock | 0;
           const newStock = currentStock + item.quantity;
-          console.log('số lượng product sau khi hủy đơn: ', newStock);
+          console.log("số lượng product sau khi hủy đơn: ", newStock);
           await updateVariantStock(item.productId, item.color, newStock);
 
           //lấy kết quả để hiển thị giao diện
@@ -253,28 +351,30 @@ const OrderDetail = () => {
             success: true,
             product: item.productName,
             color: item.color,
-            restored: item.quantity
-          }); 
-        }
-        catch(error: any){
-          toast.error(`Lỗi khi hoàn trả stock cho ${item.productName}`)
-           restoreResults.push({
-             success: false,
-             product: item.productName,
-             color: item.color,
-             error: error.message,
-           });
+            restored: item.quantity,
+          });
+        } catch (error: any) {
+          toast.error(`Lỗi khi hoàn trả stock cho ${item.productName}`);
+          restoreResults.push({
+            success: false,
+            product: item.productName,
+            color: item.color,
+            error: error.message,
+          });
         }
         //kiểm tra kết quả
-        const failedRestores = restoreResults.filter(r => !r.success);
-        const successRestores = restoreResults.filter(r => r.success);
-        
+        const failedRestores = restoreResults.filter((r) => !r.success);
+        const successRestores = restoreResults.filter((r) => r.success);
+
         //hiển thị thông báo theo kết quả
-        if (failedRestores.length > 0){
-          toast.warning(`Đơn hàng đã hủy. ${successRestores.length}/ ${restoreResults.length} sản phẩm được hoàn trả.`)
-        }
-        else{
-          toast.success(`Hủy đơn hàng thành công! Đã hoàn ${successRestores.length} sản phẩm vào kho`);
+        if (failedRestores.length > 0) {
+          toast.warning(
+            `Đơn hàng đã hủy. ${successRestores.length}/ ${restoreResults.length} sản phẩm được hoàn trả.`
+          );
+        } else {
+          toast.success(
+            `Hủy đơn hàng thành công! Đã hoàn ${successRestores.length} sản phẩm vào kho`
+          );
         }
       }
       setShowCancelModal(false);
@@ -401,11 +501,46 @@ const OrderDetail = () => {
             </div>
           </div>
 
-          <div className="payment-action-again">
-            <button className="pay-again-btn" onClick={handlePayAgain}>
-              💳 Thanh toán lại
-            </button>
-          </div>
+          {canRequestRefund() && (
+            <div className="refund-action">
+              <button
+                className="refund-btn"
+                onClick={() => setShowRefundModal(true)}
+              >
+                🔄 Yêu cầu hoàn tiền
+                {order.refundWindowRemaining && (
+                  <span style={{ fontSize: "12px", display: "block" }}>
+                    (Còn {Math.floor(order.refundWindowRemaining / 3600)} giờ)
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
+
+          {canPrintInvoice() && (
+            <div className="invoice-action">
+              <button
+                className="print-invoice-btn"
+                onClick={handlePrintInvoice}
+              >
+                🖨️ In hóa đơn
+              </button>
+            </div>
+          )}
+
+          {shouldShowPayAgainButton() && (
+            <div className="payment-action-again">
+              <button className="pay-again-btn" onClick={handlePayAgain}>
+                💳 Thanh toán lại
+                {order.expirationTime && !order.expirationTime.isExpired && (
+                  <span style={{ fontSize: "12px", display: "block" }}>
+                    (Còn {Math.floor(order.expirationTime.remainingMinutes)}{" "}
+                    phút)
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
           {btnCancel && (
             <div className="order-actions">
               <button
@@ -489,6 +624,84 @@ const OrderDetail = () => {
                 }}
               >
                 Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showRefundModal && (
+        <div className="cancel-overlay-order">
+          <div className="cancel-modal-order">
+            <h3>Yêu cầu hoàn tiền</h3>
+
+            <div className="refund-info">
+              <p>
+                <strong>Lưu ý:</strong>
+              </p>
+              <ul>
+                <li>
+                  Bạn chỉ có thể yêu cầu hoàn tiền trong vòng 72 giờ sau khi
+                  nhận hàng
+                </li>
+                <li>Admin sẽ xem xét yêu cầu trong 24-48 giờ</li>
+                <li>
+                  Nếu được chấp nhận, bạn cần gửi hàng trả lại qua bưu điện
+                </li>
+              </ul>
+            </div>
+
+            <div className="modal-input-group">
+              <label>
+                Lý do hoàn tiền <span style={{ color: "red" }}>*</span>
+              </label>
+              <textarea
+                placeholder="Nhập lý do hoàn tiền (tối thiểu 10 ký tự)"
+                value={refundReason}
+                maxLength={500}
+                rows={4}
+                onChange={(e) => setRefundReason(e.target.value)}
+                disabled={loading}
+              />
+              <div style={{ textAlign: "right", fontSize: 12, color: "#888" }}>
+                {refundReason.trim().length}/500
+              </div>
+            </div>
+
+            <div className="modal-input-group">
+              <label>Mô tả chi tiết (tùy chọn)</label>
+              <textarea
+                placeholder="Mô tả thêm về vấn đề (nếu có)"
+                value={refundDescription}
+                maxLength={1000}
+                rows={3}
+                onChange={(e) => setRefundDescription(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+
+            <div className="modal-actions-order">
+              <button
+                className="modal-confirm-order"
+                disabled={
+                  loading ||
+                  !refundReason.trim() ||
+                  refundReason.trim().length < 10
+                }
+                onClick={handleRequestRefund}
+              >
+                {loading ? "Đang gửi..." : "Gửi yêu cầu"}
+              </button>
+
+              <button
+                className="modal-cancel-order"
+                disabled={loading}
+                onClick={() => {
+                  setShowRefundModal(false);
+                  setRefundReason("");
+                  setRefundDescription("");
+                }}
+              >
+                Hủy
               </button>
             </div>
           </div>

@@ -57,6 +57,56 @@ const CheckoutModal = ({
     city: "",
     isDefault: false,
   });
+  const [addressErrors, setAddressErrors] = useState<{
+    recipientName?: string;
+    phoneNumber?: string;
+  }>({});
+
+  const resetAddressForm = () => {
+    setAddressForm({
+      recipientName: "",
+      phoneNumber: "",
+      street: "",
+      ward: "",
+      district: "",
+      city: "",
+      isDefault: false,
+    });
+    setAddressErrors({});
+    setSelectedProv(null);
+    setSelectedDist(null);
+    setDistricts([]);
+    setWards([]);
+  };
+
+
+  const validateAddressForm = () => {
+    const errors: any = {};
+
+    const name = addressForm.recipientName.trim();
+    const phone = addressForm.phoneNumber.trim();
+    const forbiddenCharsRegex = /[~`!@#$%^&*=:;"']/;
+    const recipientNameRegex = /^(?!\s)(?!.*\s$).{2,}$/;
+
+    if (!name) {
+      errors.recipientName = "Vui lòng nhập tên người nhận";
+    } else if (!recipientNameRegex.test(name)) {
+      errors.recipientName =
+        "Tên phải tối thiểu 2 ký tự, không có khoảng trắng ở đầu/cuối";
+    } else if (forbiddenCharsRegex.test(name)) {
+      errors.recipientName = "Tên không được chứa ký tự đặc biệt";
+    }
+
+    if (!phone) {
+      errors.phoneNumber = "Vui lòng nhập số điện thoại";
+    } else if (!/^\d{10,}$/.test(phone)) {
+      errors.phoneNumber =
+        "Số điện thoại phải tối thiểu 10 chữ số và chỉ gồm số";
+    }
+
+    setAddressErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const fetchAddresses = async () => {
     setIsLoading(true);
@@ -108,13 +158,23 @@ const CheckoutModal = ({
   };
 
   const handleSaveNewAddress = async () => {
+    if (!validateAddressForm()) {
+      toast.error("Vui lòng kiểm tra lại thông tin");
+      return;
+    }
+
     try {
-      await createAddress(addressForm);
+      await createAddress({
+        ...addressForm,
+        recipientName: addressForm.recipientName.trim(),
+        phoneNumber: addressForm.phoneNumber.trim(),
+      });
       toast.success("Thêm địa chỉ thành công");
+      resetAddressForm();
       setShowAddAddress(false);
       fetchAddresses();
     } catch (err) {
-      toast.error("Vui lòng nhập đầy đủ thông tin");
+      toast.error("Lỗi khi lưu địa chỉ");
     }
   };
 
@@ -130,22 +190,51 @@ const CheckoutModal = ({
               <h3>Địa chỉ giao hàng mới</h3>
               <input
                 placeholder="Tên người nhận"
-                onChange={(e) =>
+                value={addressForm.recipientName}
+                onChange={(e) => {
+                  let value = e.target.value;
+                  if (value.startsWith(" ")) return;
                   setAddressForm({
                     ...addressForm,
-                    recipientName: e.target.value,
-                  })
+                    recipientName: value,
+                  });
+
+                  if (addressErrors.recipientName) {
+                    setAddressErrors((prev) => ({
+                      ...prev,
+                      recipientName: "",
+                    }));
+                  }
+                }}
+                onBlur={() =>
+                  setAddressForm((prev) => ({
+                    ...prev,
+                    recipientName: prev.recipientName.trim(), 
+                  }))
                 }
               />
+              {addressErrors.recipientName && (
+                <span className="error-text">
+                  {addressErrors.recipientName}
+                </span>
+              )}
               <input
                 placeholder="Số điện thoại"
-                onChange={(e) =>
+                value={addressForm.phoneNumber}
+                onChange={(e) => {
+                  const onlyNumber = e.target.value.replace(/\D/g, "");
                   setAddressForm({
                     ...addressForm,
-                    phoneNumber: e.target.value,
-                  })
-                }
+                    phoneNumber: onlyNumber,
+                  });
+                  if (addressErrors.phoneNumber) {
+                    setAddressErrors((prev) => ({ ...prev, phoneNumber: "" }));
+                  }
+                }}
               />
+              {addressErrors.phoneNumber && (
+                <span className="error-text">{addressErrors.phoneNumber}</span>
+              )}
               <select onChange={handleProvinceChange}>
                 <option value="">Chọn Tỉnh/Thành</option>
                 {provinces.map((p) => (
@@ -187,7 +276,7 @@ const CheckoutModal = ({
                 }
               />
               <div className="sub-modal-actions">
-                <button onClick={() => setShowAddAddress(false)}>Hủy</button>
+                <button onClick={() => {setShowAddAddress(false); resetAddressForm();}}>Hủy</button>
                 <button className="btn-save" onClick={handleSaveNewAddress}>
                   Lưu địa chỉ
                 </button>

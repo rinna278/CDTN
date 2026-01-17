@@ -401,6 +401,17 @@ const postPayAgain = async(orderId: string) => {
   return response;
 }
 
+const patchUserRequestRefund = async(
+  orderId: string, 
+  payload: { reason: string; description?: string }
+) => {
+  const response = await instance.patch(
+    `api/v1/orders/${orderId}/request-refund`, 
+    payload
+  );
+  return response.data;
+};
+
 export {
   postLogin,
   postSendOTP,
@@ -447,5 +458,6 @@ export {
   updateOrderStatus,
   updateShipping,
   getvnpayCallback, 
-  postPayAgain
+  postPayAgain,
+  patchUserRequestRefund
 };

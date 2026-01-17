@@ -21,7 +21,6 @@ import {
   setCartInfo,
 } from "../../redux/reducer+action/cartSlice";
 import PopUpDeleteCartItem from "./popup-delete-cart_item";
-import { formatCurrency } from "../../utils/formatData";
 
 const Cart = () => {
   const [cart, setCart] = useState<CartType | null>(null);
@@ -78,6 +77,12 @@ const Cart = () => {
     }
   };
 
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(price);
+  };
 
   const getImageUrl = (imageUrl?: string): string => {
     return imageUrl || "https://via.placeholder.com/100";
@@ -435,6 +440,7 @@ const Cart = () => {
     return (
       <div
         className="cart-container"
+        style={{ textAlign: "center", padding: "50px" }}
       >
         <h2>Đang tải giỏ hàng...</h2>
       </div>
@@ -445,6 +451,7 @@ const Cart = () => {
     return (
       <div
         className="cart-container"
+        style={{ textAlign: "center", padding: "50px" }}
       >
         <h2>🛒 Giỏ hàng trống</h2>
         <p>Hãy thêm sản phẩm vào giỏ hàng của bạn!</p>
@@ -524,20 +531,30 @@ const Cart = () => {
                       {item.discount && item.discount > 0 ? (
                         <>
                           <p
+                            style={{
+                              textDecoration: "line-through",
+                              color: "#999",
+                            }}
                           >
-                            {formatCurrency(item.price)}
+                            {formatPrice(item.price)}
                           </p>
-                          <p>
-                            {formatCurrency(discountedPrice)} (-{item.discount}%)
+                          <p style={{ color: "#FC2B76", fontWeight: "bold" }}>
+                            {formatPrice(discountedPrice)} (-{item.discount}%)
                           </p>
                         </>
                       ) : (
-                        <p>{formatCurrency(item.price)}</p>
+                        <p>{formatPrice(item.price)}</p>
                       )}
                       <h3>
-                        Tổng: {formatCurrency(itemTotal)}
+                        Tổng: {formatPrice(itemTotal)}
                         {isUpdating && (
-                          <span className="saving-process"
+                          <span
+                            style={{
+                              fontSize: "12px",
+                              color: "#FC2B76",
+                              marginLeft: "8px",
+                              fontWeight: "normal",
+                            }}
                           >
                             • đang lưu...
                           </span>
@@ -613,7 +630,7 @@ const Cart = () => {
           <hr />
           <div className="total-price">
             <p>Tổng Tiền:</p>
-            <h3>{formatCurrency(calculateSelectedTotal())}</h3>
+            <h3>{formatPrice(calculateSelectedTotal())}</h3>
           </div>
           <div className="payment">
             <button

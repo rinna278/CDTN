@@ -14,7 +14,6 @@ import ImageCropModal from "./image-crop-modal";
 import { useCategories } from "./useCategories";
 import { COLOR_OPTIONS } from "../../constant/color";
 
-
 interface ModalCreateProductProps {
   isOpen: boolean;
   onClose: () => void;
@@ -22,7 +21,7 @@ interface ModalCreateProductProps {
 }
 
 interface ProductVariant {
-  id: string; // ✅ Thêm ID để quản lý list variant ổn định hơn
+  id: string;
   color: string;
   image: { url: string; publicId: string } | null;
   stock: number | "";
@@ -46,7 +45,6 @@ const ModalCreateProduct = ({
 
   const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
 
-  // ✅ Ảnh chung của product
   const [imageObjects, setImageObjects] = useState<
     Array<{ url: string; publicId: string }>
   >([]);
@@ -108,7 +106,6 @@ const ModalCreateProduct = ({
     });
   };
 
-  // ✅ Upload ảnh chung
   const handleGeneralImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -139,7 +136,6 @@ const ModalCreateProduct = ({
     e.target.value = "";
   };
 
-  // ✅ Upload ảnh cho variant
   const handleVariantImageChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     index: number
@@ -168,7 +164,6 @@ const ModalCreateProduct = ({
     e.target.value = "";
   };
 
-  // ✅ Xử lý kết quả crop
   const handleCropComplete = async (croppedBlob: Blob) => {
     setIsUploading(true);
 
@@ -221,7 +216,6 @@ const ModalCreateProduct = ({
     setImagePreview((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // ✅ Quản lý variants
   const handleVariantChange = (
     index: number,
     field: "color" | "stock",
@@ -259,8 +253,14 @@ const ModalCreateProduct = ({
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+    const nameProductRegex =
+      /^(?!\s)(?!.*\s$)(?=(?:.*.){5,})[^~`!@#$%^&*=:;"']+$/;
+
 
     if (!formData.name.trim()) newErrors.name = "Vui lòng nhập tên sản phẩm";
+    if (!nameProductRegex.test(formData.name)){
+      newErrors.name = "Tên sản phẩm không hợp lệ";
+    }
     if (!formData.price || Number(formData.price) <= 0)
       newErrors.price = "Giá không hợp lệ";
     if (!formData.category) newErrors.category = "Vui lòng chọn danh mục";
@@ -269,12 +269,6 @@ const ModalCreateProduct = ({
       (Number(formData.discount) < 0 || Number(formData.discount) > 100)
     ) {
       newErrors.discount = "Tỉ lệ khuyến mãi không hợp lệ";
-    }
-
-    // Kiểm tra ảnh chung (Nếu backend yêu cầu)
-    if (imageObjects.length === 0) {
-      // Bạn có thể bỏ comment dòng dưới nếu bắt buộc phải có ảnh chung
-      // newErrors.images = "Vui lòng thêm ít nhất 1 ảnh chung";
     }
 
     // Validate variants
@@ -303,7 +297,6 @@ const ModalCreateProduct = ({
     setSelectedOccasions([]);
     setImageObjects([]);
     setImagePreview([]);
-    // Reset variants về trạng thái mặc định
     setVariants([
       { id: crypto.randomUUID(), color: "", image: null, stock: "" },
     ]);
@@ -311,7 +304,6 @@ const ModalCreateProduct = ({
     onClose();
   };
 
-  // ✅ HÀM SUBMIT ĐÃ SỬA
   const handleSubmit = async () => {
     if (!validateForm()) {
       toast.error("Vui lòng kiểm tra lại thông tin sản phẩm");
@@ -338,6 +330,7 @@ const ModalCreateProduct = ({
         toast.error("Phải có ít nhất 1 variant hợp lệ");
         return;
       }
+
 
       const payload = {
         name: formData.name.trim(),
