@@ -38,6 +38,14 @@ import { EmailService, OrderEmailData } from '../email/email.service';
 import { UserEntity } from '../user/user.entity';
 import { RequestRefundDto } from './dto/request-refund.dto';
 import { ProcessRefundDto } from './dto/process-refund.dto';
+import { QueryRevenueDto, RevenueTimeframe } from './dto/query-revenue.dto';
+import { RevenueResponseDto } from './dto/revenue-response.dto';
+import { QueryDashboardDto } from './dto/query-dashboard.dto';
+import {
+  DailyChartDataDto,
+  DashboardResponseDto,
+  TopCategoryDto,
+} from './dto/dashboard-response.dto';
 
 @Injectable()
 export class OrderService {
@@ -1397,5 +1405,439 @@ export class OrderService {
 
       return this.transformToResponse(order);
     });
+  }
+
+  /**
+   * Tính toán khoảng thời gian dựa trên timeframe
+   */
+  private calculateDateRange(
+    timeframe: RevenueTimeframe,
+    startDate?: string,
+    endDate?: string,
+  ): { start: Date; end: Date } | null {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    switch (timeframe) {
+      case RevenueTimeframe.ALL_TIME:
+        return null; // Không filter theo thời gian
+
+      case RevenueTimeframe.TODAY:
+        return {
+          start: today,
+          end: new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1),
+        };
+
+      case RevenueTimeframe.YESTERDAY:
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        return {
+          start: yesterday,
+          end: new Date(yesterday.getTime() + 24 * 60 * 60 * 1000 - 1),
+        };
+
+      case RevenueTimeframe.THIS_WEEK:
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay()); // Chủ nhật
+        return {
+          start: startOfWeek,
+          end: now,
+        };
+
+      case RevenueTimeframe.LAST_WEEK:
+        const startOfLastWeek = new Date(today);
+        startOfLastWeek.setDate(today.getDate() - today.getDay() - 7);
+        const endOfLastWeek = new Date(startOfLastWeek);
+        endOfLastWeek.setDate(endOfLastWeek.getDate() + 6);
+        endOfLastWeek.setHours(23, 59, 59, 999);
+        return {
+          start: startOfLastWeek,
+          end: endOfLastWeek,
+        };
+
+      case RevenueTimeframe.THIS_MONTH:
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        return {
+          start: startOfMonth,
+          end: now,
+        };
+
+      case RevenueTimeframe.LAST_MONTH:
+        const startOfLastMonth = new Date(
+          now.getFullYear(),
+          now.getMonth() - 1,
+          1,
+        );
+        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+        endOfLastMonth.setHours(23, 59, 59, 999);
+        return {
+          start: startOfLastMonth,
+          end: endOfLastMonth,
+        };
+
+      case RevenueTimeframe.THIS_YEAR:
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        return {
+          start: startOfYear,
+          end: now,
+        };
+
+      case RevenueTimeframe.LAST_YEAR:
+        const startOfLastYear = new Date(now.getFullYear() - 1, 0, 1);
+        const endOfLastYear = new Date(now.getFullYear() - 1, 11, 31);
+        endOfLastYear.setHours(23, 59, 59, 999);
+        return {
+          start: startOfLastYear,
+          end: endOfLastYear,
+        };
+
+      case RevenueTimeframe.CUSTOM:
+        if (!startDate || !endDate) {
+          throw new BadRequestException(
+            'startDate và endDate là bắt buộc khi sử dụng timeframe=custom',
+          );
+        }
+        return {
+          start: new Date(startDate),
+          end: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
+        };
+
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Lấy tổng doanh thu
+   * Chỉ tính đơn hàng đã DELIVERED và đã qua 2 ngày (tránh trường hợp hoàn tiền)
+   */
+  async getTotalRevenue(query: QueryRevenueDto): Promise<RevenueResponseDto> {
+    const dateRange = this.calculateDateRange(
+      query.timeframe,
+      query.startDate,
+      query.endDate,
+    );
+
+    // Tính thời điểm 2 ngày trước (48 giờ)
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+    const queryBuilder = this.orderRepository
+      .createQueryBuilder('order')
+      .where('order.orderStatus = :orderStatus', {
+        orderStatus: OrderStatus.DELIVERED,
+      })
+      .andWhere('order.paymentStatus = :paymentStatus', {
+        paymentStatus: PaymentStatus.PAID,
+      })
+      .andWhere('order.deliveredAt <= :twoDaysAgo', {
+        twoDaysAgo,
+      });
+
+    // Áp dụng filter theo thời gian (dựa trên deliveredAt)
+    if (dateRange) {
+      queryBuilder.andWhere('order.deliveredAt BETWEEN :start AND :end', {
+        start: dateRange.start,
+        end: dateRange.end,
+      });
+    }
+
+    // Lấy tổng doanh thu và số đơn hàng đã giao (và đã qua 2 ngày)
+    const deliveredOrdersData = await queryBuilder
+      .select('SUM(order.totalAmount)', 'totalRevenue')
+      .addSelect('COUNT(order.id)', 'totalOrders')
+      .getRawOne();
+
+    // Đếm đơn hàng theo trạng thái (tất cả đơn, không filter 2 ngày)
+    const statusQuery = this.orderRepository.createQueryBuilder('order');
+
+    if (dateRange) {
+      statusQuery.where('order.createdAt BETWEEN :start AND :end', {
+        start: dateRange.start,
+        end: dateRange.end,
+      });
+    }
+
+    const [pendingCount, cancelledCount, refundedCount] = await Promise.all([
+      statusQuery
+        .clone()
+        .where({ orderStatus: OrderStatus.PENDING })
+        .getCount(),
+      statusQuery
+        .clone()
+        .where({ orderStatus: OrderStatus.CANCELLED })
+        .getCount(),
+      statusQuery
+        .clone()
+        .where({ orderStatus: OrderStatus.REFUNDED })
+        .getCount(),
+    ]);
+
+    // Tính doanh thu theo phương thức thanh toán (chỉ đơn DELIVERED + qua 2 ngày)
+    const revenueByMethod = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('order.paymentMethod', 'method')
+      .addSelect('SUM(order.totalAmount)', 'revenue')
+      .where('order.orderStatus = :orderStatus', {
+        orderStatus: OrderStatus.DELIVERED,
+      })
+      .andWhere('order.paymentStatus = :paymentStatus', {
+        paymentStatus: PaymentStatus.PAID,
+      })
+      .andWhere('order.deliveredAt <= :twoDaysAgo', {
+        twoDaysAgo,
+      })
+      .andWhere(
+        dateRange ? 'order.deliveredAt BETWEEN :start AND :end' : '1=1',
+        dateRange ? { start: dateRange.start, end: dateRange.end } : {},
+      )
+      .groupBy('order.paymentMethod')
+      .getRawMany();
+
+    const revenueByPaymentMethod = {
+      cod: 0,
+      vnpay: 0,
+      momo: 0,
+      zalopay: 0,
+      bank_transfer: 0,
+    };
+
+    revenueByMethod.forEach((item) => {
+      const revenue = parseFloat(item.revenue) || 0;
+      revenueByPaymentMethod[item.method] = revenue;
+    });
+
+    const totalRevenue = parseFloat(deliveredOrdersData.totalRevenue) || 0;
+    const deliveredOrders = parseInt(deliveredOrdersData.totalOrders) || 0;
+    const averageOrderValue =
+      deliveredOrders > 0 ? totalRevenue / deliveredOrders : 0;
+
+    return {
+      totalRevenue,
+      totalOrders:
+        deliveredOrders + pendingCount + cancelledCount + refundedCount,
+      paidOrders: deliveredOrders,
+      pendingOrders: pendingCount,
+      cancelledOrders: cancelledCount,
+      refundedOrders: refundedCount,
+      averageOrderValue: Math.round(averageOrderValue * 100) / 100,
+      timeframe: query.timeframe,
+      startDate: dateRange?.start,
+      endDate: dateRange?.end,
+      revenueByPaymentMethod,
+    };
+  }
+
+  /**
+   * Lấy dashboard statistics tổng hợp
+   * @param query - Tháng và năm cần thống kê (mặc định: tháng và năm hiện tại)
+   */
+  async getDashboardStats(
+    query: QueryDashboardDto,
+  ): Promise<DashboardResponseDto> {
+    const now = new Date();
+
+    // Lấy tháng/năm từ query hoặc dùng tháng/năm hiện tại
+    const targetMonth = query.month ?? now.getMonth() + 1;
+    const targetYear = query.year ?? now.getFullYear();
+
+    // Tính khoảng thời gian của tháng được chọn
+    const startOfTargetMonth = new Date(targetYear, targetMonth - 1, 1);
+    const endOfTargetMonth = new Date(
+      targetYear,
+      targetMonth,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
+
+    // Tháng trước đó (để so sánh)
+    const prevMonth = targetMonth === 1 ? 12 : targetMonth - 1;
+    const prevYear = targetMonth === 1 ? targetYear - 1 : targetYear;
+    const startOfPrevMonth = new Date(prevYear, prevMonth - 1, 1);
+    const endOfPrevMonth = new Date(prevYear, prevMonth, 0, 23, 59, 59, 999);
+
+    // 2 ngày trước (để tính doanh thu thực)
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+    // === 1. DOANH THU THÁNG ĐÃ CHỌN ===
+    const revenueTargetMonth = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('SUM(order.totalAmount)', 'total')
+      .where('order.orderStatus = :status', { status: OrderStatus.DELIVERED })
+      .andWhere('order.paymentStatus = :paymentStatus', {
+        paymentStatus: PaymentStatus.PAID,
+      })
+      .andWhere('order.deliveredAt BETWEEN :start AND :end', {
+        start: startOfTargetMonth,
+        end: endOfTargetMonth,
+      })
+      .andWhere('order.deliveredAt <= :twoDaysAgo', { twoDaysAgo })
+      .getRawOne();
+
+    // === 2. DOANH THU THÁNG TRƯỚC ===
+    const revenuePrevMonth = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('SUM(order.totalAmount)', 'total')
+      .where('order.orderStatus = :status', { status: OrderStatus.DELIVERED })
+      .andWhere('order.paymentStatus = :paymentStatus', {
+        paymentStatus: PaymentStatus.PAID,
+      })
+      .andWhere('order.deliveredAt BETWEEN :start AND :end', {
+        start: startOfPrevMonth,
+        end: endOfPrevMonth,
+      })
+      .andWhere('order.deliveredAt <= :twoDaysAgo', { twoDaysAgo })
+      .getRawOne();
+
+    const currentRevenue = parseFloat(revenueTargetMonth?.total || '0');
+    const prevRevenue = parseFloat(revenuePrevMonth?.total || '0');
+    const revenuePercentage =
+      prevRevenue > 0
+        ? Math.round(((currentRevenue - prevRevenue) / prevRevenue) * 100)
+        : 0;
+
+    // === 3. TỔNG ĐƠN HÀNG THÁNG ĐÃ CHỌN ===
+    const ordersTargetMonth = await this.orderRepository
+      .createQueryBuilder('order')
+      .where('order.orderStatus = :status', { status: OrderStatus.DELIVERED })
+      .andWhere('order.paymentStatus = :paymentStatus', {
+        paymentStatus: PaymentStatus.PAID,
+      })
+      .andWhere('order.deliveredAt BETWEEN :start AND :end', {
+        start: startOfTargetMonth,
+        end: endOfTargetMonth,
+      })
+      .andWhere('order.deliveredAt <= :twoDaysAgo', { twoDaysAgo })
+      .getCount();
+
+    // === 4. TỔNG ĐƠN HÀNG THÁNG TRƯỚC ===
+    const ordersPrevMonth = await this.orderRepository
+      .createQueryBuilder('order')
+      .where('order.orderStatus = :status', { status: OrderStatus.DELIVERED })
+      .andWhere('order.paymentStatus = :paymentStatus', {
+        paymentStatus: PaymentStatus.PAID,
+      })
+      .andWhere('order.deliveredAt BETWEEN :start AND :end', {
+        start: startOfPrevMonth,
+        end: endOfPrevMonth,
+      })
+      .andWhere('order.deliveredAt <= :twoDaysAgo', { twoDaysAgo })
+      .getCount();
+
+    const orderPercentage =
+      ordersPrevMonth > 0
+        ? Math.round(
+            ((ordersTargetMonth - ordersPrevMonth) / ordersPrevMonth) * 100,
+          )
+        : 0;
+
+    // === 5. GIÁ TRỊ TRUNG BÌNH ĐƠN HÀNG ===
+    const avgTargetMonth =
+      ordersTargetMonth > 0 ? currentRevenue / ordersTargetMonth : 0;
+    const avgPrevMonth =
+      ordersPrevMonth > 0 ? prevRevenue / ordersPrevMonth : 0;
+    const avgPercentage =
+      avgPrevMonth > 0
+        ? Math.round(((avgTargetMonth - avgPrevMonth) / avgPrevMonth) * 100)
+        : 0;
+
+    // === 6. BIỂU ĐỒ THEO TỪNG NGÀY TRONG THÁNG ===
+    const dailyData = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('DATE(order.deliveredAt)', 'date')
+      .addSelect('COUNT(order.id)', 'orderCount')
+      .addSelect('SUM(order.totalAmount)', 'revenue')
+      .where('order.orderStatus = :status', { status: OrderStatus.DELIVERED })
+      .andWhere('order.paymentStatus = :paymentStatus', {
+        paymentStatus: PaymentStatus.PAID,
+      })
+      .andWhere('order.deliveredAt BETWEEN :start AND :end', {
+        start: startOfTargetMonth,
+        end: endOfTargetMonth,
+      })
+      .andWhere('order.deliveredAt <= :twoDaysAgo', { twoDaysAgo })
+      .groupBy('DATE(order.deliveredAt)')
+      .orderBy('DATE(order.deliveredAt)', 'ASC')
+      .getRawMany();
+
+    // Tạo mảng đầy đủ các ngày trong tháng
+    const daysInMonth = new Date(targetYear, targetMonth, 0).getDate();
+    const chartData: DailyChartDataDto[] = [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(targetYear, targetMonth - 1, day);
+      const dateStr = date.toISOString().split('T')[0];
+
+      // Chỉ thêm ngày nếu <= 2 ngày trước
+      if (date <= twoDaysAgo) {
+        const dayData = dailyData.find((d) => d.date === dateStr);
+
+        chartData.push({
+          date: dateStr,
+          orderCount: dayData ? parseInt(dayData.orderCount) : 0,
+          revenue: dayData ? parseFloat(dayData.revenue) : 0,
+        });
+      }
+    }
+
+    // === 7. TOP 4 DANH MỤC BÁN CHẠY NHẤT (TRONG THÁNG ĐÃ CHỌN) ===
+    const topCategoriesRaw = await this.orderRepository
+      .createQueryBuilder('order')
+      .innerJoin('order.items', 'item')
+      .innerJoin('item.product', 'product')
+      .select('product.category', 'categoryName')
+      .addSelect('SUM(item.quantity)', 'soldCount')
+      .addSelect('SUM(item.subtotal)', 'revenue')
+      .where('order.orderStatus = :status', { status: OrderStatus.DELIVERED })
+      .andWhere('order.paymentStatus = :paymentStatus', {
+        paymentStatus: PaymentStatus.PAID,
+      })
+      .andWhere('order.deliveredAt BETWEEN :start AND :end', {
+        start: startOfTargetMonth,
+        end: endOfTargetMonth,
+      })
+      .andWhere('order.deliveredAt <= :twoDaysAgo', { twoDaysAgo })
+      .andWhere('product.category IS NOT NULL')
+      .groupBy('product.category')
+      .orderBy('SUM(item.subtotal)', 'DESC')
+      .limit(4)
+      .getRawMany();
+
+    const topCategories: TopCategoryDto[] = topCategoriesRaw.map(
+      (item, index) => ({
+        rank: index + 1,
+        categoryName: item.categoryName || 'Chưa phân loại',
+        soldCount: parseInt(item.soldCount),
+        revenue: parseFloat(item.revenue),
+      }),
+    );
+
+    // === TRẢ VỀ KẾT QUẢ ===
+    return {
+      month: targetMonth,
+      year: targetYear,
+      revenueStats: {
+        currentMonth: Math.round(currentRevenue),
+        lastMonth: Math.round(prevRevenue),
+        percentageChange: revenuePercentage,
+      },
+      orderStats: {
+        currentMonth: ordersTargetMonth,
+        lastMonth: ordersPrevMonth,
+        percentageChange: orderPercentage,
+      },
+      averageOrderValue: {
+        value: Math.round(avgTargetMonth),
+        lastMonthValue: Math.round(avgPrevMonth),
+        percentageChange: avgPercentage,
+      },
+      dailyOrderChart: chartData,
+      dailyRevenueChart: chartData, // Cùng data, FE tách ra 2 chart
+      topCategories,
+    };
   }
 }
