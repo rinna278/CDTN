@@ -27,6 +27,7 @@ import { USER_SWAGGER_RESPONSE } from './user.constant';
 import { UserEntity } from './user.entity';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { QueryNewCustomersDto } from './dto/query-new-customers.dto';
 
 @Controller({
   version: [API_CONFIG.VERSION_V1],
@@ -98,5 +99,28 @@ export class UserController {
   @PermissionMetadata(PERMISSIONS.USER_READ)
   public get(@Param() param: ParamIdBaseDto): Promise<UserEntity> {
     return this.userService.get(param.id);
+  }
+
+  @ApiOkResponse({
+    schema: {
+      example: {
+        count: 15,
+        month: 1,
+        year: 2026,
+      },
+      description: 'Số lượng khách hàng mới trong tháng',
+    },
+  })
+  @Get('statistics/new-customers')
+  @HttpCode(HttpStatus.OK)
+  @PermissionMetadata(PERMISSIONS.USER_GET_ALL)
+  @UseGuards(PermissionGuard)
+  public getNewCustomersCount(
+    @Query() query: QueryNewCustomersDto,
+  ): Promise<{ count: number; month: number; year: number }> {
+    return this.userService.getNewCustomersCountInMonth(
+      query.year,
+      query.month,
+    );
   }
 }

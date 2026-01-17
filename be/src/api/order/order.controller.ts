@@ -36,6 +36,8 @@ import { UpdateShippingDto } from './dto/update-shipping.dto';
 import { RequestRefundDto } from './dto/request-refund.dto';
 import { ProcessRefundDto } from './dto/process-refund.dto';
 import { OrderStatus } from './order.constant';
+import { QueryRevenueDto } from './dto/query-revenue.dto';
+import { RevenueResponseDto } from './dto/revenue-response.dto';
 
 @Controller({
   version: [API_CONFIG.VERSION_V1],
@@ -325,5 +327,42 @@ export class OrderController {
       ...query,
       orderStatus: OrderStatus.REFUND_REQUESTED,
     });
+  }
+
+  @ApiOperation({
+    summary: '[ADMIN] Lấy tổng doanh thu',
+    description:
+      'Thống kê doanh thu theo khung thời gian. Chỉ tính từ đơn hàng đã DELIVERED và đã qua 2 ngày (tránh trường hợp hoàn tiền trong 72h). Mặc định là tổng doanh thu từ trước tới giờ.',
+  })
+  @ApiOkResponse({
+    schema: {
+      example: {
+        totalRevenue: 15000000,
+        totalOrders: 150,
+        paidOrders: 120,
+        pendingOrders: 20,
+        cancelledOrders: 8,
+        refundedOrders: 2,
+        averageOrderValue: 125000,
+        timeframe: 'all_time',
+        revenueByPaymentMethod: {
+          cod: 8000000,
+          vnpay: 7000000,
+          momo: 0,
+          zalopay: 0,
+          bank_transfer: 0,
+        },
+      },
+    },
+  })
+  @Get('statistics/revenue')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  async getTotalRevenue(
+    @Query() query: QueryRevenueDto,
+  ): Promise<RevenueResponseDto> {
+    return this.orderService.getTotalRevenue(query);
   }
 }

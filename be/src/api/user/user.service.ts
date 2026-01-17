@@ -7,9 +7,9 @@ import * as bcrypt from 'bcrypt';
 import { JWT_CONFIG } from '../../configs/constant.config';
 import { IPaginateParams } from '../../share/common/app.interface';
 import { StringUtil } from '../../share/utils/string.util';
-import { Like, Repository } from 'typeorm';
+import { Between, Like, Repository } from 'typeorm';
 import { RoleStatus, RoleTypes, RoleName } from '../role/role.constant';
-import { ERROR_USER } from './user.constant';
+import { ERROR_USER, UserStatus } from './user.constant';
 import { UserEntity } from './user.entity';
 import { IChangePassword } from './user.interface';
 import { BaseService } from '../../share/database/base.service';
@@ -176,5 +176,31 @@ export class UserService extends BaseService<UserEntity> {
       uModel.phone = data.phone;
     }
     return this.userRepository.save(uModel);
+  }
+
+  async getNewCustomersCountInMonth(
+    year?: number,
+    month?: number,
+  ): Promise<{ count: number; month: number; year: number }> {
+    const now = new Date();
+    const targetYear = year || now.getFullYear();
+    const targetMonth = month || now.getMonth() + 1;
+
+    // Tính ngày đầu và cuối tháng
+    const startDate = new Date(targetYear, targetMonth - 1, 1);
+    const endDate = new Date(targetYear, targetMonth, 0, 23, 59, 59, 999);
+
+    const count = await this.userRepository.count({
+      where: {
+        createdAt: Between(startDate, endDate),
+        status: UserStatus.ACTIVE,
+      },
+    });
+
+    return {
+      count,
+      month: targetMonth,
+      year: targetYear,
+    };
   }
 }

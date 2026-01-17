@@ -19,7 +19,7 @@ export class OrderEntity extends BaseEntity {
   // User đặt hàng
   @Column({ type: 'uuid', name: 'user_id' })
   userId: string;
-  
+
   @ManyToOne(() => UserEntity)
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
