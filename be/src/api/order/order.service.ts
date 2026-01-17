@@ -40,6 +40,12 @@ import { RequestRefundDto } from './dto/request-refund.dto';
 import { ProcessRefundDto } from './dto/process-refund.dto';
 import { QueryRevenueDto, RevenueTimeframe } from './dto/query-revenue.dto';
 import { RevenueResponseDto } from './dto/revenue-response.dto';
+import { QueryDashboardDto } from './dto/query-dashboard.dto';
+import {
+  DailyChartDataDto,
+  DashboardResponseDto,
+  TopCategoryDto,
+} from './dto/dashboard-response.dto';
 
 @Injectable()
 export class OrderService {
@@ -1619,6 +1625,219 @@ export class OrderService {
       startDate: dateRange?.start,
       endDate: dateRange?.end,
       revenueByPaymentMethod,
+    };
+  }
+
+  /**
+   * Lấy dashboard statistics tổng hợp
+   * @param query - Tháng và năm cần thống kê (mặc định: tháng và năm hiện tại)
+   */
+  async getDashboardStats(
+    query: QueryDashboardDto,
+  ): Promise<DashboardResponseDto> {
+    const now = new Date();
+
+    // Lấy tháng/năm từ query hoặc dùng tháng/năm hiện tại
+    const targetMonth = query.month ?? now.getMonth() + 1;
+    const targetYear = query.year ?? now.getFullYear();
+
+    // Tính khoảng thời gian của tháng được chọn
+    const startOfTargetMonth = new Date(targetYear, targetMonth - 1, 1);
+    const endOfTargetMonth = new Date(
+      targetYear,
+      targetMonth,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
+
+    // Tháng trước đó (để so sánh)
+    const prevMonth = targetMonth === 1 ? 12 : targetMonth - 1;
+    const prevYear = targetMonth === 1 ? targetYear - 1 : targetYear;
+    const startOfPrevMonth = new Date(prevYear, prevMonth - 1, 1);
+    const endOfPrevMonth = new Date(prevYear, prevMonth, 0, 23, 59, 59, 999);
+
+    // 2 ngày trước (để tính doanh thu thực)
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+    // === 1. DOANH THU THÁNG ĐÃ CHỌN ===
+    const revenueTargetMonth = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('SUM(order.totalAmount)', 'total')
+      .where('order.orderStatus = :status', { status: OrderStatus.DELIVERED })
+      .andWhere('order.paymentStatus = :paymentStatus', {
+        paymentStatus: PaymentStatus.PAID,
+      })
+      .andWhere('order.deliveredAt BETWEEN :start AND :end', {
+        start: startOfTargetMonth,
+        end: endOfTargetMonth,
+      })
+      .andWhere('order.deliveredAt <= :twoDaysAgo', { twoDaysAgo })
+      .getRawOne();
+
+    // === 2. DOANH THU THÁNG TRƯỚC ===
+    const revenuePrevMonth = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('SUM(order.totalAmount)', 'total')
+      .where('order.orderStatus = :status', { status: OrderStatus.DELIVERED })
+      .andWhere('order.paymentStatus = :paymentStatus', {
+        paymentStatus: PaymentStatus.PAID,
+      })
+      .andWhere('order.deliveredAt BETWEEN :start AND :end', {
+        start: startOfPrevMonth,
+        end: endOfPrevMonth,
+      })
+      .andWhere('order.deliveredAt <= :twoDaysAgo', { twoDaysAgo })
+      .getRawOne();
+
+    const currentRevenue = parseFloat(revenueTargetMonth?.total || '0');
+    const prevRevenue = parseFloat(revenuePrevMonth?.total || '0');
+    const revenuePercentage =
+      prevRevenue > 0
+        ? Math.round(((currentRevenue - prevRevenue) / prevRevenue) * 100)
+        : 0;
+
+    // === 3. TỔNG ĐƠN HÀNG THÁNG ĐÃ CHỌN ===
+    const ordersTargetMonth = await this.orderRepository
+      .createQueryBuilder('order')
+      .where('order.orderStatus = :status', { status: OrderStatus.DELIVERED })
+      .andWhere('order.paymentStatus = :paymentStatus', {
+        paymentStatus: PaymentStatus.PAID,
+      })
+      .andWhere('order.deliveredAt BETWEEN :start AND :end', {
+        start: startOfTargetMonth,
+        end: endOfTargetMonth,
+      })
+      .andWhere('order.deliveredAt <= :twoDaysAgo', { twoDaysAgo })
+      .getCount();
+
+    // === 4. TỔNG ĐƠN HÀNG THÁNG TRƯỚC ===
+    const ordersPrevMonth = await this.orderRepository
+      .createQueryBuilder('order')
+      .where('order.orderStatus = :status', { status: OrderStatus.DELIVERED })
+      .andWhere('order.paymentStatus = :paymentStatus', {
+        paymentStatus: PaymentStatus.PAID,
+      })
+      .andWhere('order.deliveredAt BETWEEN :start AND :end', {
+        start: startOfPrevMonth,
+        end: endOfPrevMonth,
+      })
+      .andWhere('order.deliveredAt <= :twoDaysAgo', { twoDaysAgo })
+      .getCount();
+
+    const orderPercentage =
+      ordersPrevMonth > 0
+        ? Math.round(
+            ((ordersTargetMonth - ordersPrevMonth) / ordersPrevMonth) * 100,
+          )
+        : 0;
+
+    // === 5. GIÁ TRỊ TRUNG BÌNH ĐƠN HÀNG ===
+    const avgTargetMonth =
+      ordersTargetMonth > 0 ? currentRevenue / ordersTargetMonth : 0;
+    const avgPrevMonth =
+      ordersPrevMonth > 0 ? prevRevenue / ordersPrevMonth : 0;
+    const avgPercentage =
+      avgPrevMonth > 0
+        ? Math.round(((avgTargetMonth - avgPrevMonth) / avgPrevMonth) * 100)
+        : 0;
+
+    // === 6. BIỂU ĐỒ THEO TỪNG NGÀY TRONG THÁNG ===
+    const dailyData = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('DATE(order.deliveredAt)', 'date')
+      .addSelect('COUNT(order.id)', 'orderCount')
+      .addSelect('SUM(order.totalAmount)', 'revenue')
+      .where('order.orderStatus = :status', { status: OrderStatus.DELIVERED })
+      .andWhere('order.paymentStatus = :paymentStatus', {
+        paymentStatus: PaymentStatus.PAID,
+      })
+      .andWhere('order.deliveredAt BETWEEN :start AND :end', {
+        start: startOfTargetMonth,
+        end: endOfTargetMonth,
+      })
+      .andWhere('order.deliveredAt <= :twoDaysAgo', { twoDaysAgo })
+      .groupBy('DATE(order.deliveredAt)')
+      .orderBy('DATE(order.deliveredAt)', 'ASC')
+      .getRawMany();
+
+    // Tạo mảng đầy đủ các ngày trong tháng
+    const daysInMonth = new Date(targetYear, targetMonth, 0).getDate();
+    const chartData: DailyChartDataDto[] = [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(targetYear, targetMonth - 1, day);
+      const dateStr = date.toISOString().split('T')[0];
+
+      // Chỉ thêm ngày nếu <= 2 ngày trước
+      if (date <= twoDaysAgo) {
+        const dayData = dailyData.find((d) => d.date === dateStr);
+
+        chartData.push({
+          date: dateStr,
+          orderCount: dayData ? parseInt(dayData.orderCount) : 0,
+          revenue: dayData ? parseFloat(dayData.revenue) : 0,
+        });
+      }
+    }
+
+    // === 7. TOP 4 DANH MỤC BÁN CHẠY NHẤT (TRONG THÁNG ĐÃ CHỌN) ===
+    const topCategoriesRaw = await this.orderRepository
+      .createQueryBuilder('order')
+      .innerJoin('order.items', 'item')
+      .innerJoin('item.product', 'product')
+      .select('product.category', 'categoryName')
+      .addSelect('SUM(item.quantity)', 'soldCount')
+      .addSelect('SUM(item.subtotal)', 'revenue')
+      .where('order.orderStatus = :status', { status: OrderStatus.DELIVERED })
+      .andWhere('order.paymentStatus = :paymentStatus', {
+        paymentStatus: PaymentStatus.PAID,
+      })
+      .andWhere('order.deliveredAt BETWEEN :start AND :end', {
+        start: startOfTargetMonth,
+        end: endOfTargetMonth,
+      })
+      .andWhere('order.deliveredAt <= :twoDaysAgo', { twoDaysAgo })
+      .andWhere('product.category IS NOT NULL')
+      .groupBy('product.category')
+      .orderBy('SUM(item.subtotal)', 'DESC')
+      .limit(4)
+      .getRawMany();
+
+    const topCategories: TopCategoryDto[] = topCategoriesRaw.map(
+      (item, index) => ({
+        rank: index + 1,
+        categoryName: item.categoryName || 'Chưa phân loại',
+        soldCount: parseInt(item.soldCount),
+        revenue: parseFloat(item.revenue),
+      }),
+    );
+
+    // === TRẢ VỀ KẾT QUẢ ===
+    return {
+      month: targetMonth,
+      year: targetYear,
+      revenueStats: {
+        currentMonth: Math.round(currentRevenue),
+        lastMonth: Math.round(prevRevenue),
+        percentageChange: revenuePercentage,
+      },
+      orderStats: {
+        currentMonth: ordersTargetMonth,
+        lastMonth: ordersPrevMonth,
+        percentageChange: orderPercentage,
+      },
+      averageOrderValue: {
+        value: Math.round(avgTargetMonth),
+        lastMonthValue: Math.round(avgPrevMonth),
+        percentageChange: avgPercentage,
+      },
+      dailyOrderChart: chartData,
+      dailyRevenueChart: chartData, // Cùng data, FE tách ra 2 chart
+      topCategories,
     };
   }
 }

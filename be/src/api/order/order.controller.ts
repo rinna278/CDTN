@@ -38,6 +38,8 @@ import { ProcessRefundDto } from './dto/process-refund.dto';
 import { OrderStatus } from './order.constant';
 import { QueryRevenueDto } from './dto/query-revenue.dto';
 import { RevenueResponseDto } from './dto/revenue-response.dto';
+import { QueryDashboardDto } from './dto/query-dashboard.dto';
+import { DashboardResponseDto } from './dto/dashboard-response.dto';
 
 @Controller({
   version: [API_CONFIG.VERSION_V1],
@@ -364,5 +366,88 @@ export class OrderController {
     @Query() query: QueryRevenueDto,
   ): Promise<RevenueResponseDto> {
     return this.orderService.getTotalRevenue(query);
+  }
+
+  @ApiOperation({
+    summary: '[ADMIN] Lấy thống kê dashboard',
+    description: `
+    Trả về tất cả thống kê cho trang dashboard theo tháng/năm:
+    - Doanh thu tháng được chọn + % so với tháng trước
+    - Tổng đơn hàng tháng được chọn + % so với tháng trước
+    - Giá trị TB đơn hàng + % so với tháng trước
+    - Biểu đồ đơn hàng/doanh thu theo từng ngày trong tháng
+    - Top 4 danh mục bán chạy nhất trong tháng
+    
+    Mặc định: tháng và năm hiện tại
+    Lưu ý: Chỉ tính đơn hàng DELIVERED + đã qua 2 ngày
+  `,
+  })
+  @ApiOkResponse({
+    type: DashboardResponseDto,
+    schema: {
+      example: {
+        month: 1,
+        year: 2026,
+        revenueStats: {
+          currentMonth: 4800000,
+          lastMonth: 4285714,
+          percentageChange: 12,
+        },
+        orderStats: {
+          currentMonth: 75,
+          lastMonth: 69,
+          percentageChange: 8,
+        },
+        averageOrderValue: {
+          value: 64000,
+          lastMonthValue: 62000,
+          percentageChange: 3,
+        },
+        dailyOrderChart: [
+          { date: '2026-01-01', orderCount: 3, revenue: 180000 },
+          { date: '2026-01-02', orderCount: 5, revenue: 320000 },
+        ],
+        dailyRevenueChart: [
+          { date: '2026-01-01', orderCount: 3, revenue: 180000 },
+          { date: '2026-01-02', orderCount: 5, revenue: 320000 },
+        ],
+        topCategories: [
+          {
+            rank: 1,
+            categoryName: 'Hoa Hồng Đỏ',
+            soldCount: 245,
+            revenue: 36750000,
+          },
+          {
+            rank: 2,
+            categoryName: 'Hoa Tulip Trắng',
+            soldCount: 189,
+            revenue: 22680000,
+          },
+          {
+            rank: 3,
+            categoryName: 'Hoa Cúc Vàng',
+            soldCount: 156,
+            revenue: 12480000,
+          },
+          {
+            rank: 4,
+            categoryName: 'Hoa Ly Trắng',
+            soldCount: 98,
+            revenue: 19600000,
+          },
+        ],
+      },
+    },
+  })
+  @Get('statistics/dashboard')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  async getDashboardStats(
+    @Query() query: QueryDashboardDto,
+  ): Promise<DashboardResponseDto> {
+    return this.orderService.getDashboardStats(query);
   }
 }
