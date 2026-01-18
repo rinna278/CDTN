@@ -62,6 +62,9 @@ const ManageOrder = () => {
           date: new Date(order.createdAt).toLocaleDateString("vi-VN"),
           items: order.items || [],
           userId: order.userId,
+          refundReason: order.refundReason,
+          refundDescription: order.refundDescription,
+          refundRequestedAt: order.refundRequestedAt,
         }));
         setOrders(formatted);
         setFilteredOrders(formatted);

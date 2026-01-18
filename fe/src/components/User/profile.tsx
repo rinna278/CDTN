@@ -12,6 +12,25 @@ import {
   getDistrictsByProvinceCode,
   getWardsByDistrictCode,
 } from "../../services/apiService";
+// Thêm import này vào đầu file profile.tsx
+import {
+  validateName,
+  validatePhone,
+  validatePassword,
+  validateStreet,
+  validatePostalCode,
+  validateNotes,
+  handleNameInput,
+  handlePhoneInput,
+  handlePasswordInput,
+  handlePostalCodeInput,
+  handleTextInput,
+  handleNamePaste,
+  handlePhonePaste,
+  handlePasswordPaste,
+  handlePostalCodePaste,
+  handleTextPaste,
+} from "../../utils/validate";
 import "./profile.css";
 import { toast } from "react-toastify";
 import { AddressData } from "../../types/type";
@@ -74,7 +93,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
-  const phoneRegex = /^[0-9]{7,20}$/;
 
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
@@ -178,24 +196,8 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   };
 
   const handleShowPopup = () => {
-    const name = editName.trim();
-    const phone = editPhone.trim();
-
-    if (!name || !phone) {
-      toast.warning("Vui lòng điền đầy đủ thông tin");
-      return;
-    }
-
-    if (!/^\d+$/.test(phone)) {
-      toast.warning("Số điện thoại chỉ được chứa chữ số");
-      return;
-    }
-
-    if (!phoneRegex.test(phone)) {
-      toast.warning("Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0)");
-      return;
-    }
-
+    if (!validateName(editName, "Tên")) return;
+    if (!validatePhone(editPhone, "Số điện thoại")) return;
     setShowConfirmPopUp(true);
   };
 
@@ -214,7 +216,7 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Cập nhật thất bại");
     } finally {
-      setIsUpdating(false); 
+      setIsUpdating(false);
     }
   };
 
@@ -224,11 +226,11 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
       const newPassword = newpasswordRef.current;
       const confirmPassword = confirmpasswordRef.current;
 
-      if (!oldPassword || !newPassword || !confirmPassword) {
-        toast.warning("Vui lòng điền đầy đủ thông tin");
-        return;
-      }
+      if (!validatePassword(oldPassword, "Mật khẩu cũ")) return;
+      if (!validatePassword(newPassword, "Mật khẩu mới")) return;
+      if (!validatePassword(confirmPassword, "Mật khẩu xác nhận")) return;
 
+      // Validate mật khẩu khớp
       if (newPassword !== confirmPassword) {
         toast.error("Mật khẩu xác nhận không khớp");
         return;
@@ -237,7 +239,7 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
       const passResponse = await PatchUpdatePassword(
         oldPassword,
         newPassword,
-        confirmPassword
+        confirmPassword,
       );
 
       if (passResponse.status === 200 || passResponse.status === 204) {
@@ -258,17 +260,17 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   };
 
   const handleOldPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    oldpasswordRef.current = e.target.value;
+    oldpasswordRef.current = e.target.value.trim();
   };
 
   const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    newpasswordRef.current = e.target.value;
+    newpasswordRef.current = e.target.value.trim();
   };
 
   const handleConfirmPasswordChange = (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    confirmpasswordRef.current = e.target.value;
+    confirmpasswordRef.current = e.target.value.trim();
   };
 
   const openAddressModal = (address?: Address) => {
@@ -325,7 +327,7 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   };
 
   const handleProvinceChange = async (
-    e: React.ChangeEvent<HTMLSelectElement>
+    e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     const provinceCode = Number(e.target.value);
     const provinceName =
@@ -354,7 +356,7 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
   };
 
   const handleDistrictChange = async (
-    e: React.ChangeEvent<HTMLSelectElement>
+    e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     const districtCode = Number(e.target.value);
     const districtName =
@@ -390,32 +392,19 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
 
   const handleSaveAddress = async () => {
     try {
-      if (
-        !addressForm.recipientName ||
-        !addressForm.phoneNumber ||
-        !addressForm.street ||
-        !addressForm.city ||
-        !addressForm.district ||
-        !addressForm.ward
-      ) {
-        toast.warning("Vui lòng điền đầy đủ thông tin bắt buộc");
+      if (!validateName(addressForm.recipientName, "Tên người nhận")) return;
+      if (!validatePhone(addressForm.phoneNumber, "Số điện thoại")) return;
+      if (!validateStreet(addressForm.street)) return;
+      if (!addressForm.city || !addressForm.district || !addressForm.ward) {
+        toast.warning(
+          "Vui lòng chọn đầy đủ Tỉnh/Thành phố, Quận/Huyện, Phường/Xã",
+        );
         return;
       }
 
-      if (addressForm.recipientName.trim().length < 2) {
-        toast.warning("Tên người nhận tối thiểu 2 ký tự");
+      if (addressForm.postalCode && !validatePostalCode(addressForm.postalCode))
         return;
-      }
-
-      if (addressForm.street.trim().length < 5) {
-        toast.warning("Địa chỉ chi tiết tối thiểu 5 ký tự");
-        return;
-      }
-
-      if (!phoneRegex.test(addressForm.phoneNumber.replace(/\s/g, ""))) {
-        toast.warning("Số điện thoại không hợp lệ (7-20 chữ số)");
-        return;
-      }
+      if (addressForm.notes && !validateNotes(addressForm.notes)) return;
 
       const dataToSend: any = {
         recipientName: addressForm.recipientName.trim(),
@@ -552,6 +541,8 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
+                onInput={handleNameInput}
+                onPaste={handleNamePaste}
               />
             ) : (
               <h3>{fullNameRef.current}</h3>
@@ -564,6 +555,8 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                 type="phone"
                 value={editPhone}
                 onChange={(e) => setEditPhone(e.target.value)}
+                onInput={handlePhoneInput}
+                onPaste={handlePhonePaste}
               />
             ) : (
               <h3>{phoneRef.current}</h3>
@@ -679,6 +672,8 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
               <input
                 type="password"
                 onChange={handleOldPasswordChange}
+                onInput={handlePasswordInput}
+                onPaste={handlePasswordPaste}
                 placeholder="Nhập mật khẩu cũ"
               />
             </div>
@@ -733,6 +728,8 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                     recipientName: e.target.value,
                   })
                 }
+                onInput={handleNameInput}
+                onPaste={handleNamePaste}
                 placeholder="Nhập tên người nhận"
               />
             </div>
@@ -750,6 +747,8 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                     phoneNumber: e.target.value,
                   })
                 }
+                onInput={handlePhoneInput}
+                onPaste={handlePhonePaste}
                 placeholder="Nhập số điện thoại"
               />
             </div>
@@ -819,6 +818,8 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                 onChange={(e) =>
                   setAddressForm({ ...addressForm, street: e.target.value })
                 }
+                onInput={handleTextInput}
+                onPaste={handleTextPaste}
                 placeholder="Số nhà, tên đường..."
               />
             </div>
@@ -831,6 +832,8 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                 onChange={(e) =>
                   setAddressForm({ ...addressForm, postalCode: e.target.value })
                 }
+                onInput={handlePostalCodeInput}
+                onPaste={handlePostalCodePaste}
                 placeholder="Nhập mã bưu chính"
               />
             </div>
@@ -842,6 +845,8 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                 onChange={(e) =>
                   setAddressForm({ ...addressForm, notes: e.target.value })
                 }
+                onInput={handleTextInput}
+                onPaste={handleTextPaste}
                 placeholder="Ví dụ: Nhà riêng, Văn phòng..."
                 rows={2}
               />

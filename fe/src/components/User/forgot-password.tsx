@@ -3,6 +3,16 @@ import "./forgot-password.css";
 import { Dispatch, SetStateAction, useRef, useState, useEffect } from "react";
 import { postSubmitChangePassword } from "../../services/apiService";
 import { toast } from "react-toastify";
+import {
+  validateEmail,
+  validatePassword,
+  validateOTP,
+  handleEmailInput,
+  handleOTPPaste,
+  handleOTPInput,
+  handlePasswordInput,
+} from "../../utils/validate";
+
 
 interface HeaderProps {
   selected: string;
@@ -32,49 +42,37 @@ const ForgotPassword = ({ selected, setSelected }: HeaderProps) => {
     }
   }, [emailFromState]);
 
-  const validateEmail = (email: string) => {
-    return String(email)
-      .toLowerCase()
-      .match(
-        /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-      );
-  };
 
-  const validatePassword = (password: string): boolean => {
-    if (password.length < 6) {
-      toast.error("Mật khẩu phải có ít nhất 6 ký tự");
-      return false;
-    }
-    return true;
-  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg("");
 
-    const email = emailRef.current?.value.trim() || "";
-    const otp = otpRef.current?.value.trim() || "";
+    const email = emailRef.current?.value || "";
+    const otp = otpRef.current?.value || "";
     const newPassword = newPasswordRef.current?.value || "";
     const confirmPassword = confirmPasswordRef.current?.value || "";
 
+    // ✅ Validate email
     if (!validateEmail(email)) {
-      toast.error("Email không hợp lệ");
       setLoading(false);
       return;
     }
 
-    if (!otp) {
-      toast.error("Vui lòng nhập OTP");
+    // ✅ Validate OTP
+    if (!validateOTP(otp)) {
       setLoading(false);
       return;
     }
 
+    // ✅ Validate mật khẩu mới
     if (!validatePassword(newPassword)) {
       setLoading(false);
       return;
     }
 
+    // ✅ Check confirm password
     if (!confirmPassword) {
       toast.error("Vui lòng nhập xác nhận mật khẩu");
       setLoading(false);
@@ -118,6 +116,7 @@ const ForgotPassword = ({ selected, setSelected }: HeaderProps) => {
   };
 
 
+
   return (
     <div className="login-container">
       <div className="form-container">
@@ -136,6 +135,7 @@ const ForgotPassword = ({ selected, setSelected }: HeaderProps) => {
               placeholder="example@gmail.com"
               ref={emailRef}
               disabled={loading}
+              onInput={handleEmailInput}
               required
             />
           </div>
@@ -148,6 +148,8 @@ const ForgotPassword = ({ selected, setSelected }: HeaderProps) => {
               id="otp"
               placeholder="Nhập mã OTP"
               ref={otpRef}
+              onInput={handleOTPInput}
+              onPaste={handleOTPPaste}
               disabled={loading}
               maxLength={6}
               required
@@ -162,6 +164,7 @@ const ForgotPassword = ({ selected, setSelected }: HeaderProps) => {
               id="password"
               placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
               ref={newPasswordRef}
+              onInput={handlePasswordInput}
               disabled={loading}
               required
             />
@@ -174,6 +177,7 @@ const ForgotPassword = ({ selected, setSelected }: HeaderProps) => {
               id="confirmPassword"
               placeholder="Nhập lại mật khẩu mới"
               ref={confirmPasswordRef}
+              onInput={handlePasswordInput}
               disabled={loading}
               required
             />

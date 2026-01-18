@@ -4,7 +4,7 @@ export const ORDER_CONST = {
   MODEL_NAME: 'orders',
   // Thời gian hết hạn order (milliseconds) - 24 giờ
   EXPIRATION_TIME: 24 * 60 * 60 * 1000,
-  REFUND_WINDOW_HOURS: 72,
+  REFUND_WINDOW_HOURS: 48,
 };
 
 export enum OrderStatus {

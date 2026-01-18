@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { formatCurrency } from "../../utils/formatData";
 import { OrderItem, ManageOrderItem, OrderStatus } from "../../types/type";
-import { updateOrderStatus } from "../../services/apiService";
+import { updateOrderStatus, processRefund } from "../../services/apiService";
 import { toast } from "react-toastify";
 import "./order-detail-modal-admin.css";
-import { ChevronLeft } from "lucide-react";
 
 interface ManageOrderItemWithItems extends ManageOrderItem {
   items: OrderItem[];
   rawStatus: string;
+  userId: string;
+  refundReason?: string;
+  refundDescription?: string;
+  refundRequestedAt?: string;
 }
 
 interface OrderDetailModalProps {
@@ -31,7 +34,10 @@ const getAvailableNextStatuses = (currentStatus: string) => {
     processing: [{ label: "Đang giao hàng", value: "shipping" }],
     shipping: [{ label: "Đã giao hàng", value: "delivered" }],
     delivered: [{ label: "Yêu cầu hoàn tiền", value: "refund_requested" }],
-    refund_requested: [{ label: "Hoàn tiền", value: "refunded" }],
+    refund_requested: [
+      { label: "Chấp nhận hoàn tiền", value: "approve_refund" },
+      { label: "Từ chối hoàn tiền", value: "reject_refund" },
+    ],
     cancelled: [],
     refunded: [],
   };
@@ -73,13 +79,26 @@ const OrderDetailModalAdmin = ({
   const handleConfirmUpdate = async () => {
     try {
       setUpdating(true);
-      const res = await updateOrderStatus(order.id, {
-        status: newStatus as OrderStatus,
-      });
-      toast.success("Cập nhật trạng thái thành công!");
 
-      if (res.createdAt) {
-        setCreatedAt(res.createdAt);
+      if (
+        order.rawStatus === "refund_requested" &&
+        (newStatus === "approve_refund" || newStatus === "reject_refund")
+      ) {
+        await processRefund(order.id, {
+          action: newStatus === "approve_refund" ? "approve" : "reject",
+        });
+
+        toast.success(
+          newStatus === "approve_refund"
+            ? "Đã chấp nhận hoàn tiền"
+            : "Đã từ chối hoàn tiền"
+        );
+      }
+      else {
+        await updateOrderStatus(order.id, {
+          status: newStatus as OrderStatus,
+        });
+        toast.success("Cập nhật trạng thái thành công!");
       }
 
       setNewStatus("");
@@ -88,13 +107,12 @@ const OrderDetailModalAdmin = ({
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error("Cập nhật trạng thái thất bại!");
+      toast.error("Thao tác thất bại!");
     } finally {
       setUpdating(false);
     }
   };
 
-  // Lấy label của trạng thái mới
   const getStatusLabel = (statusValue: string) => {
     const allStatuses = getAvailableNextStatuses(order.rawStatus);
     const found = allStatuses.find((st) => st.value === statusValue);
@@ -113,6 +131,9 @@ const OrderDetailModalAdmin = ({
 
           <div className="order-info">
             <p>
+              <b>User ID:</b> {order.userId}
+            </p>
+            <p>
               <b>Khách hàng:</b> {order.nameCustomer}
             </p>
             <p>
@@ -122,6 +143,28 @@ const OrderDetailModalAdmin = ({
               <b>Ngày tạo:</b> {createdAt}
             </p>
           </div>
+
+          {order.rawStatus === "refund_requested" && (
+            <div className="refund-section">
+              <h4>Thông tin yêu cầu hoàn tiền</h4>
+              <p>
+                <b>Ngày yêu cầu:</b>{" "}
+                {order.refundRequestedAt
+                  ? new Date(order.refundRequestedAt).toLocaleString("vi-VN")
+                  : "—"}
+              </p>
+
+              <p>
+                <b>Lý do:</b> {order.refundReason}
+              </p>
+
+              {order.refundDescription && (
+                <p>
+                  <b>Mô tả chi tiết:</b> {order.refundDescription}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="order-items">
             <h3>Sản phẩm</h3>

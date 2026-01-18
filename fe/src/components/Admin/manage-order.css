@@ -33,6 +33,11 @@
   color: gray;
   font-size: 15px;
 }
+.item-order .status-order-8 h4{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .item-order .status-order-1 p {
   font-size: 25px;
   color: #ea9d4a;
@@ -72,8 +77,6 @@
   font-size: 25px;
   color: #4f11cc;
   font-weight: 800;
-  position: relative;
-  top: -15px;
 }
 
 .header-table_search{

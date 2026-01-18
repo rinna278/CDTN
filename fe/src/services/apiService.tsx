@@ -94,8 +94,7 @@ const getInfo = () => {
 
 const getAllUser = async () => {
   const response = await instance.get(`api/v1/users`);
-  console.log("Thông tin response.data:", response.data);
-  return response.data as AllUserResponse; // ✅ Trả về đúng cấu trúc
+  return response.data as AllUserResponse; 
 };
 
 
@@ -412,6 +411,42 @@ const patchUserRequestRefund = async(
   return response.data;
 };
 
+// Admin xử lý hoàn tiền (approve / reject)
+const processRefund = async (
+  orderId: string,
+  payload: { action: "approve" | "reject" }
+) => {
+  const response = await instance.patch(
+    `api/v1/orders/admin/${orderId.trim()}/process-refund`,
+    payload
+  );
+  return response.data;
+};
+
+//lấy danh sách người dùng mới tháng này
+const getStatisticNewCustomer = async() => {
+  const response = await instance.get(`api/v1/users/statistics/new-customers`);
+  return response;
+}
+
+
+//lấy thống kê cho revenue
+const getStatisticAllRevenue = async() => {
+  const response = await instance.get(`api/v1/orders/statistics/revenue`);
+  return response.data;
+}
+
+//lấy thống kê cho dashboard
+const getAllStatisticDashboard = async(month?: number, year?: number ) => {
+  const response = await instance.get(`api/v1/orders/statistics/dashboard`, {
+    params: {
+      month: month,
+      year: year
+    }
+  });
+  return response.data;
+}
+
 export {
   postLogin,
   postSendOTP,
@@ -459,5 +494,9 @@ export {
   updateShipping,
   getvnpayCallback, 
   postPayAgain,
-  patchUserRequestRefund
+  patchUserRequestRefund,
+  processRefund, 
+  getStatisticNewCustomer,
+  getStatisticAllRevenue,
+  getAllStatisticDashboard
 };

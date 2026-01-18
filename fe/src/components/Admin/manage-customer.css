@@ -46,9 +46,9 @@
 
 .item-customer{
     display: flex;
-    justify-content: space-between;
+    justify-content: space-evenly;
 }
-.item-customer .all-customer, .item-customer .new-customer, .item-customer .rate-customer{
+.item-customer .all-customer, .item-customer .new-customer{
     background-color: #fff;
     border-radius: 10px;
     margin: 1.5vh 0;
@@ -56,7 +56,7 @@
     width: 15vw;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
-.item-customer .all-customer h4, .item-customer .new-customer h4, .item-customer .rate-customer h4{
+.item-customer .all-customer h4, .item-customer .new-customer h4{
     color: gray;
 }
 .item-customer .all-customer p{
@@ -69,11 +69,7 @@
     color: #2169FC;
     font-weight: 800;
 }
-.item-customer .rate-customer p{
-    font-size: 25px;
-    color: #3FAD82;
-    font-weight: 800;
-}
+
 
 /* CSS table */
 .table-customers{

@@ -338,3 +338,11 @@ export interface SearchContextType {
   setSearchQuery: (query: string) => void;
   clearSearch: () => void;
 }
+
+//top sản phẩm
+export interface TopCategory {
+  rank: number;
+  categoryName: string;
+  soldCount: number;
+  revenue: number;
+}

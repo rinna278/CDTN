@@ -252,3 +252,18 @@
     width: 100%;
   }
 }
+
+
+
+.refund-section {
+  margin: 16px 0;
+  padding: 12px;
+  background: #fff7ed;
+  border-left: 4px solid #f97316;
+  border-radius: 6px;
+}
+
+.refund-section h4 {
+  margin-bottom: 8px;
+  color: #c2410c;
+}

@@ -181,10 +181,17 @@ const OrderDetail = () => {
   ];
 
   const canPrintInvoice = () => {
-    if (order.orderStatus !== "delivered") return false;
-    if (order.paymentStatus !== "paid") return false;
+    if (!order) return false;
 
-    // Kiểm tra đã quá 2 ngày (48 giờ) kể từ delivered
+    // Phải giao hàng thành công
+    if (order.orderStatus !== "delivered") return false;
+
+    // Nếu không phải COD thì bắt buộc đã thanh toán
+    if (order.paymentMethod !== "cod" && order.paymentStatus !== "paid") {
+      return false;
+    }
+
+    // Kiểm tra sau 48 giờ kể từ lúc giao
     if (!order.deliveredAt) return false;
 
     const now = new Date();
@@ -192,8 +199,9 @@ const OrderDetail = () => {
     const hoursSinceDelivered =
       (now.getTime() - deliveredTime.getTime()) / (1000 * 60 * 60);
 
-    return hoursSinceDelivered >= 48; // 2 ngày = 48 giờ
+    return hoursSinceDelivered >= 48;
   };
+
 
   // ✅ Hàm in hóa đơn - GỌN GÀN HƠN
   const handlePrintInvoice = () => {

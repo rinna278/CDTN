@@ -1774,7 +1774,9 @@ export class OrderService {
 
       // Chỉ thêm ngày nếu <= 2 ngày trước
       if (date <= twoDaysAgo) {
-        const dayData = dailyData.find((d) => d.date === dateStr);
+        const dayData = dailyData.find(
+          (d) => new Date(d.date).toISOString().split('T')[0] === dateStr,
+        );
 
         chartData.push({
           date: dateStr,
@@ -1800,7 +1802,7 @@ export class OrderService {
         start: startOfTargetMonth,
         end: endOfTargetMonth,
       })
-      .andWhere('order.deliveredAt <= :twoDaysAgo', { twoDaysAgo })
+      // // .andWhere('order.deliveredAt <= :twoDaysAgo', { twoDaysAgo })
       .andWhere('product.category IS NOT NULL')
       .groupBy('product.category')
       .orderBy('SUM(item.subtotal)', 'DESC')

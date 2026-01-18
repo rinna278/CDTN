@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import './control.css'
-import { getAllOrders, getAllProduct, getAllUser } from '../../services/apiService';
+import { getAllOrders, getAllProduct, getAllUser, getStatisticAllRevenue } from '../../services/apiService';
 import { useEffect, useState } from 'react';
+import { formatCurrency } from '../../utils/formatData';
 
 
 
@@ -9,6 +10,7 @@ const AdminControl = () => {
     const [allProductStatistic, setAllProductStatistic] = useState(0);
     const [allOrdersStatistic, setAllOrdersStatistic] = useState(0);
     const [allUserStatistic, setAllUserStatistic] = useState(0);
+    const [allRevenueStatistic, setAllRevenueStatistic] = useState(0);
 
     useEffect(() => {
         const fetchProduct = async() => {
@@ -23,10 +25,16 @@ const AdminControl = () => {
             const res2 = await getAllUser();
             setAllUserStatistic(res2.totalItem);
         }
+        const fetAllRevenue = async() => {
+            const res3 = await getStatisticAllRevenue();
+            console.log(res3);
+            setAllRevenueStatistic(res3.totalRevenue);
+        }
 
         fetchProduct();
         fetchOrders();
         fetchUsers();
+        fetAllRevenue();
     }, [])
 
     return (
@@ -73,12 +81,12 @@ const AdminControl = () => {
                     <div className="control-item">
                         <button>
                             <div className='item-4'>
-                                <span>Doanh Thu</span>
+                                <span>Doanh Thu Tháng</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
                                     <path d="M160 96C124.7 96 96 124.7 96 160L96 480C96 515.3 124.7 544 160 544L480 544C515.3 544 544 515.3 544 480L544 160C544 124.7 515.3 96 480 96L160 96zM216 288C229.3 288 240 298.7 240 312L240 424C240 437.3 229.3 448 216 448C202.7 448 192 437.3 192 424L192 312C192 298.7 202.7 288 216 288zM400 376C400 362.7 410.7 352 424 352C437.3 352 448 362.7 448 376L448 424C448 437.3 437.3 448 424 448C410.7 448 400 437.3 400 424L400 376zM320 192C333.3 192 344 202.7 344 216L344 424C344 437.3 333.3 448 320 448C306.7 448 296 437.3 296 424L296 216C296 202.7 306.7 192 320 192z"/>
                                 </svg>
                             </div>
-                            <h4>45.8M VND</h4>
+                            <h4>{formatCurrency(allRevenueStatistic)}</h4>
                         </button>
                     </div>
                     
