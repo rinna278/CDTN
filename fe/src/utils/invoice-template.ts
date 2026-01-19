@@ -314,7 +314,7 @@ export const generateInvoiceHTML = (order: InvoiceData): string => {
 
   <div class="footer">
     <p><strong>Cảm ơn quý khách đã mua hàng!</strong></p>
-    <p>Mọi thắc mắc vui lòng liên hệ: support@yourstore.com | Hotline: 1900-xxxx</p>
+    <p>Mọi thắc mắc vui lòng liên hệ: support@avici-flower-shop.com | Hotline: 1900-9867</p>
   </div>
 </body>
 </html>

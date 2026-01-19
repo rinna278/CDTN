@@ -430,12 +430,6 @@ const getStatisticNewCustomer = async() => {
 }
 
 
-//lấy thống kê cho revenue
-const getStatisticAllRevenue = async() => {
-  const response = await instance.get(`api/v1/orders/statistics/revenue`);
-  return response.data;
-}
-
 //lấy thống kê cho dashboard
 const getAllStatisticDashboard = async(month?: number, year?: number ) => {
   const response = await instance.get(`api/v1/orders/statistics/dashboard`, {
@@ -497,6 +491,5 @@ export {
   patchUserRequestRefund,
   processRefund, 
   getStatisticNewCustomer,
-  getStatisticAllRevenue,
   getAllStatisticDashboard
 };

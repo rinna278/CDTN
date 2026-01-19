@@ -4,10 +4,7 @@ import "./decorate-flower.css";
 import { useNavigate } from "react-router-dom";
 import { Product } from "../../types/type";
 import { useFlowerSearch } from "../../hooks/useFlowerSearch";
-
-const formatPrice = (price: number): string => {
-  return new Intl.NumberFormat("vi-VN").format(price) + " VND";
-};
+import { formatCurrency } from "../../utils/formatData";
 
 const calculateDiscountedPrice = (price: number, discount?: number): number => {
   if (!discount || discount === 0) return price;
@@ -70,12 +67,12 @@ const FlowerCard = ({ flower }: { flower: Product }) => {
           <p className="title">{flower.name}</p>
 
           {flower.discount && flower.discount > 0 ? (
-            <h4>{formatPrice(flower.price)}</h4>
+            <h4>{formatCurrency(flower.price)}</h4>
           ) : (
             <div className="old-price-empty"></div>
           )}
 
-          <h3>{formatPrice(discountedPrice)}</h3>
+          <h3>{formatCurrency(discountedPrice)}</h3>
 
           <div className="btn">
             <button onClick={handleDetailProduct}>Xem chi tiết</button>

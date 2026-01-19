@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import './control.css'
-import { getAllOrders, getAllProduct, getAllUser, getStatisticAllRevenue } from '../../services/apiService';
+import { getAllOrders, getAllProduct, getAllStatisticDashboard, getAllUser } from '../../services/apiService';
 import { useEffect, useState } from 'react';
 import { formatCurrency } from '../../utils/formatData';
 
@@ -26,9 +26,9 @@ const AdminControl = () => {
             setAllUserStatistic(res2.totalItem);
         }
         const fetAllRevenue = async() => {
-            const res3 = await getStatisticAllRevenue();
+            const res3 = await getAllStatisticDashboard();
             console.log(res3);
-            setAllRevenueStatistic(res3.totalRevenue);
+            setAllRevenueStatistic(res3.revenueStats.currentMonth);
         }
 
         fetchProduct();

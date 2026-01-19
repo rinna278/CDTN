@@ -415,14 +415,6 @@ const DetailProduct: React.FC<DetailProductProps> = ({
         <div className="product-info-detail">
           <h1 className="product-title">{product.name}</h1>
 
-          <div className="product-rating">
-            <div className="stars">★★★★★</div>
-            <span className="rating-count">5.0 (100 đánh giá)</span>
-            <span className="comment-count">
-              {product.soldCount > 0 ? `| ${product.soldCount} đã bán` : ""}
-            </span>
-          </div>
-
           <div className="product-price-section">
             {product.discount && product.discount > 0 ? (
               <span className="discount-badge">-{product.discount}%</span>
@@ -584,7 +576,6 @@ const DetailProduct: React.FC<DetailProductProps> = ({
               </div>
             </div>
           )}
-
         </div>
       </div>
 
@@ -600,14 +591,6 @@ const DetailProduct: React.FC<DetailProductProps> = ({
               >
                 <div className="similar-product-image">
                   <img src={getImageUrl(item.images)} alt={item.name} />
-                  <button
-                    className="wishlist-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                  >
-                    ♡
-                  </button>
                   {item.discount && item.discount > 0 && (
                     <div className="product-discount-badge">
                       -{item.discount}%
@@ -617,10 +600,12 @@ const DetailProduct: React.FC<DetailProductProps> = ({
                 <div className="similar-product-info-detail">
                   <h3>{item.name}</h3>
                   <div className="similar-product-price">
-                    {item.discount && item.discount > 0 && (
+                    {item.discount && item.discount > 0 ? (
                       <span className="old-price">
                         {formatPrice(item.price)}
                       </span>
+                    ) : (
+                      <span className="old-price empty"></span>
                     )}
                     <span className="current-price">
                       {formatPrice(
@@ -636,8 +621,6 @@ const DetailProduct: React.FC<DetailProductProps> = ({
           </div>
         </div>
       )}
-
-      {/* Checkout Modal cho Mua Ngay */}
       <CheckoutModal
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}

@@ -7,6 +7,7 @@ export const PERMISSION_CONST = {
 
 export const PERMISSIONS = {
   ALL: 'all',
+
   // User
   USER_CREATE: 'user:create',
   USER_READ: 'user:read',
@@ -19,12 +20,14 @@ export const PERMISSIONS = {
   PRODUCT_READ: 'product:read',
   PRODUCT_UPDATE: 'product:update',
   PRODUCT_DELETE: 'product:delete',
+
   // Role
   ROLE_SEARCH: 'role:search',
   ROLE_CREATE: 'role:create',
   ROLE_READ: 'role:read',
-  ROLE_EDIT: 'role:update',
+  ROLE_UPDATE: 'role:update',
   ROLE_DELETE: 'role:delete',
+
   // Permission
   PERMISSION_READ: 'permission:read',
 

@@ -71,17 +71,21 @@ const Header = ({ selected, setSelected }: HeaderProps) => {
     navigate("/");
   };
 
-  // Xác nhận logout
+ // ✅ Xác nhận logout
   const confirmLogout = () => {
     dispatch(logout());
-    setSelected("home");
     setShowLogoutModal(false);
+    setSelected("home"); // Reset về home sau khi logout
     navigate("/login");
   };
 
-  // Hủy logout
+  // ✅ Hủy logout - Reset selected về trang hiện tại
   const cancelLogout = () => {
     setShowLogoutModal(false);
+    // Reset selected về route hiện tại
+    const routeId =
+      location.pathname === "/" ? "home" : location.pathname.slice(1);
+    setSelected(routeId);
   };
 
   const searchButtonRef = useRef<HTMLButtonElement>(null);
