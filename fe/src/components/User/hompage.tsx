@@ -601,15 +601,6 @@ const HomePage = () => {
                     <div className='introduction'>
                         <h3>Giới thiệu về Avici.vn</h3>
                         <p>Shop Hoa Tươi Avici là một trong những tiệm hoa uy tín nhất tại TP.Hà Nội, Việt Nam. Chúng tôi cung cấp dịch vụ đặt hoa online giao tận nơi tại Hà Nội, trên các tỉnh thành phố khác. Với hệ thống cửa hàng liên kết khắp các tỉnh trên toàn quốc, chúng tôi có thể giúp bạn gửi tặng hoa cho người thân, bạn bè, người yêu ở bất cứ đâu tại Việt Nam.</p>
-                        <iframe
-                            width="560" 
-                            height="315" 
-                            src="https://www.youtube.com/embed/jMD1UAiNt8Y?autoplay=1&controls=0&showinfo=0&rel=0"
-                            title="Kết Duyên ( Htrol Remix ) - YuniBoo x Goctoi Mixer | Nhạc Trẻ EDM Tiktok Gây Nghiện Hay Nhất 2020"
-                            frameBorder="0"
-                            allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
-                        >
-                        </iframe>
                     </div>
                     <div className='trustworthy'>
                         <h3>Tại sao nên chọn Avici Shop?</h3>
@@ -803,5 +794,4 @@ const HomePage = () => {
     </div>
   );
 }
-
 export default HomePage;
