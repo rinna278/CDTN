@@ -12,6 +12,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductStatus } from './product.constant';
 import { QueryProductDto } from './dto/query-product.dto';
+import { ProductSearchResponseDto } from './dto/product-search-response.dto';
 
 @Injectable()
 export class ProductService extends BaseService<ProductEntity> {
@@ -414,5 +415,160 @@ export class ProductService extends BaseService<ProductEntity> {
       discountProducts,
       newProducts,
     };
+  }
+
+  /**
+   * Lấy gợi ý tìm kiếm cho autocomplete
+   */
+  async getSearchSuggestions(
+    query: string,
+    limit: number = 5,
+  ): Promise<Array<{ id: string; name: string; category: string }>> {
+    if (!query || query.trim().length < 2) {
+      return [];
+    }
+
+    const products = await this.productRepository
+      .createQueryBuilder('product')
+      .select(['product.id', 'product.name', 'product.category'])
+      .where('product.status = :status', { status: ProductStatus.ACTIVE })
+      .andWhere('product.deletedAt IS NULL')
+      .andWhere('product.name LIKE :query', { query: `%${query}%` })
+      .orderBy('product.soldCount', 'DESC') // Ưu tiên sản phẩm bán chạy
+      .take(limit)
+      .getMany();
+
+    return products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      category: p.category,
+    }));
+  }
+
+  /**
+   * Tìm kiếm nâng cao với highlight
+   */
+  async advancedSearch(query: QueryProductDto) {
+    const result = await this.findAll(query);
+
+    // Chuyển đổi sang DTO
+    const data = result.data.map(
+      (product) => new ProductSearchResponseDto(product, query.search),
+    );
+
+    return {
+      ...result,
+      data, // Override data với DTO mới
+    };
+  }
+
+  /**
+   * Helper: Highlight text dựa trên search term
+   */
+  private highlightText(text: string, searchTerm: string): string {
+    if (!text || !searchTerm) return text;
+
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    return text.replace(regex, '<mark>$1</mark>');
+  }
+
+  /**
+   * Tìm kiếm fuzzy (tìm kiếm gần đúng)
+   */
+  async fuzzySearch(
+    searchTerm: string,
+    limit: number = 10,
+  ): Promise<ProductEntity[]> {
+    // Tách search term thành các từ
+    const keywords = searchTerm.trim().split(/\s+/);
+
+    const queryBuilder = this.productRepository
+      .createQueryBuilder('product')
+      .where('product.status = :status', { status: ProductStatus.ACTIVE })
+      .andWhere('product.deletedAt IS NULL');
+
+    // Tìm kiếm với mỗi keyword
+    keywords.forEach((keyword, index) => {
+      queryBuilder.andWhere(
+        `(product.name LIKE :keyword${index} OR product.description LIKE :keyword${index})`,
+        { [`keyword${index}`]: `%${keyword}%` },
+      );
+    });
+
+    return await queryBuilder
+      .orderBy('product.soldCount', 'DESC')
+      .take(limit)
+      .getMany();
+  }
+
+  /**
+   * Tìm kiếm theo từ khóa phổ biến
+   */
+  async getPopularSearchTerms(limit: number = 10): Promise<string[]> {
+    // Lấy các từ trong tên sản phẩm bán chạy
+    const products = await this.productRepository.find({
+      where: { status: ProductStatus.ACTIVE },
+      order: { soldCount: 'DESC' },
+      take: 50,
+    });
+
+    const wordsCount = new Map<string, number>();
+
+    products.forEach((product) => {
+      const words = product.name.toLowerCase().split(/\s+/);
+      words.forEach((word) => {
+        if (word.length > 2) {
+          // Bỏ qua từ quá ngắn
+          wordsCount.set(word, (wordsCount.get(word) || 0) + 1);
+        }
+      });
+    });
+
+    return Array.from(wordsCount.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([word]) => word);
+  }
+
+  /**
+   * Tìm kiếm với typo tolerance (chấp nhận lỗi chính tả)
+   * Sử dụng SOUNDEX hoặc Levenshtein distance nếu MySQL hỗ trợ
+   */
+  async searchWithTypoTolerance(
+    searchTerm: string,
+    limit: number = 10,
+  ): Promise<ProductEntity[]> {
+    // Cách đơn giản: tìm kiếm với các biến thể phổ biến
+    const variations = [
+      searchTerm,
+      searchTerm.replace(/ô/g, 'o'),
+      searchTerm.replace(/ơ/g, 'o'),
+      searchTerm.replace(/ư/g, 'u'),
+      // Thêm các biến thể khác tùy nhu cầu
+    ];
+
+    const queryBuilder = this.productRepository
+      .createQueryBuilder('product')
+      .where('product.status = :status', { status: ProductStatus.ACTIVE })
+      .andWhere('product.deletedAt IS NULL');
+
+    const conditions = variations
+      .map((_, index) => `product.name LIKE :variation${index}`)
+      .join(' OR ');
+
+    const params = variations.reduce(
+      (acc, variation, index) => {
+        acc[`variation${index}`] = `%${variation}%`;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+
+    queryBuilder.andWhere(`(${conditions})`, params);
+
+    return await queryBuilder
+      .orderBy('product.soldCount', 'DESC')
+      .take(limit)
+      .getMany();
   }
 }

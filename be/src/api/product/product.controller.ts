@@ -214,4 +214,27 @@ export class ProductController {
   getHomepageProducts() {
     return this.productService.getHomepageProducts();
   }
+
+  @ApiOperation({
+    summary: 'Tìm kiếm nhanh sản phẩm (autocomplete)',
+    description: 'Trả về danh sách gợi ý tên sản phẩm cho autocomplete',
+  })
+  @Get('search/suggestions')
+  @HttpCode(HttpStatus.OK)
+  async searchSuggestions(
+    @Query('q') query: string,
+    @Query('limit') limit: number = 5,
+  ) {
+    return this.productService.getSearchSuggestions(query, limit);
+  }
+
+  @ApiOperation({
+    summary: 'Tìm kiếm sản phẩm nâng cao',
+    description: 'Tìm kiếm với nhiều tiêu chí và highlight kết quả',
+  })
+  @Get('search')
+  @HttpCode(HttpStatus.OK)
+  async advancedSearch(@Query() query: QueryProductDto) {
+    return this.productService.advancedSearch(query);
+  }
 }
