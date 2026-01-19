@@ -502,6 +502,11 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
                   placeholder="Nhập % giảm giá"
                   min="0"
                   max="100"
+                  onKeyDown={(e) => {
+                    if (["-", "+", "e", "E"].includes(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
 
@@ -731,6 +736,11 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
                             )
                           }
                           min="0"
+                          onKeyDown={(e) => {
+                            if (["-", "+", "e", "E"].includes(e.key)) {
+                              e.preventDefault();
+                            }
+                          }}
                         />
                       </div>
 

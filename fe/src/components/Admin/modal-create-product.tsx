@@ -545,6 +545,11 @@ const ModalCreateProduct = ({
                   placeholder="%"
                   min="0"
                   max="100"
+                  onKeyDown={(e) => {
+                    if (["-", "+", "e", "E"].includes(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
                 {errors.discount && (
                   <span className="err-text">{errors.discount}</span>
