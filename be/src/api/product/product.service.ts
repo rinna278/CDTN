@@ -80,7 +80,12 @@ export class ProductService extends BaseService<ProductEntity> {
 
     if (search) {
       queryBuilder.andWhere(
-        '(product.name ILIKE :search OR product.description ILIKE :search)',
+        `
+        (
+          lower(unaccent(product.name)) LIKE lower(unaccent(:search))
+          OR lower(unaccent(product.description)) LIKE lower(unaccent(:search))
+        )
+        `,
         { search: `%${search}%` },
       );
     }

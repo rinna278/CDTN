@@ -17,10 +17,6 @@ import {
   validateName,
   validatePhone,
   validateStreet,
-  handleNameInput,
-  handleNamePaste,
-  handlePhoneInput,
-  handlePhonePaste,
   handleTextInput,
   handleTextPaste,
 } from "../../utils/validate";
@@ -237,8 +233,6 @@ const CheckoutModal = ({
                     recipientName: e.target.value,
                   })
                 }
-                onInput={handleNameInput}
-                onPaste={handleNamePaste}
                 onBlur={() =>
                   setAddressForm((prev) => ({
                     ...prev,
@@ -256,8 +250,6 @@ const CheckoutModal = ({
                     phoneNumber: e.target.value,
                   })
                 }
-                onInput={handlePhoneInput}
-                onPaste={handlePhonePaste}
               />
 
               <select

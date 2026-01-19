@@ -33,7 +33,7 @@ export const validateName = (
   }
 
   // Chỉ cho phép chữ cái (có dấu) và khoảng trắng
-  const nameRegex = /^[A-Za-zÀ-ỹ]+(?:\s[A-Za-zÀ-ỹ]+)*$/;
+  const nameRegex = /^[\p{L}]+(?:\s[\p{L}]+)*$/u;
   if (!nameRegex.test(trimmedName)) {
     if (showToast)
       toast.warning(`${fieldName} chỉ được chứa chữ cái và khoảng trắng`);
