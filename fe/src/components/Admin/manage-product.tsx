@@ -30,7 +30,6 @@ const ManageProduct = () => {
     total: 0,
     totalPages: 0,
   });
-  
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -92,8 +91,9 @@ const ManageProduct = () => {
   const handleSuccess = () => {
     setPagination((p) => ({ ...p, page: 1 }));
     setReloadKey((k) => k + 1);
+    // ✅ Trigger event để CategoryManager cập nhật productCount
+    window.dispatchEvent(new Event("productUpdated"));
   };
-
   const handleOpenDeleteModal = (product: Product) => {
     setProductToDelete(product);
     setIsDeleteModalOpen(true);
@@ -124,6 +124,7 @@ const ManageProduct = () => {
 
       setIsDeleteModalOpen(false);
       setProductToDelete(null);
+      window.dispatchEvent(new Event("productUpdated"));
     } catch (error: any) {
       console.error("Lỗi khi xóa sản phẩm:", error);
       toast.error("Có lỗi xảy ra khi xóa sản phẩm");
@@ -132,18 +133,11 @@ const ManageProduct = () => {
     }
   };
 
-
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     setPagination((p) => ({ ...p, page: 1 }));
   };
 
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= pagination.totalPages) {
-      setPagination((p) => ({ ...p, page }));
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
 
   // ✅ Tính số màu khả dụng (stock thực tế - reserved > 0)
   const getAvailableColorsCount = (product: Product): number => {

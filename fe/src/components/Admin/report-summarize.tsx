@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import { ChartOptions } from "chart.js";
 import {
   getAllStatisticDashboard,
-  getStatisticAllRevenue,
 } from "../../services/apiService";
 import {
   Chart as ChartJS,

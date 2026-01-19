@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Edit2, Trash2, Plus } from "lucide-react";
 import "./manage-categories.css";
 import ModalConfirmDeleteCategory from "./modal-confirm-delete-category";
 import { toast } from "react-toastify";
+import { getAllProduct } from "../../services/apiService";
 
 interface Category {
   id: string;
@@ -20,34 +21,99 @@ const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryName, setCategoryName] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
-  // ✅ State cho delete modal
+  // State cho delete modal
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
-    null
+    null,
   );
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Load categories từ localStorage khi component mount
-  useEffect(() => {
-    const savedCategories = localStorage.getItem("productCategories");
-    if (savedCategories) {
-      setCategories(JSON.parse(savedCategories));
-    } else {
-      // Danh mục mặc định
-      const defaultCategories: Category[] = [
-        { id: "1", name: "Hoa Hồng", productCount: 0 },
-        { id: "2", name: "Hoa Tulip", productCount: 8 },
-        { id: "3", name: "Hoa Cúc", productCount: 15 },
-        { id: "4", name: "Hoa Ly", productCount: 10 },
-      ];
-      setCategories(defaultCategories);
-      localStorage.setItem(
-        "productCategories",
-        JSON.stringify(defaultCategories)
-      );
+  // ✅ Sử dụng useCallback để tránh re-create function
+  const fetchProductCounts = useCallback(async (categoryList: Category[]) => {
+    try {
+      const response = await getAllProduct({
+        page: 1,
+        limit: 1000,
+      });
+
+      const categoryCounts: { [key: string]: number } = {};
+
+      response.data.forEach((product) => {
+        const category = product.category;
+        if (category) {
+          categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+        }
+      });
+
+      const updatedCategories = categoryList.map((cat) => ({
+        ...cat,
+        productCount: categoryCounts[cat.name] || 0,
+      }));
+
+      return updatedCategories;
+    } catch (error) {
+      console.error("Error fetching product counts:", error);
+      toast.error("Không thể tải số lượng sản phẩm");
+      return categoryList;
     }
   }, []);
+
+  // Load categories ban đầu
+  useEffect(() => {
+    const loadCategories = async () => {
+      setIsLoading(true);
+
+      const savedCategories = localStorage.getItem("productCategories");
+      let categoryList: Category[];
+
+      if (savedCategories) {
+        categoryList = JSON.parse(savedCategories);
+      } else {
+        categoryList = [
+          { id: "1", name: "Hoa Hồng", productCount: 0 },
+          { id: "2", name: "Hoa Tulip", productCount: 0 },
+          { id: "3", name: "Hoa Cúc", productCount: 0 },
+          { id: "4", name: "Hoa Ly", productCount: 0 },
+        ];
+      }
+
+      const updatedCategories = await fetchProductCounts(categoryList);
+      setCategories(updatedCategories);
+      localStorage.setItem(
+        "productCategories",
+        JSON.stringify(updatedCategories),
+      );
+      setIsLoading(false);
+    };
+
+    loadCategories();
+  }, [fetchProductCounts]);
+
+  // ✅ FIX: Lắng nghe event KHÔNG phụ thuộc vào categories
+  useEffect(() => {
+    const handleProductUpdate = async () => {
+      // Đọc categories từ state hiện tại thay vì dependency
+      setCategories((prevCategories) => {
+        // Trigger async update
+        fetchProductCounts(prevCategories).then((updated) => {
+          setCategories(updated);
+          localStorage.setItem("productCategories", JSON.stringify(updated));
+        });
+        // Trả về state hiện tại để không thay đổi ngay
+        return prevCategories;
+      });
+    };
+
+    window.addEventListener("productUpdated", handleProductUpdate);
+    window.addEventListener("categoriesUpdated", handleProductUpdate);
+
+    return () => {
+      window.removeEventListener("productUpdated", handleProductUpdate);
+      window.removeEventListener("categoriesUpdated", handleProductUpdate);
+    };
+  }, [fetchProductCounts]); // ✅ Chỉ phụ thuộc vào fetchProductCounts (stable)
 
   // Notify parent component when categories change
   useEffect(() => {
@@ -56,15 +122,24 @@ const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) => {
     }
   }, [categories, onCategoriesChange]);
 
-  // Lưu categories vào localStorage
-  const saveCategories = (newCategories: Category[]) => {
-    localStorage.setItem("productCategories", JSON.stringify(newCategories));
+  // ✅ Lưu categories và cập nhật state ngay lập tức
+  const saveCategories = async (newCategories: Category[]) => {
+    // Update state NGAY để UI phản ánh ngay lập tức
     setCategories(newCategories);
-    // ✅ Trigger event để notify các component khác
+    localStorage.setItem("productCategories", JSON.stringify(newCategories));
+
+    // Sau đó fetch product counts
+    const updatedCategories = await fetchProductCounts(newCategories);
+    setCategories(updatedCategories);
+    localStorage.setItem(
+      "productCategories",
+      JSON.stringify(updatedCategories),
+    );
+
+    // Trigger event
     window.dispatchEvent(new Event("categoriesUpdated"));
   };
 
-  // Mở modal thêm danh mục
   const handleOpenAddModal = () => {
     setEditingCategory(null);
     setCategoryName("");
@@ -72,15 +147,24 @@ const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) => {
     setIsModalOpen(true);
   };
 
-  // Mở modal sửa danh mục
   const handleOpenEditModal = (category: Category) => {
+    // ✅ Kiểm tra nếu category có sản phẩm
+    if (category.productCount > 0) {
+      toast.warning(
+        `Không thể sửa tên danh mục "${category.name}" vì đang có ${category.productCount} sản phẩm. Vui lòng xóa hoặc chuyển sản phẩm sang danh mục khác trước.`,
+        {
+          autoClose: 4000,
+        },
+      );
+      return;
+    }
+
     setEditingCategory(category);
     setCategoryName(category.name);
     setError("");
     setIsModalOpen(true);
   };
 
-  // Đóng modal
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingCategory(null);
@@ -88,18 +172,16 @@ const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) => {
     setError("");
   };
 
-  // Thêm hoặc sửa danh mục
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!categoryName.trim()) {
       setError("Vui lòng nhập tên danh mục");
       return;
     }
 
-    // Kiểm tra trùng tên (trừ chính nó nếu đang edit)
     const isDuplicate = categories.some(
       (cat) =>
         cat.name.toLowerCase() === categoryName.trim().toLowerCase() &&
-        cat.id !== editingCategory?.id
+        cat.id !== editingCategory?.id,
     );
 
     if (isDuplicate) {
@@ -108,59 +190,71 @@ const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) => {
     }
 
     if (editingCategory) {
-      // Sửa danh mục
       const updatedCategories = categories.map((cat) =>
         cat.id === editingCategory.id
           ? { ...cat, name: categoryName.trim() }
-          : cat
+          : cat,
       );
-      saveCategories(updatedCategories);
+      await saveCategories(updatedCategories);
       toast.success("Cập nhật danh mục thành công");
     } else {
-      // Thêm danh mục mới
       const newCategory: Category = {
         id: Date.now().toString(),
         name: categoryName.trim(),
         productCount: 0,
       };
-      saveCategories([...categories, newCategory]);
+      await saveCategories([...categories, newCategory]);
       toast.success("Thêm danh mục thành công");
     }
 
     handleCloseModal();
   };
 
-  // ✅ Mở modal xác nhận xóa
   const handleOpenDeleteModal = (category: Category) => {
     setCategoryToDelete(category);
     setIsDeleteModalOpen(true);
   };
 
-  // ✅ Đóng modal xác nhận xóa
   const handleCloseDeleteModal = () => {
     setIsDeleteModalOpen(false);
     setCategoryToDelete(null);
   };
 
-  // ✅ Xác nhận xóa danh mục
-  const handleConfirmDelete = () => {
+  // ✅ FIX: Xóa ngay lập tức, không cần setTimeout
+  const handleConfirmDelete = async () => {
     if (!categoryToDelete) return;
 
     setIsDeleting(true);
 
-    // Giả lập delay để hiển thị loading state
-    setTimeout(() => {
+    try {
+      // ✅ Xóa category ngay lập tức
       const updatedCategories = categories.filter(
-        (cat) => cat.id !== categoryToDelete.id
+        (cat) => cat.id !== categoryToDelete.id,
       );
-      saveCategories(updatedCategories);
 
-      setIsDeleting(false);
+      await saveCategories(updatedCategories);
+
+      toast.success("Đã xóa danh mục");
       setIsDeleteModalOpen(false);
       setCategoryToDelete(null);
-      toast.success("Đã xóa danh mục");
-    }, 500);
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      toast.error("Có lỗi xảy ra khi xóa danh mục");
+    } finally {
+      setIsDeleting(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="content-bottom-product">
+        <div className="title_bottom">
+          <h2>Quản Lý Danh Mục</h2>
+          <h5>Đang tải...</h5>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -189,10 +283,9 @@ const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) => {
                   Sửa
                 </button>
 
-                {/* ✅ LOGIC SỬA ĐỔI TẠI ĐÂY */}
                 <button
                   onClick={() => handleOpenDeleteModal(category)}
-                  disabled={category.productCount > 0} 
+                  disabled={category.productCount > 0}
                   title={
                     category.productCount > 0
                       ? "Không thể xóa danh mục đang có sản phẩm"
@@ -204,10 +297,14 @@ const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) => {
                       category.productCount > 0 ? "not-allowed" : "pointer",
                   }}
                 >
-                  <Trash2 style={{
-                    opacity: category.productCount > 0 ? 0.5 : 1,
-                    cursor: category.productCount > 0 ? "not-allowed" : "pointer",
-                  }} size={16} />
+                  <Trash2
+                    style={{
+                      opacity: category.productCount > 0 ? 0.5 : 1,
+                      cursor:
+                        category.productCount > 0 ? "not-allowed" : "pointer",
+                    }}
+                    size={16}
+                  />
                   Xóa
                 </button>
               </div>
@@ -258,7 +355,7 @@ const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) => {
         </div>
       )}
 
-      {/* ✅ Modal Confirm Delete */}
+      {/* Modal Confirm Delete */}
       <ModalConfirmDeleteCategory
         isOpen={isDeleteModalOpen}
         onClose={handleCloseDeleteModal}

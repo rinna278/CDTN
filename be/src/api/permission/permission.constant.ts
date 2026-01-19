@@ -26,7 +26,7 @@ export const PERMISSIONS = {
   ROLE_SEARCH: 'role:search',
   ROLE_CREATE: 'role:create',
   ROLE_READ: 'role:read',
-  ROLE_EDIT: 'role:update',
+  ROLE_UPDATE: 'role:update',
   ROLE_DELETE: 'role:delete',
 
   // Permission
