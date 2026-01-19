@@ -16,10 +16,6 @@ import { fetchCartFromServer } from "../../redux/reducer+action/cartSlice";
 import {
   validateEmail,
   validatePassword,
-  handleEmailInput,
-  handleEmailPaste,
-  handlePasswordInput,
-  handlePasswordPaste,
 } from "../../utils/validate";
 
 interface HeaderProps {
@@ -157,8 +153,6 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              onInput={handleEmailInput}
-              onPaste={handleEmailPaste}
               placeholder="Nhập email của bạn"
               autoComplete="email"
             />
@@ -171,8 +165,6 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onInput={handlePasswordInput}
-              onPaste={handlePasswordPaste}
               placeholder="Nhập password của bạn"
               autoComplete="current-password"
             />
@@ -237,8 +229,6 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
                   type="email"
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
-                  onInput={handleEmailInput}
-                  onPaste={handleEmailPaste}
                   placeholder="Nhập email của bạn"
                   disabled={forgotLoading}
                   onKeyPress={(e) => {

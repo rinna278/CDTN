@@ -66,6 +66,23 @@ export const searchFlower = async (params: {
   return response.data;
 };
 
+const searchOrder = async(params: {
+  recipientName?: string;
+  page?: number;
+  limit?: number;
+  orderCode?: string;
+}) => {
+  const response = await instance.get(`api/v1/orders/admin/all`, {
+    params: {
+      recipientName: params.recipientName,
+      page: params.page,
+      limit: params.limit,
+      orderCode: params.orderCode
+    }
+  })
+  return response.data;
+}
+
 //Người dùng
 const postLogin = (userEmail: string, userPassword: string) => {
   return instance.post(`api/v1/login`, {
@@ -515,5 +532,6 @@ export {
   patchUserRequestRefund,
   processRefund, 
   getStatisticNewCustomer,
-  getAllStatisticDashboard
+  getAllStatisticDashboard,
+  searchOrder,
 };

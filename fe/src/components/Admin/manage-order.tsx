@@ -1,10 +1,11 @@
 import "./manage-order.css";
 import { useEffect, useState } from "react";
-import { getAllOrders } from "../../services/apiService";
+import { getAllOrders, searchOrder } from "../../services/apiService";
 import { formatCurrency } from "../../utils/formatData";
 import { OrderStatus, ManageOrderItem, OrderItem } from "../../types/type";
 import { ORDER_STATUS_LABEL } from "../../utils/orderStatusMap";
 import OrderDetailModalAdmin from "../Order/order-detail-modal-admin";
+import { useMemo } from "react";
 
 export const mapStatus = (status: OrderStatus): string => {
   return ORDER_STATUS_LABEL[status] ?? status;
@@ -18,20 +19,37 @@ interface OrderExtended extends ManageOrderItem {
 
 const ManageOrder = () => {
   const [orders, setOrders] = useState<OrderExtended[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<OrderExtended[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [searchOrderCode, setSearchOrderCode] = useState("");
+  const [searchRecipientName, setSearchRecipientName] = useState("");
 
-  const [stats, setStats] = useState({
-    pending: 0,
-    confirmed: 0,
-    processing: 0,
-    shipping: 0,
-    delivered: 0,
-    cancelled: 0,
-    refunded: 0,
-    refund_requested: 0,
-  });
+  const stats = useMemo(() => {
+    const result = {
+      pending: 0,
+      confirmed: 0,
+      processing: 0,
+      shipping: 0,
+      delivered: 0,
+      cancelled: 0,
+      refunded: 0,
+      refund_requested: 0,
+    };
+
+    orders.forEach((order) => {
+      const status = order.rawStatus;
+      if (status in result) {
+        result[status as keyof typeof result]++;
+      }
+    });
+
+    return result;
+  }, [orders]);
+  // Lọc orders theo selectedStatus
+  const filteredOrders = useMemo(() => {
+    if (!selectedStatus) return orders;
+    return orders.filter((order) => order.rawStatus === selectedStatus);
+  }, [orders, selectedStatus]);
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -40,17 +58,28 @@ const ManageOrder = () => {
     totalPages: 0,
   });
 
+
   const [hoveredOrder, setHoveredOrder] = useState<OrderExtended | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
   const fetchDataOrders = async () => {
     try {
       setLoading(true);
-      const res = await getAllOrders({
-        page: pagination.page,
-        limit: pagination.limit,
-      });
-      console.log("API lấy đơn hàng", res);
+      const hasSearch =
+        searchOrderCode.trim() !== "" || searchRecipientName.trim() !== "";
+
+      const res = hasSearch
+        ? await searchOrder({
+            orderCode: searchOrderCode.trim(),
+            recipientName: searchRecipientName.trim(),
+            page: pagination.page,
+            limit: pagination.limit,
+          })
+        : await getAllOrders({
+            page: pagination.page,
+            limit: pagination.limit,
+          });
+
       if (res?.data) {
         const formatted = res.data.map((order: any) => ({
           id: String(order.id),
@@ -66,29 +95,13 @@ const ManageOrder = () => {
           refundDescription: order.refundDescription,
           refundRequestedAt: order.refundRequestedAt,
         }));
+
         setOrders(formatted);
-        setFilteredOrders(formatted);
         setPagination((prev) => ({
           ...prev,
           total: res.total,
           totalPages: Math.ceil(res.total / prev.limit),
         }));
-
-        // Cập nhật stats
-        const s = {
-          pending: 0,
-          confirmed: 0,
-          processing: 0,
-          shipping: 0,
-          delivered: 0,
-          cancelled: 0,
-          refunded: 0,
-          refund_requested: 0,
-        };
-        res.data.forEach((o: any) => {
-          if (s.hasOwnProperty(o.orderStatus)) (s as any)[o.orderStatus]++;
-        });
-        setStats(s);
       }
     } catch (err) {
       console.error(err);
@@ -103,16 +116,12 @@ const ManageOrder = () => {
 
   // Hàm lọc đơn hàng theo trạng thái
   const handleStatusFilter = (status: string) => {
-    if (selectedStatus === status) {
-      // Nếu click vào trạng thái đã chọn -> bỏ lọc
-      setSelectedStatus(null);
-      setFilteredOrders(orders);
-    } else {
-      // Lọc theo trạng thái mới
-      setSelectedStatus(status);
-      const filtered = orders.filter((order) => order.rawStatus === status);
-      setFilteredOrders(filtered);
-    }
+    setSelectedStatus((prev) => (prev === status ? null : status));
+  };
+
+  const handleSearch = () => {
+    setPagination((p) => ({ ...p, page: 1 }));
+    fetchDataOrders();
   };
 
   if (loading)
@@ -208,9 +217,23 @@ const ManageOrder = () => {
             <div className="header-table_search">
               <h2>Danh Sách Đơn Hàng</h2>
               <div className="search-input-order">
-                <input type="text" placeholder="Tìm kiếm theo mã đơn hàng" />
-                <input type="text" placeholder="Tìm kiếm theo tên khách hàng" />
-                <button className="btn-search-order">
+                <input
+                  type="text"
+                  placeholder="Tìm theo mã đơn hàng..."
+                  value={searchOrderCode}
+                  onChange={(e) => setSearchOrderCode(e.target.value)}
+                />
+                <input
+                  type="text"
+                  placeholder="Tìm theo tên người nhận..."
+                  value={searchRecipientName}
+                  onChange={(e) => setSearchRecipientName(e.target.value)}
+                />
+
+                <button
+                  className="btn-search-order"
+                  onClick={handleSearch}
+                >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
                     <path d="M480 272C480 317.9 465.1 360.3 440 394.7L566.6 521.4C579.1 533.9 579.1 554.2 566.6 566.7C554.1 579.2 533.8 579.2 521.3 566.7L394.7 440C360.3 465.1 317.9 480 272 480C157.1 480 64 386.9 64 272C64 157.1 157.1 64 272 64C386.9 64 480 157.1 480 272zM272 416C351.5 416 416 351.5 416 272C416 192.5 351.5 128 272 128C192.5 128 128 192.5 128 272C128 351.5 192.5 416 272 416z" />
                   </svg>
@@ -227,7 +250,6 @@ const ManageOrder = () => {
                 className="clear-filter-btn"
                 onClick={() => {
                   setSelectedStatus(null);
-                  setFilteredOrders(orders);
                 }}
               >
                 Xóa bộ lọc
@@ -396,6 +418,6 @@ const ManageOrder = () => {
       />
     </>
   );
-};
+};;
 
 export default ManageOrder;

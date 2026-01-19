@@ -8,14 +8,6 @@ import {
   validateEmail,
   validatePassword,
   validateOTP,
-  handleNameInput,
-  handleNamePaste,
-  handleEmailInput,
-  handleEmailPaste,
-  handlePasswordInput,
-  handlePasswordPaste,
-  handleOTPInput,
-  handleOTPPaste,
 } from "../../utils/validate";
 
 interface HeaderProps {
@@ -181,8 +173,6 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
                 id="username"
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
-                onInput={handleNameInput}
-                onPaste={handleNamePaste}
                 onBlur={() => setUserName(userName.trim())}
                 placeholder="Nhập username của bạn"
               />
@@ -195,8 +185,6 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
                 id="email"
                 value={userEmail}
                 onChange={(e) => setUserEmail(e.target.value)}
-                onInput={handleEmailInput}
-                onPaste={handleEmailPaste}
                 placeholder="Nhập email của bạn"
               />
             </div>
@@ -208,8 +196,7 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
                 id="password"
                 value={userPassword}
                 onChange={(e) => setUserPassword(e.target.value)}
-                onInput={handlePasswordInput}
-                onPaste={handlePasswordPaste}
+
                 placeholder="Nhập mật khẩu của bạn"
               />
             </div>
@@ -255,8 +242,7 @@ const Register = ({ selected, setSelected }: HeaderProps) => {
                 placeholder="Enter OTP"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
-                onInput={handleOTPInput}
-                onPaste={handleOTPPaste}
+
               />
               <button className="otp-btn" onClick={handleSendOtp}>
                 {isOtpSent && isOtpValid && remainingTime > 0

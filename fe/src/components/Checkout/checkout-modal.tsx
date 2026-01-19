@@ -17,8 +17,6 @@ import {
   validateName,
   validatePhone,
   validateStreet,
-  handleTextInput,
-  handleTextPaste,
 } from "../../utils/validate";
 
 interface AddressWithId extends AddressData {
@@ -302,8 +300,6 @@ const CheckoutModal = ({
                 onChange={(e) =>
                   setAddressForm({ ...addressForm, street: e.target.value })
                 }
-                onInput={handleTextInput}
-                onPaste={handleTextPaste}
                 onBlur={() =>
                   setAddressForm((prev) => ({
                     ...prev,
@@ -414,8 +410,6 @@ const CheckoutModal = ({
               className="notes-area"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              onInput={handleTextInput}
-              onPaste={handleTextPaste}
               placeholder="Nhập ghi chú cho cửa hàng (nếu có)..."
               maxLength={500}
             />

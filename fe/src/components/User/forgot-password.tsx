@@ -8,8 +8,6 @@ import {
   validatePassword,
   validateOTP,
   handleEmailInput,
-  handleOTPPaste,
-  handleOTPInput,
   handlePasswordInput,
 } from "../../utils/validate";
 
@@ -148,8 +146,6 @@ const ForgotPassword = ({ selected, setSelected }: HeaderProps) => {
               id="otp"
               placeholder="Nhập mã OTP"
               ref={otpRef}
-              onInput={handleOTPInput}
-              onPaste={handleOTPPaste}
               disabled={loading}
               maxLength={6}
               required

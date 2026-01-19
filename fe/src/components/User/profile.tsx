@@ -20,16 +20,6 @@ import {
   validateStreet,
   validatePostalCode,
   validateNotes,
-  handleNameInput,
-  handlePhoneInput,
-  handlePasswordInput,
-  handlePostalCodeInput,
-  handleTextInput,
-  handleNamePaste,
-  handlePhonePaste,
-  handlePasswordPaste,
-  handlePostalCodePaste,
-  handleTextPaste,
 } from "../../utils/validate";
 import "./profile.css";
 import { toast } from "react-toastify";
@@ -541,8 +531,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                onInput={handleNameInput}
-                onPaste={handleNamePaste}
               />
             ) : (
               <h3>{fullNameRef.current}</h3>
@@ -555,8 +543,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                 type="phone"
                 value={editPhone}
                 onChange={(e) => setEditPhone(e.target.value)}
-                onInput={handlePhoneInput}
-                onPaste={handlePhonePaste}
               />
             ) : (
               <h3>{phoneRef.current}</h3>
@@ -672,8 +658,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
               <input
                 type="password"
                 onChange={handleOldPasswordChange}
-                onInput={handlePasswordInput}
-                onPaste={handlePasswordPaste}
                 placeholder="Nhập mật khẩu cũ"
               />
             </div>
@@ -728,8 +712,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                     recipientName: e.target.value,
                   })
                 }
-                onInput={handleNameInput}
-                onPaste={handleNamePaste}
                 placeholder="Nhập tên người nhận"
               />
             </div>
@@ -747,8 +729,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                     phoneNumber: e.target.value,
                   })
                 }
-                onInput={handlePhoneInput}
-                onPaste={handlePhonePaste}
                 placeholder="Nhập số điện thoại"
               />
             </div>
@@ -818,8 +798,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                 onChange={(e) =>
                   setAddressForm({ ...addressForm, street: e.target.value })
                 }
-                onInput={handleTextInput}
-                onPaste={handleTextPaste}
                 placeholder="Số nhà, tên đường..."
               />
             </div>
@@ -832,8 +810,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                 onChange={(e) =>
                   setAddressForm({ ...addressForm, postalCode: e.target.value })
                 }
-                onInput={handlePostalCodeInput}
-                onPaste={handlePostalCodePaste}
                 placeholder="Nhập mã bưu chính"
               />
             </div>
@@ -845,8 +821,6 @@ const Profile = ({ selected, setSelected }: HeaderProps) => {
                 onChange={(e) =>
                   setAddressForm({ ...addressForm, notes: e.target.value })
                 }
-                onInput={handleTextInput}
-                onPaste={handleTextPaste}
                 placeholder="Ví dụ: Nhà riêng, Văn phòng..."
                 rows={2}
               />
