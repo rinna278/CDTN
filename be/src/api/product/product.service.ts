@@ -386,4 +386,33 @@ export class ProductService extends BaseService<ProductEntity> {
 
     return await queryBuilder.getMany();
   }
+
+  async getHomepageProducts() {
+    // 1. Lấy hoa giảm đến 30% (10 cái gần 30% nhất)
+    const discountProducts = await this.productRepository
+      .createQueryBuilder('product')
+      .where('product.status = :status', { status: ProductStatus.ACTIVE })
+      .andWhere('product.discount > 0')
+      .andWhere('product.discount <= 30')
+      .orderBy('product.discount', 'DESC')
+      .take(10)
+      .getMany();
+
+    // 2. Lấy sản phẩm mới (trong vòng 1 tuần)
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const newProducts = await this.productRepository
+      .createQueryBuilder('product')
+      .where('product.status = :status', { status: ProductStatus.ACTIVE })
+      .andWhere('product.createdAt >= :oneWeekAgo', { oneWeekAgo })
+      .orderBy('product.createdAt', 'DESC')
+      .take(10)
+      .getMany();
+
+    return {
+      discountProducts,
+      newProducts,
+    };
+  }
 }

@@ -194,4 +194,24 @@ export class ProductController {
       updateStockDto.quantity,
     );
   }
+
+  @ApiOperation({
+    summary: 'Lấy sản phẩm cho trang chủ',
+    description:
+      'Bao gồm: hoa giảm đến 30% (10 sản phẩm) và sản phẩm mới (trong vòng 1 tuần)',
+  })
+  @ApiOkResponse({
+    description: 'Get homepage products successfully',
+    schema: {
+      example: {
+        discountProducts: [],
+        newProducts: [],
+      },
+    },
+  })
+  @Get('featured/homepage')
+  @HttpCode(HttpStatus.OK)
+  getHomepageProducts() {
+    return this.productService.getHomepageProducts();
+  }
 }
