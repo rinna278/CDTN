@@ -13,6 +13,7 @@ import {
   UpdateShippingPayload,
   CreateOrderPayload,
   AdminOrderListResponse,
+  SearchProductResponse,
 } from "../types/type";
 import { Province } from "../types/type";
 import { District } from "../types/type";
@@ -41,6 +42,29 @@ export interface SingleProductResponse {
   success?: boolean;
   message?: string;
 }
+
+export const searchFlower = async (params: {
+  search?: string;
+  page?: number;
+  limit?: number;
+  occasions?: string[];
+  status?: number;
+}) => {
+  const response = await instance.get<SearchProductResponse>(
+    "/api/v1/products",
+    {
+      params: {
+        search: params.search,
+        page: params.page,
+        limit: params.limit,
+        occasions: params.occasions,
+        status: params.status,
+      },
+    },
+  );
+
+  return response.data;
+};
 
 //Người dùng
 const postLogin = (userEmail: string, userPassword: string) => {

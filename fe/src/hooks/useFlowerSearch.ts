@@ -1,5 +1,6 @@
+import { normalizeText } from './../utils/normalizeText';
 import { useState, useEffect } from "react";
-import { getAllProduct } from "../services/apiService";
+import { getAllProduct, searchFlower } from "../services/apiService";
 import { useSearch } from "../components/context/SearchContext";
 import { Product } from "../types/type";
 
@@ -35,33 +36,42 @@ export const useFlowerSearch = ({
     }
   };
 
-  useEffect(() => {
-    const fetchFlowers = async () => {
-      try {
-        setLoading(true);
-        const sortParams = getSortParams(sortOption);
+ useEffect(() => {
+   const fetchFlowers = async () => {
+     try {
+       setLoading(true);
 
-        const response = await getAllProduct({
-          page: currentPage,
-          limit: itemsPerPage,
-          occasions: [occasion],
-          status: 1,
-          search: searchQuery,
-          ...sortParams,
-        });
+       const response = await searchFlower({
+         page: 1,
+         limit: 1000,
+         occasions: [occasion],
+         status: 1,
+       });
 
-        setFlowers(response.data || []);
-        setTotalPages(response.totalPages || 0);
-      } catch (err: any) {
-        setError(err.message);
-        setFlowers([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+       const normalizedSearch = normalizeText(searchQuery);
 
-    fetchFlowers();
-  }, [currentPage, sortOption, searchQuery, occasion,itemsPerPage]);
+       const filtered = normalizedSearch
+         ? response.data.filter((p) =>
+             normalizeText(p.name).includes(normalizedSearch),
+           )
+         : response.data;
+
+       const start = (currentPage - 1) * itemsPerPage;
+       const paginated = filtered.slice(start, start + itemsPerPage);
+
+       setFlowers(paginated);
+       setTotalPages(Math.ceil(filtered.length / itemsPerPage));
+     } catch (e: any) {
+       setError(e.message);
+     } finally {
+       setLoading(false);
+     }
+   };
+
+   fetchFlowers();
+ }, [searchQuery, currentPage, occasion, itemsPerPage]);
+
+
 
   useEffect(() => {
     if (searchQuery) setCurrentPage(1);

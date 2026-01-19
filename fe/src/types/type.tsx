@@ -345,3 +345,11 @@ export interface TopCategory {
   soldCount: number;
   revenue: number;
 }
+
+export interface SearchProductResponse {
+  data: Product[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
