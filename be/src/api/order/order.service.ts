@@ -848,6 +848,7 @@ export class OrderService {
       paymentStatus,
       paymentMethod,
       orderCode,
+      recipientName,
     } = query;
 
     const queryBuilder = this.orderRepository
@@ -877,6 +878,13 @@ export class OrderService {
       queryBuilder.andWhere('order.orderCode LIKE :orderCode', {
         orderCode: `%${orderCode}%`,
       });
+    }
+
+    if (recipientName) {
+      queryBuilder.andWhere(
+        `lower(unaccent(order.recipientName)) LIKE lower(unaccent(:recipientName))`,
+        { recipientName: `%${recipientName}%` },
+      );
     }
 
     queryBuilder

@@ -48,4 +48,12 @@ export class QueryOrderDto {
   @IsOptional()
   @IsString()
   orderCode?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Tìm theo tên người nhận',
+  })
+  @IsOptional()
+  @IsString()
+  recipientName?: string;
 }
