@@ -87,14 +87,52 @@ const ModalCreateProduct = ({
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value } = e.target;
+
+    // ===== DISCOUNT =====
+    if (name === "discount") {
+      // Cho phép rỗng
+      if (value === "") {
+        setFormData((prev) => ({ ...prev, discount: "" }));
+        setErrors((prev) => ({ ...prev, discount: "" }));
+        return;
+      }
+
+      // Không phải chữ số
+      if (!/^\d+$/.test(value)) {
+        setErrors((prev) => ({
+          ...prev,
+          discount: "Giảm giá phải là chữ số từ 0 đến 100",
+        }));
+        return;
+      }
+
+      const num = Number(value);
+
+      // < 0 hoặc > 100
+      if (num < 0 || num > 100) {
+        setErrors((prev) => ({
+          ...prev,
+          discount: "Giảm giá phải nằm trong khoảng 0 – 100",
+        }));
+        return;
+      }
+
+      // ✅ Hợp lệ
+      setFormData((prev) => ({ ...prev, discount: value }));
+      setErrors((prev) => ({ ...prev, discount: "" }));
+      return;
+    }
+
+    // ===== FIELD KHÁC =====
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
+
 
   const handleOccasionToggle = (value: string) => {
     setSelectedOccasions((prev) => {
@@ -113,7 +151,7 @@ const ModalCreateProduct = ({
     const file = files[0];
     if (
       !["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(
-        file.type
+        file.type,
       )
     ) {
       toast.error("Chỉ chấp nhận ảnh (JPG, PNG, WEBP)");
@@ -138,7 +176,7 @@ const ModalCreateProduct = ({
 
   const handleVariantImageChange = (
     e: React.ChangeEvent<HTMLInputElement>,
-    index: number
+    index: number,
   ) => {
     const files = e.target.files;
     if (!files) return;
@@ -146,7 +184,7 @@ const ModalCreateProduct = ({
     const file = files[0];
     if (
       !["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(
-        file.type
+        file.type,
       )
     ) {
       toast.error("Chỉ chấp nhận ảnh (JPG, PNG, WEBP)");
@@ -204,7 +242,7 @@ const ModalCreateProduct = ({
     } catch (error: any) {
       console.error("Upload failed:", error);
       toast.error(
-        "Upload ảnh thất bại: " + (error.message || "Lỗi không xác định")
+        "Upload ảnh thất bại: " + (error.message || "Lỗi không xác định"),
       );
     } finally {
       setIsUploading(false);
@@ -219,14 +257,58 @@ const ModalCreateProduct = ({
   const handleVariantChange = (
     index: number,
     field: "color" | "stock",
-    value: string | number
+    value: string,
   ) => {
+    // ===== STOCK =====
+    if (field === "stock") {
+      const errorKey = `stock_${index}`;
+
+      if (value === "") {
+        setVariants((prev) => {
+          const updated = [...prev];
+          updated[index].stock = "";
+          return updated;
+        });
+        setErrors((prev) => ({ ...prev, [errorKey]: "" }));
+        return;
+      }
+
+      if (!/^\d+$/.test(value)) {
+        setErrors((prev) => ({
+          ...prev,
+          [errorKey]: "Số lượng phải là chữ số ≥ 0",
+        }));
+        return;
+      }
+
+      const num = Number(value);
+      if (num < 0) {
+        setErrors((prev) => ({
+          ...prev,
+          [errorKey]: "Số lượng phải là chữ số ≥ 0",
+        }));
+        return;
+      }
+
+      setVariants((prev) => {
+        const updated = [...prev];
+        updated[index].stock = num;
+        return updated;
+      });
+
+      setErrors((prev) => ({ ...prev, [errorKey]: "" }));
+      return;
+    }
+
+    // ===== COLOR =====
     setVariants((prev) => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
+      updated[index].color = value;
       return updated;
     });
   };
+
+
 
   const addVariant = () => {
     setVariants((prev) => [
@@ -256,9 +338,8 @@ const ModalCreateProduct = ({
     const nameProductRegex =
       /^(?!\s)(?!.*\s$)(?=(?:.*.){5,})[^~`!@#$%^&*=:;"']+$/;
 
-
     if (!formData.name.trim()) newErrors.name = "Vui lòng nhập tên sản phẩm";
-    if (!nameProductRegex.test(formData.name)){
+    if (!nameProductRegex.test(formData.name)) {
       newErrors.name = "Tên sản phẩm không hợp lệ";
     }
     if (!formData.price || Number(formData.price) <= 0)
@@ -273,7 +354,7 @@ const ModalCreateProduct = ({
 
     // Validate variants
     const validVariants = variants.filter(
-      (v) => v.color.trim() && v.image && Number(v.stock) >= 0
+      (v) => v.color.trim() && v.image && Number(v.stock) >= 0,
     );
 
     if (validVariants.length === 0) {
@@ -330,7 +411,6 @@ const ModalCreateProduct = ({
         toast.error("Phải có ít nhất 1 variant hợp lệ");
         return;
       }
-
 
       const payload = {
         name: formData.name.trim(),
@@ -564,8 +644,8 @@ const ModalCreateProduct = ({
                       {isUploading
                         ? "Đang upload ảnh..."
                         : imageObjects.length >= 5
-                        ? "Đã đạt giới hạn 5 ảnh"
-                        : "Click để chọn ảnh chung"}
+                          ? "Đã đạt giới hạn 5 ảnh"
+                          : "Click để chọn ảnh chung"}
                     </span>
                   </label>
                 </div>
@@ -653,7 +733,8 @@ const ModalCreateProduct = ({
                               key={color.value}
                               value={color.label}
                               disabled={variants.some(
-                                (v, i) => i !== index && v.color === color.label
+                                (v, i) =>
+                                  i !== index && v.color === color.label,
                               )}
                             >
                               {color.label}
@@ -664,18 +745,25 @@ const ModalCreateProduct = ({
                         <input
                           type="number"
                           placeholder="Tồn kho"
-                          className="stock-color"
+                          className={`stock-color ${
+                            errors[`stock_${index}`] ? "input-error" : ""
+                          }`}
                           value={variant.stock}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            handleVariantChange(
-                              index,
-                              "stock",
-                              value === "" ? "" : Number(value)
-                            );
+                          onChange={(e) =>
+                            handleVariantChange(index, "stock", e.target.value)
+                          }
+                          onKeyDown={(e) => {
+                            if (["-", "+", "e", "E"].includes(e.key)) {
+                              e.preventDefault();
+                            }
                           }}
-                          min="0"
                         />
+
+                        {errors[`stock_${index}`] && (
+                          <span className="err-text">
+                            {errors[`stock_${index}`]}
+                          </span>
+                        )}
                       </div>
 
                       <div className="variant-image-upload">

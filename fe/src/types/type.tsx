@@ -178,7 +178,7 @@ export interface CreateOrderPayload {
   paymentMethod: "cod" | "vnpay" | "momo" | "bank_transfer";
   notes?: string;
   discountCode?: string;
-  cartItemIds: string[]; // 👈 Thêm field này
+  cartItemIds?: string[];
 }
 
 

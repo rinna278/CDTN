@@ -55,11 +55,6 @@ const FlowerCard = ({ flower }: { flower: Product }) => {
     });
   };
 
-  const handleBuyProduct = () => {
-    navigate(`/detail-product/${flower.id}`,{
-      state: {product: flower},
-    })
-  };
 
   return (
     <div className="flip-card">
@@ -86,7 +81,7 @@ const FlowerCard = ({ flower }: { flower: Product }) => {
 
           <div className="btn">
             <button onClick={handleDetailProduct}>Xem chi tiết</button>
-            <button onClick={handleBuyProduct}>Mua hàng</button>
+            <button onClick={handleDetailProduct}>Thêm vào giỏ</button>
           </div>
         </div>
       </div>

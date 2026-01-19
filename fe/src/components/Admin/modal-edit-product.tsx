@@ -117,9 +117,33 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value } = e.target;
+
+    if (name === "discount") {
+      // Cho phép rỗng
+      if (value === "") {
+        setFormData((prev) => ({ ...prev, discount: "" }));
+        return;
+      }
+
+      // Chỉ cho số (loại -, +, e, ký tự lạ)
+      if (!/^\d+$/.test(value)) return;
+
+      const num = Number(value);
+
+      // Không cho số âm, giới hạn 0 - 100
+      if (num < 0 || num > 100) return;
+
+      setFormData((prev) => ({ ...prev, discount: value }));
+
+      if (errors.discount) {
+        setErrors((prev) => ({ ...prev, discount: "" }));
+      }
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -288,8 +312,6 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
 
    const nameProductRegex =
      /^(?!\s)(?!.*\s$)(?=(?:.*.){5,})[^~`!@#$%^&*=:;"']+$/;
-
-
 
     if (!formData.name.trim()) newErrors.name = "Vui lòng nhập tên sản phẩm";
     if (!nameProductRegex.test(formData.name)){

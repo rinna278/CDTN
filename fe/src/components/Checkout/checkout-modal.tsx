@@ -13,9 +13,26 @@ import {
 } from "../../types/type";
 import { toast } from "react-toastify";
 import "./checkout-modal.css";
+import {
+  validateName,
+  validatePhone,
+  validateStreet,
+  handleNameInput,
+  handleNamePaste,
+  handlePhoneInput,
+  handlePhonePaste,
+  handleTextInput,
+  handleTextPaste,
+} from "../../utils/validate";
 
 interface AddressWithId extends AddressData {
   id: string;
+}
+
+interface BuyNowItem {
+  productId: string;
+  quantity: number;
+  color: string;
 }
 
 interface CheckoutModalProps {
@@ -23,7 +40,8 @@ interface CheckoutModalProps {
   onClose: () => void;
   onConfirm: (data: CreateOrderPayload) => void;
   totalAmount: number;
-  selectedItemIds: string[]; // 👈 Thêm prop này
+  selectedItemIds?: string[]; // Optional - cho cart
+  buyNowItem?: BuyNowItem; // Optional - cho mua ngay
 }
 
 const CheckoutModal = ({
@@ -31,12 +49,13 @@ const CheckoutModal = ({
   onClose,
   onConfirm,
   totalAmount,
-  selectedItemIds, // 👈 Nhận prop
+  selectedItemIds,
+  buyNowItem,
 }: CheckoutModalProps) => {
   const [addresses, setAddresses] = useState<AddressWithId[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
-    PaymentMethod.COD
+    PaymentMethod.COD,
   );
   const [notes, setNotes] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -57,10 +76,6 @@ const CheckoutModal = ({
     city: "",
     isDefault: false,
   });
-  const [addressErrors, setAddressErrors] = useState<{
-    recipientName?: string;
-    phoneNumber?: string;
-  }>({});
 
   const resetAddressForm = () => {
     setAddressForm({
@@ -72,40 +87,34 @@ const CheckoutModal = ({
       city: "",
       isDefault: false,
     });
-    setAddressErrors({});
     setSelectedProv(null);
     setSelectedDist(null);
     setDistricts([]);
     setWards([]);
   };
 
-
   const validateAddressForm = () => {
-    const errors: any = {};
+    const isNameValid = validateName(
+      addressForm.recipientName,
+      "Tên người nhận",
+    );
+    const isPhoneValid = validatePhone(addressForm.phoneNumber);
+    const isStreetValid = validateStreet(addressForm.street);
 
-    const name = addressForm.recipientName.trim();
-    const phone = addressForm.phoneNumber.trim();
-    const forbiddenCharsRegex = /[~`!@#$%^&*=:;"']/;
-    const recipientNameRegex = /^(?!\s)(?!.*\s$).{2,}$/;
-
-    if (!name) {
-      errors.recipientName = "Vui lòng nhập tên người nhận";
-    } else if (!recipientNameRegex.test(name)) {
-      errors.recipientName =
-        "Tên phải tối thiểu 2 ký tự, không có khoảng trắng ở đầu/cuối";
-    } else if (forbiddenCharsRegex.test(name)) {
-      errors.recipientName = "Tên không được chứa ký tự đặc biệt";
+    if (!addressForm.city) {
+      toast.warning("Vui lòng chọn Tỉnh/Thành");
+      return false;
+    }
+    if (!addressForm.district) {
+      toast.warning("Vui lòng chọn Quận/Huyện");
+      return false;
+    }
+    if (!addressForm.ward) {
+      toast.warning("Vui lòng chọn Phường/Xã");
+      return false;
     }
 
-    if (!phone) {
-      errors.phoneNumber = "Vui lòng nhập số điện thoại";
-    } else if (!/^\d{10,}$/.test(phone)) {
-      errors.phoneNumber =
-        "Số điện thoại phải tối thiểu 10 chữ số và chỉ gồm số";
-    }
-
-    setAddressErrors(errors);
-    return Object.keys(errors).length === 0;
+    return isNameValid && isPhoneValid && isStreetValid;
   };
 
   const fetchAddresses = async () => {
@@ -135,7 +144,7 @@ const CheckoutModal = ({
   }, [showAddAddress]);
 
   const handleProvinceChange = async (
-    e: React.ChangeEvent<HTMLSelectElement>
+    e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     const code = Number(e.target.value);
     const name = provinces.find((p) => p.code === code)?.name || "";
@@ -147,7 +156,7 @@ const CheckoutModal = ({
   };
 
   const handleDistrictChange = async (
-    e: React.ChangeEvent<HTMLSelectElement>
+    e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     const code = Number(e.target.value);
     const name = districts.find((d) => d.code === code)?.name || "";
@@ -159,7 +168,6 @@ const CheckoutModal = ({
 
   const handleSaveNewAddress = async () => {
     if (!validateAddressForm()) {
-      toast.error("Vui lòng kiểm tra lại thông tin");
       return;
     }
 
@@ -168,6 +176,7 @@ const CheckoutModal = ({
         ...addressForm,
         recipientName: addressForm.recipientName.trim(),
         phoneNumber: addressForm.phoneNumber.trim(),
+        street: addressForm.street.trim(),
       });
       toast.success("Thêm địa chỉ thành công");
       resetAddressForm();
@@ -178,12 +187,43 @@ const CheckoutModal = ({
     }
   };
 
+  const handleConfirmCheckout = () => {
+    if (!selectedAddress) {
+      toast.warning("Vui lòng chọn địa chỉ giao hàng");
+      return;
+    }
+
+    // Tạo payload dựa trên loại checkout
+    const orderData: CreateOrderPayload = {
+      addressId: selectedAddress,
+      paymentMethod: paymentMethod as any,
+      notes: notes.trim(),
+      ...(buyNowItem
+        ? {
+            // Mua ngay - truyền thông tin sản phẩm trực tiếp
+            items: [
+              {
+                productId: buyNowItem.productId,
+                quantity: buyNowItem.quantity,
+                color: buyNowItem.color,
+              },
+            ],
+          }
+        : {
+            // Đặt hàng từ giỏ - truyền danh sách cart item IDs
+            cartItemIds: selectedItemIds || [],
+          }),
+    };
+
+    onConfirm(orderData);
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="checkout-modal" onClick={(e) => e.stopPropagation()}>
-        {/* Sub-modal: Chỉ hiển thị bên trong checkout-modal */}
+        {/* Sub-modal: Thêm địa chỉ mới */}
         {showAddAddress && (
           <div className="sub-modal-overlay">
             <div className="sub-modal-content">
@@ -191,51 +231,39 @@ const CheckoutModal = ({
               <input
                 placeholder="Tên người nhận"
                 value={addressForm.recipientName}
-                onChange={(e) => {
-                  let value = e.target.value;
-                  if (value.startsWith(" ")) return;
+                onChange={(e) =>
                   setAddressForm({
                     ...addressForm,
-                    recipientName: value,
-                  });
-
-                  if (addressErrors.recipientName) {
-                    setAddressErrors((prev) => ({
-                      ...prev,
-                      recipientName: "",
-                    }));
-                  }
-                }}
+                    recipientName: e.target.value,
+                  })
+                }
+                onInput={handleNameInput}
+                onPaste={handleNamePaste}
                 onBlur={() =>
                   setAddressForm((prev) => ({
                     ...prev,
-                    recipientName: prev.recipientName.trim(), 
+                    recipientName: prev.recipientName.trim(),
                   }))
                 }
               />
-              {addressErrors.recipientName && (
-                <span className="error-text">
-                  {addressErrors.recipientName}
-                </span>
-              )}
+
               <input
                 placeholder="Số điện thoại"
                 value={addressForm.phoneNumber}
-                onChange={(e) => {
-                  const onlyNumber = e.target.value.replace(/\D/g, "");
+                onChange={(e) =>
                   setAddressForm({
                     ...addressForm,
-                    phoneNumber: onlyNumber,
-                  });
-                  if (addressErrors.phoneNumber) {
-                    setAddressErrors((prev) => ({ ...prev, phoneNumber: "" }));
-                  }
-                }}
+                    phoneNumber: e.target.value,
+                  })
+                }
+                onInput={handlePhoneInput}
+                onPaste={handlePhonePaste}
               />
-              {addressErrors.phoneNumber && (
-                <span className="error-text">{addressErrors.phoneNumber}</span>
-              )}
-              <select onChange={handleProvinceChange}>
+
+              <select
+                onChange={handleProvinceChange}
+                value={selectedProv || ""}
+              >
                 <option value="">Chọn Tỉnh/Thành</option>
                 {provinces.map((p) => (
                   <option key={p.code} value={p.code}>
@@ -243,7 +271,12 @@ const CheckoutModal = ({
                   </option>
                 ))}
               </select>
-              <select onChange={handleDistrictChange} disabled={!selectedProv}>
+
+              <select
+                onChange={handleDistrictChange}
+                disabled={!selectedProv}
+                value={selectedDist || ""}
+              >
                 <option value="">Chọn Quận/Huyện</option>
                 {districts.map((d) => (
                   <option key={d.code} value={d.code}>
@@ -251,6 +284,7 @@ const CheckoutModal = ({
                   </option>
                 ))}
               </select>
+
               <select
                 disabled={!selectedDist}
                 onChange={(e) =>
@@ -269,14 +303,32 @@ const CheckoutModal = ({
                   </option>
                 ))}
               </select>
+
               <input
                 placeholder="Địa chỉ chi tiết (Số nhà, tên đường)"
+                value={addressForm.street}
                 onChange={(e) =>
                   setAddressForm({ ...addressForm, street: e.target.value })
                 }
+                onInput={handleTextInput}
+                onPaste={handleTextPaste}
+                onBlur={() =>
+                  setAddressForm((prev) => ({
+                    ...prev,
+                    street: prev.street.trim(),
+                  }))
+                }
               />
+
               <div className="sub-modal-actions">
-                <button onClick={() => {setShowAddAddress(false); resetAddressForm();}}>Hủy</button>
+                <button
+                  onClick={() => {
+                    setShowAddAddress(false);
+                    resetAddressForm();
+                  }}
+                >
+                  Hủy
+                </button>
                 <button className="btn-save" onClick={handleSaveNewAddress}>
                   Lưu địa chỉ
                 </button>
@@ -370,7 +422,10 @@ const CheckoutModal = ({
               className="notes-area"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              onInput={handleTextInput}
+              onPaste={handleTextPaste}
               placeholder="Nhập ghi chú cho cửa hàng (nếu có)..."
+              maxLength={500}
             />
           </div>
         </div>
@@ -392,14 +447,7 @@ const CheckoutModal = ({
             <button
               className="btn-confirm"
               disabled={!selectedAddress}
-              onClick={() =>
-                onConfirm({
-                  addressId: selectedAddress,
-                  paymentMethod: paymentMethod as any,
-                  notes,
-                  cartItemIds: selectedItemIds, // 👈 Thêm field này
-                })
-              }
+              onClick={handleConfirmCheckout}
             >
               Đặt Hàng Ngay
             </button>

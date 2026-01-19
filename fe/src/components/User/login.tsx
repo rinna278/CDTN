@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import "./login.css";
-import { Dispatch, SetStateAction, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "../../redux/store";
 import {
@@ -13,6 +13,14 @@ import {
 } from "../../services/apiService";
 import { toast } from "react-toastify";
 import { fetchCartFromServer } from "../../redux/reducer+action/cartSlice";
+import {
+  validateEmail,
+  validatePassword,
+  handleEmailInput,
+  handleEmailPaste,
+  handlePasswordInput,
+  handlePasswordPaste,
+} from "../../utils/validate";
 
 interface HeaderProps {
   selected: string;
@@ -24,27 +32,18 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const isLogined = useSelector((state: RootState) => state.user.loggedIn);
 
-  const emailRef = useRef<HTMLInputElement>(null);
-  const passwordRef = useRef<HTMLInputElement>(null);
-  const forgotEmailRef = useRef<HTMLInputElement>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [forgotEmail, setForgotEmail] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
-  const [forgotEmailError, setForgotEmailError] = useState("");
 
   const handleSignUp = () => {
     setSelected("register");
-  };
-
-  const validateEmail = (email: string) => {
-    return String(email)
-      .toLowerCase()
-      .match(
-        /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-      );
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -52,26 +51,21 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
     setLoading(true);
     setErrorMsg("");
 
-    const email = emailRef.current?.value.trim() || "";
-    const password = passwordRef.current?.value.trim() || "";
+    // Validate email và password
+    const isEmailValid = validateEmail(email);
+    const isPasswordValid = validatePassword(password);
 
-    if (!validateEmail(email)) {
-      toast.error("Invalid email");
-      setLoading(false);
-      return;
-    }
-
-    if (!password) {
-      toast.error("Invalid password");
+    if (!isEmailValid || !isPasswordValid) {
       setLoading(false);
       return;
     }
 
     try {
-      const response = await postLogin(email, password);
+      const response = await postLogin(email.trim(), password.trim());
 
-      if (emailRef.current) emailRef.current.value = "";
-      if (passwordRef.current) passwordRef.current.value = "";
+      // Clear inputs sau khi đăng nhập thành công
+      setEmail("");
+      setPassword("");
 
       dispatch(
         loginSuccess({
@@ -80,7 +74,7 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
           accessToken: response.data.accessToken,
           refreshToken: response.data.refreshToken,
           isFirstTimeLogin: response.data.isFirstTimeLogin,
-        })
+        }),
       );
       dispatch(fetchCartFromServer() as any);
 
@@ -88,14 +82,20 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
       navigate("/", { replace: true });
     } catch (error: any) {
       const status = error.response?.status;
-      if (status === 500){
-        toast.error('Tài khoản không tồn tại');
+      if (status === 500) {
+        toast.error("Tài khoản không tồn tại");
+      } else if (status === 401) {
+        toast.error("Email hoặc mật khẩu không chính xác");
+      } else {
+        toast.error("Đăng nhập thất bại");
       }
+
       const msg = "Login failed";
       setErrorMsg(msg);
       dispatch(loginFailure(msg));
 
-      if (passwordRef.current) passwordRef.current.value = "";
+      // Chỉ clear password khi đăng nhập thất bại
+      setPassword("");
     } finally {
       setLoading(false);
     }
@@ -103,43 +103,41 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
 
   const handleForgotPasswordClick = () => {
     setShowForgotModal(true);
-    setForgotEmailError("");
+    setForgotEmail("");
   };
 
   const handleCloseModal = () => {
     setShowForgotModal(false);
-    setForgotEmailError("");
-    if (forgotEmailRef.current) forgotEmailRef.current.value = "";
+    setForgotEmail("");
   };
 
   const handleSendOTPForgotPassword = async () => {
-    const email = forgotEmailRef.current?.value || "";
-
-    if (!validateEmail(email)) {
-      setForgotEmailError("Please enter a valid email address");
+    // Validate email trước khi gửi OTP
+    if (!validateEmail(forgotEmail, "Email khôi phục")) {
       return;
     }
 
     setForgotLoading(true);
-    setForgotEmailError("");
 
     try {
-      const response = await postSendOTPChangePassword(email);
+      const response = await postSendOTPChangePassword(forgotEmail.trim());
 
       if (response.data.success) {
-        toast.success("OTP sent successfully to your email");
+        toast.success("OTP đã được gửi đến email của bạn");
         handleCloseModal();
-        navigate("/forgot-password", { state: { email } });
+        navigate("/forgot-password", { state: { email: forgotEmail.trim() } });
       } else {
-        setForgotEmailError("Failed to send OTP. Please try again.");
-        toast.error("Failed to send OTP");
+        toast.error("Gửi OTP thất bại. Vui lòng thử lại.");
       }
     } catch (error: any) {
-      const msg =
-        error.response?.data?.message ||
-        "Email does not exist or error occurred";
-      setForgotEmailError(msg);
-      toast.error(msg);
+      const status = error.response?.status;
+      if (status === 404) {
+        toast.error("Email không tồn tại trong hệ thống");
+      } else {
+        toast.error(
+          error.response?.data?.message || "Có lỗi xảy ra khi gửi OTP",
+        );
+      }
     } finally {
       setForgotLoading(false);
     }
@@ -154,12 +152,30 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
         <form className="form" onSubmit={handleLogin}>
           <div className="input-group">
             <label htmlFor="email">Email</label>
-            <input type="text" id="email" ref={emailRef} required />
+            <input
+              type="text"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onInput={handleEmailInput}
+              onPaste={handleEmailPaste}
+              placeholder="Nhập email của bạn"
+              autoComplete="email"
+            />
           </div>
 
           <div className="input-group">
             <label htmlFor="password">Password</label>
-            <input type="password" id="password" ref={passwordRef} required />
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onInput={handlePasswordInput}
+              onPaste={handlePasswordPaste}
+              placeholder="Nhập password của bạn"
+              autoComplete="current-password"
+            />
 
             <div className="forgot">
               <button
@@ -198,7 +214,10 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
       {/* Modal Forgot Password */}
       {showForgotModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content-login" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal-content-login"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header-login">
               <h3>Forgot Password</h3>
               <button className="close-btn" onClick={handleCloseModal}>
@@ -208,26 +227,26 @@ const Login = ({ selected, setSelected }: HeaderProps) => {
 
             <div className="modal-body">
               <p className="modal-description">
-                Enter your email address and we'll send you an OTP to reset your
-                password.
+                Nhập địa chỉ email của bạn và chúng tôi sẽ gửi mã OTP để đặt lại
+                mật khẩu.
               </p>
 
               <div className="input-group">
                 <label>Email Address</label>
                 <input
                   type="email"
-                  ref={forgotEmailRef}
-                  placeholder="Enter your email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  onInput={handleEmailInput}
+                  onPaste={handleEmailPaste}
+                  placeholder="Nhập email của bạn"
                   disabled={forgotLoading}
                   onKeyPress={(e) => {
                     if (e.key === "Enter") handleSendOTPForgotPassword();
                   }}
+                  autoComplete="email"
                 />
               </div>
-
-              {forgotEmailError && (
-                <div className="error-message">{forgotEmailError}</div>
-              )}
             </div>
 
             <div className="modal-footer">

@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   getProductByID,
   getAllProduct,
   postAddToCart,
+  postCreateOrder,
 } from "../../services/apiService";
 import "./detail-product.css";
 import { toast } from "react-toastify";
-import { Product } from "../../types/type";
-import { fetchCartFromServer } from "../../redux/reducer+action/cartSlice"; // Điều chỉnh đường dẫn cho đúng
+import { Product, CreateOrderPayload } from "../../types/type";
+import { fetchCartFromServer } from "../../redux/reducer+action/cartSlice";
 import { useDispatch } from "react-redux";
 import CheckoutModal from "../Checkout/checkout-modal";
 
@@ -55,12 +56,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
   const navigate = useNavigate();
 
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [checkoutItem, setCheckoutItem] = useState<{
-    id: string;
-    quantity: number;
-    color: string;
-    price: number;
-  } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -72,7 +68,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
   const [selectedColor, setSelectedColor] = useState("");
   const [availableColors, setAvailableColors] = useState<string[]>([]);
   const [currentVariant, setCurrentVariant] = useState<ProductVariant | null>(
-    null
+    null,
   );
 
   const getAvailableStock = (variant: ProductVariant | null): number => {
@@ -165,7 +161,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
         });
 
         const filtered = (response.data || []).filter(
-          (p) => p.id !== product.id
+          (p) => p.id !== product.id,
         );
         setSimilarProducts(filtered.slice(0, 8));
       } catch (err) {
@@ -305,8 +301,8 @@ const DetailProduct: React.FC<DetailProductProps> = ({
     product.images && product.images.length > 0
       ? product.images
       : currentVariant?.image
-      ? [currentVariant.image]
-      : [];
+        ? [currentVariant.image]
+        : [];
 
   const imageUrls =
     displayImages.length > 0
@@ -334,12 +330,12 @@ const DetailProduct: React.FC<DetailProductProps> = ({
       await postAddToCart(product.id, quantity, selectedColor);
       dispatch(fetchCartFromServer() as any);
       toast.success(
-        `Đã thêm ${quantity} sản phẩm màu ${selectedColor} vào giỏ hàng`
+        `Đã thêm ${quantity} sản phẩm màu ${selectedColor} vào giỏ hàng`,
       );
     } catch (error: any) {
       console.error("Lỗi thêm vào giỏ hàng:", error);
       toast.error(
-        error.response?.data?.message || "Không thể thêm vào giỏ hàng"
+        error.response?.data?.message || "Không thể thêm vào giỏ hàng",
       );
     }
   };
@@ -356,19 +352,38 @@ const DetailProduct: React.FC<DetailProductProps> = ({
       return;
     }
 
-    setCheckoutItem({
-      id: product.id,
-      quantity: quantity,
-      color: selectedColor,
-      price: discountedPrice,
-    });
+    // Mở modal checkout với thông tin mua ngay
     setIsCheckoutOpen(true);
   };
 
+  const handleConfirmBuyNow = async (orderData: CreateOrderPayload) => {
+    if (isSubmitting) return;
+
+    try {
+      setIsSubmitting(true);
+
+      const res = await postCreateOrder(orderData);
+      dispatch(fetchCartFromServer() as any);
+      setIsCheckoutOpen(false);
+
+      if (orderData.paymentMethod === "vnpay" && res.paymentUrl) {
+        window.location.href = res.paymentUrl;
+      } else {
+        toast.success("Đặt hàng thành công! Cảm ơn bạn.");
+        navigate("/profile?tab=orders");
+      }
+    } catch (error: any) {
+      console.error("Lỗi đặt hàng:", error);
+      toast.error(error.response?.data?.message || "Không thể tạo đơn hàng");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSimilarProductClick = (similarProduct: Product) => {
-    // ✅ Chỉ cần navigate, không cần truyền state
     navigate(`/detail-product/${similarProduct.id}`);
   };
+
   return (
     <div className="detail-product-page">
       <div className="breadcrumb">
@@ -391,7 +406,6 @@ const DetailProduct: React.FC<DetailProductProps> = ({
                 <img src={url} alt={`${product.name} ${index + 1}`} />
               </div>
             ))}
-            {}
           </div>
           <div className="main-image">
             <img src={imageUrls[selectedImage]} alt={product.name} />
@@ -499,8 +513,8 @@ const DetailProduct: React.FC<DetailProductProps> = ({
                 setQuantity(
                   Math.min(
                     Math.max(1, parseInt(e.target.value) || 1),
-                    currentVariant?.stock || 1
-                  )
+                    currentVariant?.stock || 1,
+                  ),
                 )
               }
               min="1"
@@ -525,13 +539,6 @@ const DetailProduct: React.FC<DetailProductProps> = ({
             >
               Thêm vào giỏ hàng
             </button>
-            <button
-              className="btn-buy-now"
-              onClick={handleBuyNow}
-              disabled={!currentVariant || currentVariant.stock === 0}
-            >
-              Mua ngay
-            </button>
           </div>
         </div>
       </div>
@@ -543,19 +550,6 @@ const DetailProduct: React.FC<DetailProductProps> = ({
             onClick={() => setActiveTab("description")}
           >
             Mô tả sản phẩm
-          </button>
-          <button
-            className={`tab ${activeTab === "comments" ? "active" : ""}`}
-            onClick={() => setActiveTab("comments")}
-          >
-            Đánh giá (0)
-          </button>
-
-          <button
-            className={`tab ${activeTab === "qa" ? "active" : ""}`}
-            onClick={() => setActiveTab("qa")}
-          >
-            Hỏi đáp
           </button>
         </div>
 
@@ -591,21 +585,6 @@ const DetailProduct: React.FC<DetailProductProps> = ({
             </div>
           )}
 
-          {activeTab === "comments" && (
-            <div className="comments-content">
-              <p className="empty-state">
-                Chưa có đánh giá nào cho sản phẩm này.
-              </p>
-              <button className="btn-review">Viết đánh giá đầu tiên</button>
-            </div>
-          )}
-
-          {activeTab === "qa" && (
-            <div className="qa-content">
-              <p className="empty-state">Chưa có câu hỏi nào.</p>
-              <button className="btn-question">Đặt câu hỏi</button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -647,7 +626,7 @@ const DetailProduct: React.FC<DetailProductProps> = ({
                       {formatPrice(
                         item.discount
                           ? item.price * (1 - item.discount / 100)
-                          : item.price
+                          : item.price,
                       )}
                     </span>
                   </div>
@@ -658,19 +637,22 @@ const DetailProduct: React.FC<DetailProductProps> = ({
         </div>
       )}
 
-      {checkoutItem && (
-        <CheckoutModal
-          isOpen={isCheckoutOpen}
-          onClose={() => setIsCheckoutOpen(false)}
-          onConfirm={(data) => {
-            console.log("Order confirmed:", data);
-            toast.success("Đặt hàng thành công!");
-            setIsCheckoutOpen(false);
-          }}
-          totalAmount={checkoutItem.price * checkoutItem.quantity}
-          selectedItemIds={[checkoutItem.id]}
-        />
-      )}
+      {/* Checkout Modal cho Mua Ngay */}
+      <CheckoutModal
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        onConfirm={handleConfirmBuyNow}
+        totalAmount={discountedPrice * quantity}
+        buyNowItem={
+          product && selectedColor
+            ? {
+                productId: product.id,
+                quantity: quantity,
+                color: selectedColor,
+              }
+            : undefined
+        }
+      />
     </div>
   );
 };
