@@ -183,7 +183,7 @@ export class ProductController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  @PermissionMetadata(PERMISSIONS.PRODUCT_STOCK_UPDATE)
   updateStock(
     @Param() param: ParamIdBaseDto,
     @Body() updateStockDto: UpdateStockDto,

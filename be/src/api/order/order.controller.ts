@@ -61,9 +61,6 @@ export class OrderController {
   @Get('vnpay-callback')
   @HttpCode(HttpStatus.OK)
   async handleVNPayCallback(@Query() query: any) {
-    console.log('📞 VNPay callback received (GET)');
-    console.debug('Query params:', JSON.stringify(query, null, 2));
-
     return this.orderService.handleVNPayCallback(query);
   }
 
@@ -241,7 +238,7 @@ export class OrderController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  @PermissionMetadata(PERMISSIONS.ORDER_READ)
   getAllOrders(@Query() query: QueryOrderDto) {
     return this.orderService.findAll(query);
   }
@@ -252,7 +249,7 @@ export class OrderController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  @PermissionMetadata(PERMISSIONS.ORDER_READ)
   async getOrderAdmin(@Param() param: ParamIdBaseDto) {
     const order = await this.orderService.findOne(param.id);
     return this.orderService['transformToResponse'](order);
@@ -268,7 +265,7 @@ export class OrderController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  @PermissionMetadata(PERMISSIONS.ORDER_STATUS_UPDATE)
   updateOrderStatus(
     @Param() param: ParamIdBaseDto,
     @Body() updateDto: UpdateOrderStatusDto,
@@ -285,7 +282,7 @@ export class OrderController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  @PermissionMetadata(PERMISSIONS.ORDER_SHIPPING_UPDATE)
   updateShipping(
     @Param() param: ParamIdBaseDto,
     @Body() updateDto: UpdateShippingDto,
@@ -306,7 +303,7 @@ export class OrderController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  @PermissionMetadata(PERMISSIONS.ORDER_REFUND_PROCESS)
   processRefund(
     @Param() param: ParamIdBaseDto,
     @Body() processDto: ProcessRefundDto,
@@ -323,7 +320,7 @@ export class OrderController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  @PermissionMetadata(PERMISSIONS.ORDER_REFUND_PROCESS)
   getRefundRequests(@Query() query: QueryOrderDto) {
     return this.orderService.findAll({
       ...query,
@@ -361,7 +358,7 @@ export class OrderController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  @PermissionMetadata(PERMISSIONS.ORDER_STATISTICS)
   async getTotalRevenue(
     @Query() query: QueryRevenueDto,
   ): Promise<RevenueResponseDto> {
@@ -444,11 +441,10 @@ export class OrderController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @PermissionMetadata(PERMISSIONS.ADMIN_CREATE)
+  @PermissionMetadata(PERMISSIONS.ORDER_STATISTICS)
   async getDashboardStats(
     @Query() query: QueryDashboardDto,
   ): Promise<DashboardResponseDto> {
     return this.orderService.getDashboardStats(query);
   }
 }
-
