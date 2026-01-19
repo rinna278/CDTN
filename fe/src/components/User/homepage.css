@@ -70,13 +70,13 @@
 }
 
 .button-ship::before {
-  width: 49.5vw;
+  width: 100%;
   top: 0;
   border-bottom-width: 0;
 }
 
 .button-ship::after {
-  width: 49.5vw;
+  width: 100%;
   bottom: 0;
   border-top-width: 0;
 }

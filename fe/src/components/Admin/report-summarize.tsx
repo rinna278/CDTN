@@ -76,16 +76,6 @@ const ReportSummarize = () => {
     setShowModal(false);
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const response = await getStatisticAllRevenue();
-      setTotalOrders(response.totalOrders);
-      setTotalRevenue(response.totalRevenue);
-      setTotalAverageOrders(response.averageOrderValue);
-    };
-
-    fetchData();
-  }, []);
 
   useEffect(() => {
     const fetchStatistic = async () => {
@@ -93,7 +83,9 @@ const ReportSummarize = () => {
         range === "Tháng" ? selectedMonth : undefined,
         selectedYear,
       );
-
+      setTotalRevenue(response?.revenueStats.currentMonth);
+      setTotalOrders(response?.orderStats.currentMonth);
+      setTotalAverageOrders(response?.averageOrderValue.value);
       setPercentChangeRevenue(response?.revenueStats?.percentageChange || 0);
       setPercentChangeOrders(response?.orderStats?.percentageChange || 0);
       setPercentAverageOrders(
@@ -326,16 +318,16 @@ const getCommonOptions = (
 
 
 
-  const getChartTitle = () => {
-    switch (range) {
-      case "Tháng":
-        return "Biểu đồ thể hiện số lượng đơn hàng theo Ngày";
-      case "Năm":
-        return "Biểu đồ thể hiện số lượng đơn hàng theo Tháng";
-      default:
-        return "Biểu đồ thể hiện số lượng Đơn hàng";
-    }
-  };
+  // const getChartTitle = () => {
+  //   switch (range) {
+  //     case "Tháng":
+  //       return "Biểu đồ thể hiện số lượng đơn hàng theo Ngày";
+  //     case "Năm":
+  //       return "Biểu đồ thể hiện số lượng đơn hàng theo Tháng";
+  //     default:
+  //       return "Biểu đồ thể hiện số lượng Đơn hàng";
+  //   }
+  // };
 
   const getChartTitle2 = () => {
     switch (range) {
